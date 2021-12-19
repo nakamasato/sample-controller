@@ -475,6 +475,72 @@ Check the controller logs.
 2021/12/19 17:31:57 handleDelete was called
 ```
 
+### 4.2. Fetch foo object
+
+Implement the following logic:
+1. Get a workqueue item.
+1. Get the key for the item from the cache.
+1. Split the key into namespace and name.
+1. Get the `Foo` resource with namespace and name from the lister.
+
+
+```go
+func (c *Controller) processNextItem() bool {
+	item, shutdown := c.workqueue.Get()
+	if shutdown {
+		return false
+	}
+
+	key, err := cache.MetaNamespaceKeyFunc(item)
+	if err != nil {
+		log.Printf("failed to get key from the cache %s\n", err.Error())
+		return false
+	}
+
+	ns, name, err := cache.SplitMetaNamespaceKey(key)
+	if err != nil {
+		log.Printf("failed to split key into namespace and name %s\n", err.Error())
+		return false
+	}
+
+	foo, err := c.fLister.Foos(ns).Get(name)
+	if err != nil {
+		log.Printf("failed to get foo resource from lister %s\n", err.Error())
+		return false
+	}
+	log.Printf("Got foo %+v\n", foo.Spec)
+
+	return true
+}
+```
+
+Build and run the controller.
+
+```
+go build
+./sample-controller
+```
+
+Create and delete CR.
+
+```
+kubectl apply -f config/sample/foo.yaml
+```
+
+```
+kubectl delete -f config/sample/foo.yaml
+```
+
+Check the controller logs.
+
+```
+./sample-controller
+2021/12/20 05:53:10 handleAdd was called
+2021/12/20 05:53:10 Got foo {DeploymentName:foo-sample Replicas:0xc0001a942c}
+2021/12/20 05:53:16 handleDelete was called
+2021/12/20 05:53:16 failed to get foo resource from lister foo.example.com "foo-sample" not found
+```
+
 ## Reference
 - [sample-controller](https://github.com/kubernetes/sample-controller)
 - [Kubernetes Deep Dive: Code Generation for CustomResources](https://cloud.redhat.com/blog/kubernetes-deep-dive-code-generation-customresources)

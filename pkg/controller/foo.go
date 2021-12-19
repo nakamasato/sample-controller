@@ -57,6 +57,30 @@ func (c *Controller) worker() {
 }
 
 func (c *Controller) processNextItem() bool {
+	item, shutdown := c.workqueue.Get()
+	if shutdown {
+		return false
+	}
+
+	key, err := cache.MetaNamespaceKeyFunc(item)
+	if err != nil {
+		log.Printf("failed to get key from the cache %s\n", err.Error())
+		return false
+	}
+
+	ns, name, err := cache.SplitMetaNamespaceKey(key)
+	if err != nil {
+		log.Printf("failed to split key into namespace and name %s\n", err.Error())
+		return false
+	}
+
+	foo, err := c.fLister.Foos(ns).Get(name)
+	if err != nil {
+		log.Printf("failed to get foo resource from lister %s\n", err.Error())
+		return false
+	}
+	log.Printf("Got foo %+v\n", foo.Spec)
+
 	return true
 }
 
