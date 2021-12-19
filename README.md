@@ -230,7 +230,7 @@ controller-gen paths=github.com/nakamasato/sample-controller/pkg/apis/foo/v1alph
 
 will create `config/crd/example.com_foos.yaml`
 
-## 4. Write `main.go`
+## 4. Checkpoint: Custom Resource is ready
 
 1. Create `main.go`.
 
@@ -328,6 +328,152 @@ will create `config/crd/example.com_foos.yaml`
     ```
 
 ## 4. Write controller
+
+### 4.1. Create Controller
+
+<details><summary>`pkg/controller/foo.go`</summary>
+
+```go
+package controller
+
+import (
+	"log"
+	"time"
+
+	clientset "github.com/nakamasato/sample-controller/pkg/client/clientset/versioned"
+	finformer "github.com/nakamasato/sample-controller/pkg/client/informers/externalversions/example.com/v1alpha1"
+	flister "github.com/nakamasato/sample-controller/pkg/client/listers/example.com/v1alpha1"
+
+	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/util/workqueue"
+)
+
+type Controller struct {
+	// clientset for custom resource Foo
+	client clientset.Interface
+	// foo has synced
+	fooSynced cache.InformerSynced
+	// lister
+	fLister flister.FooLister
+	// queue
+	workqueue workqueue.RateLimitingInterface
+}
+
+func NewController(client clientset.Interface, fooInformer finformer.FooInformer) *Controller {
+	c := &Controller{
+		client: client,
+		fooSynced: fooInformer.Informer().HasSynced,
+		fLister: fooInformer.Lister(),
+		workqueue: workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "foo"),
+	}
+
+	fooInformer.Informer().AddEventHandler(
+		cache.ResourceEventHandlerFuncs{
+			AddFunc: c.handleAdd,
+			DeleteFunc: c.handleDelete,
+		},
+	)
+	return c
+}
+
+func (c *Controller) Run(ch chan struct{}) error {
+	if ok := cache.WaitForCacheSync(ch, c.fooSynced); !ok {
+		log.Printf("cache is not synced")
+	}
+
+	go wait.Until(c.worker, time.Second, ch)
+
+	<-ch
+	return nil
+}
+
+func (c *Controller) worker() {
+	c.processNextItem()
+}
+
+func (c *Controller) processNextItem() bool {
+	return true
+}
+
+func (c *Controller) handleAdd(obj interface{}) {
+	log.Println("handleAdd was called")
+	c.workqueue.Add(obj)
+}
+
+func (c *Controller) handleDelete(obj interface{}) {
+	log.Println("handleDelete was called")
+	c.workqueue.Add(obj)
+}
+
+```
+
+</details>
+
+Update main.go
+
+
+```diff
+ package main
+
+ import (
+-       "context"
+        "flag"
+-       "fmt"
+        "log"
+        "path/filepath"
++       "time"
+
+        "k8s.io/client-go/tools/clientcmd"
+        "k8s.io/client-go/util/homedir"
+
+        client "github.com/nakamasato/sample-controller/pkg/client/clientset/versioned"
+-       metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
++       finformer "github.com/nakamasato/sample-controller/pkg/client/informers/externalversions"
++       "github.com/nakamasato/sample-controller/pkg/controller"
+ )
+
+...
+-       fmt.Println(clientset)
+
+-       foos, err := clientset.ExampleV1alpha1().Foos("").List(context.Background(), metav1.ListOptions{})
+-       if err != nil {
+-               log.Printf("listing foos %s\n", err.Error())
++       informerFactory := finformer.NewSharedInformerFactory(clientset, 20 * time.Minute)
++       ch := make(chan struct{})
++       c := controller.NewController(clientset, informerFactory.Example().V1alpha1().Foos())
++       informerFactory.Start(ch)
++       if err = c.Run(ch); err != nil {
++               log.Printf("error occurred when running controller %s\n", err.Error())
+        }
+-       fmt.Printf("length of foos is %d\n", len(foos.Items))
+```
+
+Build and run the controller.
+
+```
+go build
+./sample-controller
+```
+
+Create and delete CR.
+
+```
+kubectl apply -f config/sample/foo.yaml
+```
+
+```
+kubectl delete -f config/sample/foo.yaml
+```
+
+Check the controller logs.
+
+```
+2021/12/19 17:31:25 handleAdd was called
+2021/12/19 17:31:47 handleDelete was called
+2021/12/19 17:31:53 handleAdd was called
+2021/12/19 17:31:57 handleDelete was called
+```
 
 ## Reference
 - [sample-controller](https://github.com/kubernetes/sample-controller)

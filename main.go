@@ -1,17 +1,17 @@
 package main
 
 import (
-	"context"
 	"flag"
-	"fmt"
 	"log"
 	"path/filepath"
+	"time"
 
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
 
 	client "github.com/nakamasato/sample-controller/pkg/client/clientset/versioned"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	finformer "github.com/nakamasato/sample-controller/pkg/client/informers/externalversions"
+	"github.com/nakamasato/sample-controller/pkg/controller"
 )
 
 func main() {
@@ -33,11 +33,12 @@ func main() {
 	if err != nil {
 		log.Printf("getting client set %s\n", err.Error())
 	}
-	fmt.Println(clientset)
 
-	foos, err := clientset.ExampleV1alpha1().Foos("").List(context.Background(), metav1.ListOptions{})
-	if err != nil {
-		log.Printf("listing foos %s\n", err.Error())
+	informerFactory := finformer.NewSharedInformerFactory(clientset, 20*time.Minute)
+	ch := make(chan struct{})
+	c := controller.NewController(clientset, informerFactory.Example().V1alpha1().Foos())
+	informerFactory.Start(ch)
+	if err = c.Run(ch); err != nil {
+		log.Printf("error occurred when running controller %s\n", err.Error())
 	}
-	fmt.Printf("length of foos is %d\n", len(foos.Items))
 }
