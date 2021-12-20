@@ -613,3 +613,124 @@ Steps:
     2021/12/19 17:31:25 handleAdd was called
     2021/12/19 17:31:47 handleDelete was called
     ```
+
+### 5.2. Fetch foo object
+
+Implement the following logic:
+1. Get a workqueue item.
+1. Get the key for the item from the cache.
+1. Split the key into namespace and name.
+1. Get the `Foo` resource with namespace and name from the lister.
+
+Steps:
+1. Define `enqueueFoo` to convert Foo resource into namespace/name string before putting into the workqueue.
+
+    ```go
+    func (c *Controller) handleAdd(obj interface{}) {
+        log.Println("handleAdd was called")
+        c.enqueueFoo(obj)
+    }
+
+    func (c *Controller) handleDelete(obj interface{}) {
+        log.Println("handleDelete was called")
+        c.enqueueFoo(obj)
+    }
+
+    // enqueueFoo takes a Foo resource and converts it into a namespace/name
+    // string which is then put onto the work queue. This method should *not* be
+    // passed resources of any type other than Foo.
+    func (c *Controller) enqueueFoo(obj interface{}) {
+        var key string
+        var err error
+        if key, err = cache.MetaNamespaceKeyFunc(obj); err != nil {
+            log.Printf("failed to get key from the cache %s\n", err.Error())
+            return
+        }
+        c.workqueue.Add(key)
+    }
+    ```
+1. Update `processNextItem`.
+
+    ```go
+    func (c *Controller) processNextItem() bool {
+        obj, shutdown := c.workqueue.Get()
+        if shutdown {
+            return false
+        }
+
+        // wrap this block in a func to use defer c.workqueue.Done
+        err := func(obj interface{}) error {
+            // call Done to tell workqueue that the item was finished processing
+            defer c.workqueue.Done(obj)
+            var key string
+            var ok bool
+
+            if key, ok = obj.(string); !ok {
+                // As the item in the workqueue is actually invalid, we call
+                // Forget here else we'd go into a loop of attempting to
+                // process a work item that is invalid.
+                c.workqueue.Forget(obj)
+                return nil
+            }
+
+            ns, name, err := cache.SplitMetaNamespaceKey(key)
+            if err != nil {
+                log.Printf("failed to split key into namespace and name %s\n", err.Error())
+                return err
+            }
+
+            // temporary main logic
+            foo, err := c.foosLister.Foos(ns).Get(name)
+            if err != nil {
+                log.Printf("failed to get foo resource from lister %s\n", err.Error())
+                return err
+            }
+            log.Printf("Got foo %+v\n", foo.Spec)
+
+            // Forget the queue item as it's successfully processed and
+            // the item will not be requeued.
+            c.workqueue.Forget(obj)
+            return nil
+        }(obj)
+
+        if err != nil {
+            return true
+        }
+
+        return true
+    }
+    ```
+
+1. Build and run the controller.
+
+    ```
+    go build
+    ./sample-controller
+    ```
+
+1. Create and delete CR.
+
+    ```
+    kubectl apply -f config/sample/foo.yaml
+    ```
+
+    ```
+    kubectl delete -f config/sample/foo.yaml
+    ```
+
+1. Check the controller logs.
+
+    ```
+    ./sample-controller
+    2021/12/20 05:53:10 handleAdd was called
+    2021/12/20 05:53:10 Got foo {DeploymentName:foo-sample Replicas:0xc0001a942c}
+    2021/12/20 05:53:16 handleDelete was called
+    2021/12/20 05:53:16 failed to get foo resource from lister foo.example.com "foo-sample" not found
+    ```
+
+## Reference
+- [sample-controller](https://github.com/kubernetes/sample-controller)
+- [Kubernetes Deep Dive: Code Generation for CustomResources](https://cloud.redhat.com/blog/kubernetes-deep-dive-code-generation-customresources)
+- [Generating ClientSet/Informers/Lister and CRD for Custom Resources | Writing K8S Operator - Part 1](https://www.youtube.com/watch?v=89PdRvRUcPU)
+- [Implementing add and del handler func and token field in Kluster CRD | Writing K8S Operator - Part 2](https://www.youtube.com/watch?v=MOutOgdXfnA)
+- [Calling DigitalOcean APIs on Kluster's add event | Writing K8S Operator - Part 3](https://www.youtube.com/watch?v=Wtyj0V4Inmg)
