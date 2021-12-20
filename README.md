@@ -392,3 +392,224 @@ Steps:
         ```
         kubectl delete -f config/sample/foo.yaml
         ```
+
+## 5. Write controller
+
+### 5.1. Create Controller
+
+1. Create controller.
+
+    What's inside the controller:
+    1. Define `Controller` struct with `sampleclientset`, `foosLister`, `foosSynced`, and `workqueue`.
+    1. Define `NewController` function
+        1. Create `Controller` with the arguments `sampleclientset` and `fooInformer`, which will be passed in `main.go`.
+        1. Add event handlers for `addFunc` and `DeleteFunc` to the informer.
+        1. Return the controller.
+    1. Define `Run`, which will be called in `main.go`.
+        1. Wait until the cache is synced.
+        1. Run `c.worker` repeatedly every second until the stop channel is closed.
+    1. Define `worker`: just call `processNextItem`.
+    1. Define `processNextItem`: always return true for now.
+
+    <details><summary>pkg/controller/foo.go</summary>
+
+    ```go
+    package controller
+
+    import (
+    	"log"
+    	"time"
+
+    	clientset "github.com/nakamasato/sample-controller/pkg/client/clientset/versioned"
+    	informers "github.com/nakamasato/sample-controller/pkg/client/informers/externalversions/example.com/v1alpha1"
+    	listers "github.com/nakamasato/sample-controller/pkg/client/listers/example.com/v1alpha1"
+
+    	"k8s.io/apimachinery/pkg/util/wait"
+    	"k8s.io/client-go/tools/cache"
+    	"k8s.io/client-go/util/workqueue"
+    )
+
+    type Controller struct {
+    	// sampleclientset is a clientset for our own API group
+    	sampleclientset clientset.Interface
+
+    	foosLister listers.FooLister    // lister for foo
+    	foosSynced cache.InformerSynced // cache is synced for foo
+
+    	// queue
+    	workqueue workqueue.RateLimitingInterface
+    }
+
+    func NewController(sampleclientset clientset.Interface, fooInformer informers.FooInformer) *Controller {
+    	controller := &Controller{
+    		sampleclientset: sampleclientset,
+    		foosSynced:      fooInformer.Informer().HasSynced,
+    		foosLister:      fooInformer.Lister(),
+    		workqueue:       workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "foo"),
+    	}
+
+    	fooInformer.Informer().AddEventHandler(
+    		cache.ResourceEventHandlerFuncs{
+    			AddFunc:    controller.handleAdd,
+    			DeleteFunc: controller.handleDelete,
+    		},
+    	)
+    	return controller
+    }
+
+    func (c *Controller) Run(ch chan struct{}) error {
+    	if ok := cache.WaitForCacheSync(ch, c.foosSynced); !ok {
+    		log.Printf("cache is not synced")
+    	}
+
+    	go wait.Until(c.worker, time.Second, ch)
+
+    	<-ch
+    	return nil
+    }
+
+    func (c *Controller) worker() {
+    	c.processNextItem()
+    }
+
+    func (c *Controller) processNextItem() bool {
+    	return true
+    }
+
+    func (c *Controller) handleAdd(obj interface{}) {
+    	log.Println("handleAdd was called")
+    	c.workqueue.Add(obj)
+    }
+
+    func (c *Controller) handleDelete(obj interface{}) {
+    	log.Println("handleDelete was called")
+    	c.workqueue.Add(obj)
+    }
+    ```
+
+    </details>
+
+    Although `controller.go` is under the root directory in [sample-controller](https://github.com/kubernetes/sample-controller/blob/master/controller.go), here creates controller under `pkg/controller` directory in this repo. You can also move it to `main` package if you want.
+
+
+1. Update `main.go` to initialize a controller and run it.
+
+    ```diff
+     import (
+    -       "context"
+            "flag"
+    -       "fmt"
+            "log"
+            "path/filepath"
+    +       "time"
+
+            "k8s.io/client-go/tools/clientcmd"
+            "k8s.io/client-go/util/homedir"
+
+    -       client "github.com/nakamasato/sample-controller/pkg/client/clientset/versioned"
+    -       metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+    +       clientset "github.com/nakamasato/sample-controller/pkg/client/clientset/versioned"
+    +       informers "github.com/nakamasato/sample-controller/pkg/client/informers/externalversions"
+    +       "github.com/nakamasato/sample-controller/pkg/controller"
+     )
+
+     func main() {
+    @@ -29,15 +29,16 @@ func main() {
+                    log.Printf("Building config from flags, %s", err.Error())
+            }
+
+    -       clientset, err := client.NewForConfig(config)
+    +       exampleClient, err := clientset.NewForConfig(config)
+            if err != nil {
+                    log.Printf("getting client set %s\n", err.Error())
+            }
+    -       fmt.Println(clientset)
+
+    -       foos, err := clientset.ExampleV1alpha1().Foos("").List(context.Background(), metav1.ListOptions{})
+    -       if err != nil {
+    -               log.Printf("listing foos %s\n", err.Error())
+    +       exampleInformerFactory := informers.NewSharedInformerFactory(exampleClient, 20*time.Minute)
+    +       ch := make(chan struct{})
+    +       controller := controller.NewController(exampleClient, informerFactory.Example().V1alpha1().Foos())
+    +       exampleInformerFactory.Start(ch)
+    +       if err = controller.Run(ch); err != nil {
+    +               log.Printf("error occurred when running controller %s\n", err.Error())
+            }
+    -       fmt.Printf("length of foos is %d\n", len(foos.Items))
+     }
+    ```
+
+    <details><summary>main.go</summary>
+
+    ```go
+    package main
+
+    import (
+    	"flag"
+    	"log"
+    	"path/filepath"
+    	"time"
+
+    	"k8s.io/client-go/tools/clientcmd"
+    	"k8s.io/client-go/util/homedir"
+
+    	clientset "github.com/nakamasato/sample-controller/pkg/client/clientset/versioned"
+    	informers "github.com/nakamasato/sample-controller/pkg/client/informers/externalversions"
+    	"github.com/nakamasato/sample-controller/pkg/controller"
+    )
+
+    func main() {
+    	var kubeconfig *string
+
+    	if home := homedir.HomeDir(); home != "" {
+    		kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional)")
+    	} else {
+    		kubeconfig = flag.String("kubeconfig", "", "absolute path to kubeconfig file")
+    	}
+    	flag.Parse()
+
+    	config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
+    	if err != nil {
+    		log.Printf("Building config from flags, %s", err.Error())
+    	}
+
+    	exampleClient, err := clientset.NewForConfig(config)
+    	if err != nil {
+    		log.Printf("getting client set %s\n", err.Error())
+    	}
+
+    	exampleInformerFactory := informers.NewSharedInformerFactory(exampleClient, 20*time.Minute)
+    	ch := make(chan struct{})
+    	controller := controller.NewController(exampleClient, exampleInformerFactory.Example().V1alpha1().Foos())
+    	exampleInformerFactory.Start(ch)
+    	if err = controller.Run(ch); err != nil {
+    		log.Printf("error occurred when running controller %s\n", err.Error())
+    	}
+    }
+    ```
+
+    </details>
+
+1. Build and run the controller.
+
+    ```
+    go build
+    ./sample-controller
+    ```
+
+1. Create and delete CR.
+
+    ```
+    kubectl apply -f config/sample/foo.yaml
+    ```
+
+    ```
+    kubectl delete -f config/sample/foo.yaml
+    ```
+
+1. Check the controller logs.
+
+    ```
+    2021/12/19 17:31:25 handleAdd was called
+    2021/12/19 17:31:47 handleDelete was called
+    ```
