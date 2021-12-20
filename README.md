@@ -728,6 +728,248 @@ Steps:
     2021/12/20 05:53:16 failed to get foo resource from lister foo.example.com "foo-sample" not found
     ```
 
+### 5.3. Implement reconciliation logic - Enable to Create/Delete Deployment for Foo resource
+
+At the end of this step, we'll be able to create `Deployment` for `Foo` resource.
+
+1. Add fields (`kubeclientset`, `deploymentsLister`, and `deploymentsSynced`) to `Controller`.
+    ```diff
+     type Controller struct {
+    +       // kubeclientset is a standard kubernetes clientset
+    +       kubeclientset kubernetes.Interface
+            // sampleclientset is a clientset for our own API group
+            sampleclientset clientset.Interface
+
+    +       deploymentsLister appslisters.DeploymentLister
+    +       deploymentsSynced cache.InformerSynced
+    +
+            foosLister listers.FooLister    // lister for foo
+            foosSynced cache.InformerSynced // cache is synced for foo
+
+    @@ -24,12 +39,19 @@ type Controller struct {
+            workqueue workqueue.RateLimitingInterface
+     }
+    ```
+1. Update `NewController` as follows:
+    ```diff
+    -func NewController(sampleclientset clientset.Interface, fooInformer informers.FooInformer) *Controller {
+    +func NewController(
+    +       kubeclientset kubernetes.Interface,
+    +       sampleclientset clientset.Interface,
+    +       deploymentInformer appsinformers.DeploymentInformer,
+    +       fooInformer informers.FooInformer) *Controller {
+            controller := &Controller{
+    -               sampleclientset: sampleclientset,
+    -               foosSynced:      fooInformer.Informer().HasSynced,
+    -               foosLister:      fooInformer.Lister(),
+    -               workqueue:       workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "foo"),
+    +               kubeclientset:     kubeclientset,
+    +               sampleclientset:   sampleclientset,
+    +               deploymentsLister: deploymentInformer.Lister(),
+    +               deploymentsSynced: deploymentInformer.Informer().HasSynced,
+    +               foosLister:        fooInformer.Lister(),
+    +               foosSynced:        fooInformer.Informer().HasSynced,
+    +               workqueue:         workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "foo"),
+            }
+    ```
+1. Update `main.go` to pass the added arguments to `NewController`.
+    ```diff
+    import (
+    ...
+    +       kubeinformers "k8s.io/client-go/informers"
+    +       "k8s.io/client-go/kubernetes"
+    ...
+    )
+    ```
+
+    ```diff
+    func main() {
+        ...
+    +       kubeClient, err := kubernetes.NewForConfig(config)
+    +       if err != nil {
+    +               log.Printf("getting kubernetes client set %s\n", err.Error())
+    +       }
+    +
+            exampleClient, err := clientset.NewForConfig(config)
+            if err != nil {
+                    log.Printf("getting client set %s\n", err.Error())
+            }
+
+    -       exampleInformerFactory := informers.NewSharedInformerFactory(exampleClient, 20*time.Minute)
+    +       kubeInformerFactory := kubeinformers.NewSharedInformerFactory(kubeClient, time.Second*30)
+    +       exampleInformerFactory := informers.NewSharedInformerFactory(exampleClient, time.Second*30)
+            ch := make(chan struct{})
+    -       controller := controller.NewController(exampleClient, exampleInformerFactory.Example().V1alpha1().Foos())
+    +       controller := controller.NewController(
+    +               kubeClient,
+    +               exampleClient,
+    +               kubeInformerFactory.Apps().V1().Deployments(),
+    +               exampleInformerFactory.Example().V1alpha1().Foos(),
+    +       )
+    +       kubeInformerFactory.Start(ch)
+        ...
+    }
+    ```
+1. Create `syncHandler` and `newDeployment`.
+
+    ```go
+    func (c *Controller) syncHandler(key string) error {
+    	ns, name, err := cache.SplitMetaNamespaceKey(key)
+    	if err != nil {
+    		log.Printf("failed to split key into namespace and name %s\n", err.Error())
+    		return err
+    	}
+
+    	foo, err := c.foosLister.Foos(ns).Get(name)
+    	if err != nil {
+    		log.Printf("failed to get foo resource from lister %s\n", err.Error())
+    		if errors.IsNotFound(err) {
+    			return nil
+    		}
+    		return err
+    	}
+
+    	deploymentName := foo.Spec.DeploymentName
+    	if deploymentName == "" {
+    		log.Printf("deploymentName must be specified %s\n", key)
+    		return nil
+    	}
+    	deployment, err := c.deploymentsLister.Deployments(foo.Namespace).Get(deploymentName)
+    	if errors.IsNotFound(err) {
+    		deployment, err = c.kubeclientset.AppsV1().Deployments(foo.Namespace).Create(context.TODO(), newDeployment(foo), metav1.CreateOptions{})
+    	}
+
+    	if err != nil {
+    		return err
+    	}
+
+    	log.Printf("deployment %+v", deployment)
+
+    	return nil
+    }
+
+    func newDeployment(foo *samplev1alpha1.Foo) *appsv1.Deployment {
+    	labels := map[string]string{
+    		"app":        "nginx",
+    		"controller": foo.Name,
+    	}
+    	return &appsv1.Deployment{
+    		ObjectMeta: metav1.ObjectMeta{
+    			Name:            foo.Spec.DeploymentName,
+    			Namespace:       foo.Namespace,
+    			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(foo, samplev1alpha1.SchemeGroupVersion.WithKind("Foo"))},
+    		},
+    		Spec: appsv1.DeploymentSpec{
+    			Replicas: foo.Spec.Replicas,
+    			Selector: &metav1.LabelSelector{
+    				MatchLabels: labels,
+    			},
+    			Template: corev1.PodTemplateSpec{
+    				ObjectMeta: metav1.ObjectMeta{
+    					Labels: labels,
+    				},
+    				Spec: corev1.PodSpec{
+    					Containers: []corev1.Container{
+    						{
+    							Name:  "nginx",
+    							Image: "nginx:latest",
+    						},
+    					},
+    				},
+    			},
+    		},
+    	}
+    }
+    ```
+
+1. Update `processNextItem` to call `syncHandler` for main logic.
+
+    ```diff
+    @@ -77,20 +99,12 @@ func (c *Controller) processNextItem() bool {
+                            return nil
+                    }
+
+    -               ns, name, err := cache.SplitMetaNamespaceKey(key)
+    -               if err != nil {
+    -                       log.Printf("failed to split key into namespace and name %s\n", err.Error())
+    -                       return err
+    +               if err := c.syncHandler(key); err != nil {
+    +                       // Put the item back on the workqueue to handle any transient errors.
+    +                       c.workqueue.AddRateLimited(key)
+    +                       return fmt.Errorf("error syncing '%s': %s, requeuing", key, err.Error())
+                    }
+
+    -               // temporary main logic
+    -               foo, err := c.foosLister.Foos(ns).Get(name)
+    -               if err != nil {
+    -                       log.Printf("failed to get foo resource from lister %s\n", err.Error())
+    -                       return err
+    -               }
+    -               log.Printf("Got foo %+v\n", foo.Spec)
+    -
+                    // Forget the queue item as it's successfully processed and
+                    // the item will not be requeued.
+                    c.workqueue.Forget(obj)
+    ```
+1. Delete `handleDelete` function as it's covered by `ownerReferences` (details mentioned in the next step) for delete action.
+
+    ```diff
+            fooInformer.Informer().AddEventHandler(
+                    cache.ResourceEventHandlerFuncs{
+                            AddFunc:    controller.handleAdd,
+    -                       DeleteFunc: controller.handleDelete,
+                    },
+            )
+    ```
+    ```diff
+    -func (c *Controller) handleDelete(obj interface{}) {
+    -       log.Println("handleDelete was called")
+    -       c.enqueueFoo(obj)
+    -}
+    ```
+
+
+1. Test `sample-controller`.
+    1. Build and run the controller.
+        ```
+        go build
+        ./sample-controller
+        ```
+    1. Create `Foo` resource.
+        ```
+        kubectl apply -f config/sample/foo.yaml
+        ```
+
+        Check `Deployment`:
+        ```
+        kubectl get deploy
+        NAME         READY   UP-TO-DATE   AVAILABLE   AGE
+        foo-sample   0/1     1            0           3s
+        ```
+        Check `sample-controller`'s logs:
+        ```
+        2021/12/20 19:58:30 handleAdd was called
+        2021/12/20 19:58:30 deployment foo-sample exists
+        ```
+    1. Delete `Foo` resource.
+        ```
+        kubectl delete -f config/sample/foo.yaml
+        ```
+        Check `Deployment`:
+        ```
+        kubectl get deploy
+        No resources found in default namespace.
+        ```
+        Check `sample-controller`'s logs:
+        ```
+        2021/12/20 19:59:14 handleDelete was called
+        2021/12/20 19:59:14 failed to get foo resource from lister foo.example.com "foo-sample" not found
+        ```
+        `Deployment` is deleted when the corresponding `Foo` is deleted thanks to `OwnerReference`'s [cascading deletion](https://kubernetes.io/docs/concepts/architecture/garbage-collection/#cascading-deletion) feature:
+
+        > Kubernetes checks for and deletes objects that no longer have owner references, like the pods left behind when you delete a ReplicaSet. When you delete an object, you can control whether Kubernetes deletes the object's dependents automatically, in a process called cascading deletion.
+
+
 ## Reference
 - [sample-controller](https://github.com/kubernetes/sample-controller)
 - [Kubernetes Deep Dive: Code Generation for CustomResources](https://cloud.redhat.com/blog/kubernetes-deep-dive-code-generation-customresources)
