@@ -1250,6 +1250,110 @@ Steps:
         {"availableReplicas":1}
         ```
 
+### 5.7. Implement reconciliation logic - Create events for Foo resource
+
+1. Add necessary packages.
+    ```diff
+    @@ -13,20 +13,34 @@ import (
+            "k8s.io/apimachinery/pkg/util/wait"
+            appsinformers "k8s.io/client-go/informers/apps/v1"
+            "k8s.io/client-go/kubernetes"
+    +       typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
+            appslisters "k8s.io/client-go/listers/apps/v1"
+            "k8s.io/client-go/tools/cache"
+    +       "k8s.io/client-go/tools/record"
+            "k8s.io/client-go/util/workqueue"
+
+            samplev1alpha1 "github.com/nakamasato/sample-controller/pkg/apis/example.com/v
+    1alpha1"
+            clientset "github.com/nakamasato/sample-controller/pkg/client/clientset/versio
+    ned"
+    +       "github.com/nakamasato/sample-controller/pkg/client/clientset/versioned/scheme
+    "
+            informers "github.com/nakamasato/sample-controller/pkg/client/informers/extern
+    alversions/example.com/v1alpha1"
+            listers "github.com/nakamasato/sample-controller/pkg/client/listers/example.com/v1alpha1"
+    ```
+1. Add eventRecorder to Controller.
+    ```diff
+     type Controller struct {
+    @@ -43,6 +57,10 @@ type Controller struct {
+
+            // queue
+            workqueue workqueue.RateLimitingInterface
+    +
+    +       // recorder is an event recorder for recording Event resources to the
+    +       // Kubernetes API.
+    +       recorder record.EventRecorder
+     }
+    ```
+1. Initialize `eventBroadcaster`.
+    ```diff
+     func NewController(
+    @@ -50,6 +68,11 @@ func NewController(
+            sampleclientset clientset.Interface,
+            deploymentInformer appsinformers.DeploymentInformer,
+            fooInformer informers.FooInformer) *Controller {
+    +
+    +       eventBroadcaster := record.NewBroadcaster()
+    +       eventBroadcaster.StartStructuredLogging(0)
+    +       eventBroadcaster.StartRecordingToSink(&typedcorev1.EventSinkImpl{Interface:     kubeclientset.CoreV1().Events("")})
+    +       recorder := eventBroadcaster.NewRecorder(scheme.Scheme, corev1.EventSource{Component:     controllerAgentName})
+            controller := &Controller{
+                    kubeclientset:     kubeclientset,
+                    sampleclientset:   sampleclientset,
+    @@ -58,6 +81,7 @@ func NewController(
+                    foosLister:        fooInformer.Lister(),
+                    foosSynced:        fooInformer.Informer().HasSynced,
+                    workqueue:         workqueue.NewNamedRateLimitingQueue(workqueue.    DefaultControllerRateLimiter(), "foo"),
+    +               recorder:          recorder,
+            }
+    ```
+1. Define constants.
+    ```diff
+     const (
+    +       // SuccessSynced is used as part of the Event 'reason' when a Foo is synced
+    +       SuccessSynced = "Synced"
+    +       // ErrResourceExists is used as part of the Event 'reason' when a Foo fails
+    +       // to sync due to a Deployment of the same name already existing.
+    +       ErrResourceExists = "ErrResourceExists"
+    +
+            // MessageResourceExists is the message used for Events when a resource
+            // fails to sync due to a Deployment already existing
+            MessageResourceExists = "Resource %q already exists and is not managed by Foo"
+    +       // MessageResourceSynced is the message used for an Event fired when a Foo
+    +       // is synced successfully
+    +       MessageResourceSynced = "Foo synced successfully"
+    +
+    +       controllerAgentName = "sample-controller"
+     )
+    ```
+1. Record events.
+    ```diff
+    @@ -199,6 +223,7 @@ func (c *Controller) syncHandler(key string) error {
+            // a warning to the event recorder and return error msg.
+            if !metav1.IsControlledBy(deployment, foo) {
+                    msg := fmt.Sprintf(MessageResourceExists, deployment.Name)
+    +               c.recorder.Event(foo, corev1.EventTypeWarning, ErrResourceExists, msg)
+                    log.Println(msg)
+                    return fmt.Errorf("%s", msg)
+            }
+    @@ -228,6 +253,7 @@ func (c *Controller) syncHandler(key string) error {
+                    return err
+            }
+
+    +       c.recorder.Event(foo, corev1.EventTypeNormal, SuccessSynced, MessageResourceSynced)
+            return nil
+     }
+    ```
+1. Test event.
+    1. Apply `Foo`.
+    1. Check `event`.
+        ```
+        kubectl get event --field-selector involvedObject.kind=Foo
+        LAST SEEN   TYPE     REASON   OBJECT           MESSAGE
+        22s         Normal   Synced   foo/foo-sample   Foo synced successfully
+        ```
 ## Reference
 - [sample-controller](https://github.com/kubernetes/sample-controller)
 - [Kubernetes Deep Dive: Code Generation for CustomResources](https://cloud.redhat.com/blog/kubernetes-deep-dive-code-generation-customresources)
@@ -1257,3 +1361,4 @@ Steps:
 - [Implementing add and del handler func and token field in Kluster CRD | Writing K8S Operator - Part 2](https://www.youtube.com/watch?v=MOutOgdXfnA)
 - [Calling DigitalOcean APIs on Kluster's add event | Writing K8S Operator - Part 3](https://www.youtube.com/watch?v=Wtyj0V4Inmg)
 - [A deep dive into Kubernetes controllers](https://engineering.bitnami.com/articles/a-deep-dive-into-kubernetes-controllers.html)
+- [Programming Kubernetes CRDs](https://insujang.github.io/2020-02-13/programming-kubernetes-crd/)
