@@ -1085,6 +1085,91 @@ Steps:
         kubectl delete deploy foo-sample
         ```
 
+### 5.5. Implement reconciliation logic - Update Foo status
+
+1. Create `updateFooStatus` function and add the logic at the end of `syncHandler`
+
+    ```go
+    func (c *Controller) updateFooStatus(foo *samplev1alpha1.Foo, deployment *appsv1.Deployment) error {
+        // NEVER modify objects from the store. It's a read-only, local cache.
+        // You can use DeepCopy() to make a deep copy of original object and modify this copy
+        // Or create a copy manually for better performance
+        fooCopy := foo.DeepCopy()
+        fooCopy.Status.AvailableReplicas = deployment.Status.AvailableReplicas
+        // If the CustomResourceSubresources feature gate is not enabled,
+        // we must use Update instead of UpdateStatus to update the Status block of the Foo resource.
+        // UpdateStatus will not allow changes to the Spec of the resource,
+        // which is ideal for ensuring nothing other than resource status has been updated.
+        _, err := c.sampleclientset.ExampleV1alpha1().Foos(foo.Namespace).UpdateStatus(context.TODO(), fooCopy, metav1.UpdateOptions{})
+        return err
+    }
+    ```
+
+    ```go
+    func (c *Controller) syncHandler() {
+        ...
+
+        // Finally, we update the status block of the Foo resource to reflect the
+        // current state of the world
+        err = c.updateFooStatus(foo, deployment)
+        if err != nil {
+            log.Printf("failed to update Foo status for %s", foo.Name)
+            return err
+        }
+
+        return nil
+    }
+    ```
+1. Add `subresources` to `CustomResourceDefinition`.
+
+    ```yaml
+          subresources:
+            status: {}
+            scale:
+              specReplicasPath: .spec.replicas
+              statusReplicasPath: .status.replicas
+              labelSelectorPath: .status.labelSelector
+    ```
+
+    For more details, see [subresources](https://kubernetes.io/docs/tasks/extend-kubernetes/custom-resources/custom-resource-definitions/#subresources)
+1. Test status
+    1. Apply `Foo`
+        ```
+        kubectl apply -f config/sample/foo.yaml
+        ```
+    1. Check status (not updated immediately -> will be fixed in the next section.)
+        ```
+        kubectl get foo foo-sample -o jsonpath='{.status}'
+        {"availableReplicas":0}%
+        ```
+        Currently, the informer just monitors `Foo` resource, which cannot capture the update of `Deployment.status.availableReplicas`.
+    1. Check status after a while
+        ```
+        kubectl get foo foo-sample -o jsonpath='{.status}'
+        {"availableReplicas":1}%
+        ```
+1. Test scale
+    1. Scale.
+        ```
+        kubectl scale --replicas=3 foo foo-sample
+        ```
+
+        ```
+        kubectl get deploy
+        NAME         READY   UP-TO-DATE   AVAILABLE   AGE
+        foo-sample   3/3     3            3           95s
+        ```
+
+        ```
+        kubectl scale --replicas=1 foo foo-sample
+        ```
+
+        ```
+        kubectl get deploy
+        NAME         READY   UP-TO-DATE   AVAILABLE   AGE
+        foo-sample   1/1     1            1           9m10s
+        ```
+
 ## Reference
 - [sample-controller](https://github.com/kubernetes/sample-controller)
 - [Kubernetes Deep Dive: Code Generation for CustomResources](https://cloud.redhat.com/blog/kubernetes-deep-dive-code-generation-customresources)
