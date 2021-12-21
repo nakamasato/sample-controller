@@ -1170,6 +1170,86 @@ Steps:
         foo-sample   1/1     1            1           9m10s
         ```
 
+### 5.6. Implement reconciliation logic - Capture the update of Deployment
+
+1. Add handleObject function.
+
+    ```go
+    // handleObject will take any resource implementing metav1.Object and attempt
+    // to find the Foo resource that 'owns' it. It does this by looking at the
+    // objects metadata.ownerReferences field for an appropriate OwnerReference.
+    // It then enqueues that Foo resource to be processed. If the object does not
+    // have an appropriate OwnerReference, it will simply be skipped.
+    func (c *Controller) handleObject(obj interface{}) {
+        var object metav1.Object
+        var ok bool
+        if object, ok = obj.(metav1.Object); !ok {
+            tombstone, ok := obj.(cache.DeletedFinalStateUnknown)
+            if !ok {
+                return
+            }
+            object, ok = tombstone.Obj.(metav1.Object)
+            if !ok {
+                return
+            }
+            log.Printf("Recovered deleted object '%s' from tombstone", object.GetName())
+        }
+        log.Printf("Processing object: %s", object.GetName())
+        if ownerRef := metav1.GetControllerOf(object); ownerRef != nil {
+            // If this object is not owned by a Foo, we should not do anything more
+            // with it.
+            if ownerRef.Kind != "Foo" {
+                return
+            }
+
+            foo, err := c.foosLister.Foos(object.GetNamespace()).Get(ownerRef.Name)
+            if err != nil {
+                log.Printf("ignoring orphaned object '%s' of foo '%s'", object.GetSelfLink(), ownerRef.Name)
+                return
+            }
+
+            c.enqueueFoo(foo)
+            return
+        }
+    }
+    ```
+    When `Deployment` managed by `Foo` is added/updated/deleted, get the corresponding `Foo` and put the key (`naemspace/name`) to the workqueue.
+
+1. Add event handlers to `deploymentInformer` in `NewController`.
+
+    ```go
+        // Set up an event handler for when Deployment resources change. This
+        // handler will lookup the owner of the given Deployment, and if it is
+        // owned by a Foo resource then the handler will enqueue that Foo resource for
+        // processing. This way, we don't need to implement custom logic for
+        // handling Deployment resources. More info on this pattern:
+        // https://github.com/kubernetes/community/blob/8cafef897a22026d42f5e5bb3f104febe7e29830/contributors/devel/controllers.md
+        deploymentInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+            AddFunc: controller.handleObject,
+            UpdateFunc: func(old, new interface{}) {
+                newDepl := new.(*appsv1.Deployment)
+                oldDepl := old.(*appsv1.Deployment)
+                if newDepl.ResourceVersion == oldDepl.ResourceVersion {
+                    // Periodic resync will send update events for all known Deployments.
+                    // Two different versions of the same Deployment will always have different RVs.
+                    return
+                }
+                controller.handleObject(new)
+            },
+            DeleteFunc: controller.handleObject,
+        })
+    ```
+1. Test the Foo's status after Deployment is updated.
+    1. Create Foo resource.
+        ```
+        kubectl apply -f config/sample/foo.yaml
+        ```
+    1. Check Foo's status (will be immediately updated.)
+        ```
+        kubectl get foo foo-sample -o jsonpath='{.status}'
+        {"availableReplicas":1}
+        ```
+
 ## Reference
 - [sample-controller](https://github.com/kubernetes/sample-controller)
 - [Kubernetes Deep Dive: Code Generation for CustomResources](https://cloud.redhat.com/blog/kubernetes-deep-dive-code-generation-customresources)
