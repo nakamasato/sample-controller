@@ -23,6 +23,12 @@ import (
 	listers "github.com/nakamasato/sample-controller/pkg/client/listers/example.com/v1alpha1"
 )
 
+const (
+	// MessageResourceExists is the message used for Events when a resource
+	// fails to sync due to a Deployment already existing
+	MessageResourceExists = "Resource %q already exists and is not managed by Foo"
+)
+
 type Controller struct {
 	// kubeclientset is a standard kubernetes clientset
 	kubeclientset kubernetes.Interface
@@ -56,7 +62,10 @@ func NewController(
 
 	fooInformer.Informer().AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
-			AddFunc: controller.handleAdd,
+			AddFunc: controller.enqueueFoo,
+			UpdateFunc: func(old, new interface{}) {
+				controller.enqueueFoo(new)
+			},
 		},
 	)
 	return controller
@@ -95,6 +104,7 @@ func (c *Controller) processNextItem() bool {
 			// Forget here else we'd go into a loop of attempting to
 			// process a work item that is invalid.
 			c.workqueue.Forget(obj)
+			log.Printf("%v is removed from workqueue\n", obj)
 			return nil
 		}
 
@@ -107,6 +117,7 @@ func (c *Controller) processNextItem() bool {
 		// Forget the queue item as it's successfully processed and
 		// the item will not be requeued.
 		c.workqueue.Forget(obj)
+		log.Printf("%s is removed from workqueue\n", obj)
 		return nil
 	}(obj)
 
@@ -115,11 +126,6 @@ func (c *Controller) processNextItem() bool {
 	}
 
 	return true
-}
-
-func (c *Controller) handleAdd(obj interface{}) {
-	log.Println("handleAdd was called")
-	c.enqueueFoo(obj)
 }
 
 // enqueueFoo takes a Foo resource and converts it into a namespace/name
@@ -132,6 +138,7 @@ func (c *Controller) enqueueFoo(obj interface{}) {
 		log.Printf("failed to get key from the cache %s\n", err.Error())
 		return
 	}
+	log.Printf("%s is added to workqueue\n", key)
 	c.workqueue.Add(key)
 }
 
@@ -165,7 +172,32 @@ func (c *Controller) syncHandler(key string) error {
 		return err
 	}
 
-	log.Printf("deployment %s exists", deployment.Name)
+	log.Printf("deployment %s found", deployment.Name)
+
+	// If the Deployment is not controlled by this Foo resource, we should log
+	// a warning to the event recorder and return error msg.
+	if !metav1.IsControlledBy(deployment, foo) {
+		msg := fmt.Sprintf(MessageResourceExists, deployment.Name)
+		log.Println(msg)
+		return fmt.Errorf("%s", msg)
+	}
+
+	// If this number of the replicas on the Foo resource is specified, and the
+	// number does not equal the current desired replicas on the Deployment, we
+	// should update the Deployment resource.
+	if foo.Spec.Replicas != nil && *foo.Spec.Replicas != *deployment.Spec.Replicas {
+		log.Printf("Foo %s replicas: %d, deployment replicas: %d\n", name, *foo.Spec.Replicas, *deployment.Spec.Replicas)
+		deployment, err = c.kubeclientset.AppsV1().Deployments(foo.Namespace).Update(context.TODO(), newDeployment(foo), metav1.UpdateOptions{})
+	}
+
+	// If an error occurs during Update, we'll requeue the item so we can
+	// attempt processing again later. This could have been caused by a
+	// temporary network failure, or any other transient reason.
+	if err != nil {
+		return err
+	}
+
+	log.Printf("deployment %s is valid", deployment.Name)
 
 	return nil
 }

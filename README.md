@@ -539,6 +539,10 @@ Steps:
      }
     ```
 
+    At the line of `exampleInformerFactory := informers.NewSharedInformerFactory(exampleClient, 20*time.Minute)`, the second argument specifies ***ResyncPeriod***, which defines the interval of ***resync*** (*The resync operation consists of delivering to the handler an update notification for every object in the informer's local cache*). For more detail, please read [NewSharedIndexInformer](https://pkg.go.dev/k8s.io/client-go@v0.23.1/tools/cache#NewSharedIndexInformer)
+
+    I'm not exactly sure why [here](https://github.com/kubernetes/sample-controller/blob/0da864e270013aff1b6604a83b19356333d85ce9/main.go#L62-L63) specifies 30 seconds for **ResyncPeriod**.
+
     <details><summary>main.go</summary>
 
     ```go
@@ -969,6 +973,117 @@ At the end of this step, we'll be able to create `Deployment` for `Foo` resource
 
         > Kubernetes checks for and deletes objects that no longer have owner references, like the pods left behind when you delete a ReplicaSet. When you delete an object, you can control whether Kubernetes deletes the object's dependents automatically, in a process called cascading deletion.
 
+### 5.4. Implement reconciliation logic - Check and update Deployment if necessary
+
+What needs to be done:
+- In `syncHandler`
+    - [x] Check if the found `Deployment` is managed by the `sample-controller`.
+    - [x] Check if the found `Deployment`'s `replicas` is same as the specified `replica` in `Foo` resource.
+- In `NewController`
+    - [x] Set `UpdateFunc` as an event handler for the informer in order to call `syncHandler` when `Foo` resource is updated.
+
+Steps:
+1. Update `syncHandler`:
+    1. Check if the `Deployment` is managed by the controller.
+
+        ```go
+            // If the Deployment is not controlled by this Foo resource, we should log
+            // a warning to the event recorder and return error msg.
+            if !metav1.IsControlledBy(deployment, foo) {
+                msg := fmt.Sprintf(MessageResourceExists, deployment.Name)
+                log.Println(msg)
+                return fmt.Errorf("%s", msg)
+            }
+        ```
+    1. Check the replica and update `Deployment` object if replicas in `Deployment` and `Foo` differ.
+
+        ```go
+            // If this number of the replicas on the Foo resource is specified, and the
+            // number does not equal the current desired replicas on the Deployment, we
+            // should update the Deployment resource.
+            if foo.Spec.Replicas != nil && *foo.Spec.Replicas != *deployment.Spec.Replicas {
+                log.Printf("Foo %s replicas: %d, deployment replicas: %d\n", name, *foo.Spec.Replicas, *deployment.Spec.Replicas)
+                deployment, err = c.kubeclientset.AppsV1().Deployments(foo.Namespace).Update(context.TODO(), newDeployment(foo), metav1.UpdateOptions{})
+            }
+            // If an error occurs during Update, we'll requeue the item so we can
+            // attempt processing again later. This could have been caused by a
+            // temporary network failure, or any other transient reason.
+            if err != nil {
+                return err
+            }
+        ```
+1. Update event handlers in `NewController`:
+    ```diff
+            fooInformer.Informer().AddEventHandler(
+                    cache.ResourceEventHandlerFuncs{
+    -                       AddFunc: controller.handleAdd,
+    +                       AddFunc: controller.enqueueFoo,
+    +                       UpdateFunc: func(old, new interface{}) {
+    +                               controller.enqueueFoo(new)
+    +                       },
+                    },
+            )
+    ```
+1. Remove unused `handleAdd` function.
+    ```diff
+    -func (c *Controller) handleAdd(obj interface{}) {
+    -       log.Println("handleAdd was called")
+    -       c.enqueueFoo(obj)
+    -}
+    ```
+1. Test if `sample-controller` updates replicas.
+    1. Apply `Foo` resource.
+        ```
+        kubectl apply -f config/sample/foo.yaml
+        ```
+
+        ```
+        kubectl get deploy
+        NAME         READY   UP-TO-DATE   AVAILABLE   AGE
+        foo-sample   1/1     1            1           3h41m
+        ```
+    1. Increase replica to 2.
+        ```
+        kubectl patch foo foo-sample -p '{"spec":{"replicas": 2}}' --type=merge
+        ```
+
+        logs:
+
+        ```
+        2021/12/21 10:08:19 Foo foo-sample replicas: 2, deployment replicas: 1
+        ```
+
+        Replicas of Deployment increased.
+        ```
+        kubectl get deploy
+        NAME         READY   UP-TO-DATE   AVAILABLE   AGE
+        foo-sample   2/2     2            2           3h42m
+        ```
+    1. Delete `Foo` resource.
+        ```
+        kubectl delete -f config/sample/foo.yaml
+        ```
+1. Test if `sample-controller` wouldn't touch `Deployment` that is not managed by the controller.
+    1. Apply `Deployment` with name `foo-sample`.
+        ```
+        kubectl create deployment foo-sample --image=nginx
+        ```
+
+    1. Apply `Foo` resource with name `foo-sample`.
+        ```
+        kubectl apply -f config/sample/foo.yaml
+        ```
+    1. Log:
+        ```
+        2021/12/21 10:14:50 deployment foo-sample found
+        2021/12/21 10:14:50 Resource "foo-sample" already exists and is not managed by Foo
+        ```
+
+    1. Clean up.
+        ```
+        kubectl delete -f config/sample/foo.yaml
+        kubectl delete deploy foo-sample
+        ```
 
 ## Reference
 - [sample-controller](https://github.com/kubernetes/sample-controller)
@@ -976,3 +1091,4 @@ At the end of this step, we'll be able to create `Deployment` for `Foo` resource
 - [Generating ClientSet/Informers/Lister and CRD for Custom Resources | Writing K8S Operator - Part 1](https://www.youtube.com/watch?v=89PdRvRUcPU)
 - [Implementing add and del handler func and token field in Kluster CRD | Writing K8S Operator - Part 2](https://www.youtube.com/watch?v=MOutOgdXfnA)
 - [Calling DigitalOcean APIs on Kluster's add event | Writing K8S Operator - Part 3](https://www.youtube.com/watch?v=Wtyj0V4Inmg)
+- [A deep dive into Kubernetes controllers](https://engineering.bitnami.com/articles/a-deep-dive-into-kubernetes-controllers.html)
