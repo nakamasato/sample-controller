@@ -1,5 +1,9 @@
 # Sample Controller
 
+## Docs
+
+https://nakamasato.github.io/sample-controller
+
 ## Spec
 
 - Group: example.com
@@ -9,12 +13,6 @@
 ## Tools
 
 - [code-generator](https://github.com/kubernetes/code-generator)
-
-
-
-## 5. Write controller
-
-
 
 ## Reference
 - [sample-controller](https://github.com/kubernetes/sample-controller)
