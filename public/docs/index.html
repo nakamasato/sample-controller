@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  <title>Overview - sample controller</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  
+  <link rel="icon" href="/favicon.png">
+
+  
+  
+  <link rel="stylesheet" href="/css/style.min.6719d72e323121369d5caeb4264b95d8a63cf1deaab029da67602fe5a046e0a4.css">
+  
+
+  
+
+</head>
+
+<body class='page page-default-list'>
+  <div id="main-menu-mobile" class="main-menu-mobile">
+  <ul>
+    
+    
+    <li class="menu-item-home">
+      <a href="/">
+        <span>Home</span>
+      </a>
+    </li>
+    
+    <li class="menu-item-docs">
+      <a href="/docs/">
+        <span>Docs</span>
+      </a>
+    </li>
+    
+  </ul>
+</div>
+  <div class="wrapper">
+    <div class='header'>
+  <div class="container">
+    <div class="logo">
+      <a href="/"><img alt="Logo" src="/images/logo.svg" /></a>
+    </div>
+    <div class="logo-mobile">
+      <a href="/"><img alt="Logo" src="/images/logo-mobile.svg" /></a>
+    </div>
+    <div id="main-menu" class="main-menu">
+  <ul>
+    
+    
+    <li class="menu-item-home">
+      <a href="/">
+        <span>Home</span>
+      </a>
+    </li>
+    
+    <li class="menu-item-docs">
+      <a href="/docs/">
+        <span>Docs</span>
+      </a>
+    </li>
+    
+  </ul>
+</div>
+    <button id="toggle-main-menu-mobile" class="hamburger hamburger--slider" type="button">
+  <span class="hamburger-box">
+    <span class="hamburger-inner"></span>
+  </span>
+</button>
+  </div>
+</div>
+
+
+    
+    
+    
+    
+    
+    
+
+    
+    <div class="container pt-2 pt-md-6 pb-3 pb-md-6">
+      <div class="row">
+        <div class="col-12 col-md-3 mb-3">
+          <div class="sidebar">
+            
+<div class="docs-menu">
+  <h4>Docs</h4>
+  <ul>
+    
+    <li class="">
+      <a href="/docs/00-init-module/">0. Install Go module</a>
+    </li>
+    
+    <li class="">
+      <a href="/docs/01-define-crd/">1. Define CRD</a>
+    </li>
+    
+    <li class="">
+      <a href="/docs/02-generate-code/">2. Generate codes</a>
+    </li>
+    
+    <li class="">
+      <a href="/docs/03-create-crd-yaml/">3. Create CRD yaml file</a>
+    </li>
+    
+  </ul>
+</div>
+
+          </div>
+        </div>
+        <div class="col-12 col-md-9">
+          
+
+<span class="overview">Overview</span>
+<h1 class="title">Overview</h1>
+<div class="content">
+  <h2 id="overview">Overview</h2>
+<p>Here I will explain about how to write <a href="https://github.com/kubernetes/sample-controller/">sample-controller</a> step by step. Although this is not the only way to implement a Kubernetes operator and there are very convenient tools to help create a custom Kubernetes operator e.g. <a href="https://book.kubebuilder.io/">kubebuilder</a>, <a href="https://sdk.operatorframework.io/">operator-sdk</a>, you&rsquo;ll gain deeper understanding of Kubernetes internal implementaion with this documentation, which will be helpful for OSS code reading, daily debuging, and implementing Kubernetes operators.</p>
+
+</div>
+
+
+<div class="summary mb-2">
+  
+  <h2 class="title-summary"><a href="/docs/00-init-module/">0. Install Go module</a></h2>
+  <p>Init Go module go mod init &lt;module name&gt; </p>
+</div>
+
+
+<div class="summary mb-2">
+  
+  <h2 class="title-summary"><a href="/docs/01-define-crd/">1. Define CRD</a></h2>
+  <p>1. Define CRD   Create a directory.
+mkdir -p pkg/apis/example.com/v1alpha1   Create pkg/apis/example.com/v1alpha1/doc.go.
+// +k8s:deepcopy-gen=package // +groupName=example.com  package v1alpha1   Create pkg/apis/example.com/v1alpha1/types.go.
+package v1alpha1 import metav1 &#34;k8s.io/apimachinery/pkg/apis/meta/v1&#34; // These const variables are used in our custom controller. const ( GroupName string = &#34;example.com&#34; Kind string = &#34;Foo&#34; Version string = &#34;v1alpha1&#34; Plural string = &#34;foos&#34; Singluar string = &#34;foo&#34; ShortName string = &#34;foo&#34; Name string = Plural + &#34;.</p>
+</div>
+
+
+<div class="summary mb-2">
+  
+  <h2 class="title-summary"><a href="/docs/02-generate-code/">2. Generate codes</a></h2>
+  <p>Syntax highlighting and menus can be configured via <code>config.toml</code>.</p>
+</div>
+
+
+<div class="summary mb-2">
+  
+  <h2 class="title-summary"><a href="/docs/03-create-crd-yaml/">3. Create CRD yaml file</a></h2>
+  <p>3. Create CRD yaml file config/crd/example.com_foos.yaml:
+apiVersion:apiextensions.k8s.io/v1kind:CustomResourceDefinitionmetadata:name:foos.example.comspec:group:example.comnames:kind:FoolistKind:FooListplural:foossingular:fooscope:Namespacedversions:- name:v1alpha1served:truestorage:trueschema:openAPIV3Schema:properties:apiVersion:type:stringkind:type:stringmetadata:type:objectspec:type:objectproperties:deploymentName:type:stringreplicas:type:integerminimum:1maximum:10status:type:objectproperties:availableReplicas:type:integer※ You can also use controller-gen, which is a subproject of the kubebuilder project, to generate CRD yaml.</p>
+</div>
+
+
+<div class="summary mb-2">
+  
+  <h2 class="title-summary"><a href="/docs/04-check-points-check-custom-resource-and-codes/">4. Checkpoint</a></h2>
+  <p>4. Checkpoint: Check custom resource and codes What to check:
+ Create CRD Create CR Read the CR from sample-controller  Steps:
+  Create main.go to retrieve custom resource Foo.
+package main import ( &#34;context&#34; &#34;flag&#34; &#34;fmt&#34; &#34;log&#34; &#34;path/filepath&#34; &#34;k8s.io/client-go/tools/clientcmd&#34; &#34;k8s.io/client-go/util/homedir&#34; client &#34;github.com/nakamasato/sample-controller/pkg/client/clientset/versioned&#34; metav1 &#34;k8s.io/apimachinery/pkg/apis/meta/v1&#34; ) func main() { var kubeconfig *string if home := homedir.HomeDir(); home != &#34;&#34; { kubeconfig = flag.String(&#34;kubeconfig&#34;, filepath.Join(home, &#34;.kube&#34;, &#34;config&#34;), &#34;(optional)&#34;) } else { kubeconfig = flag.</p>
+</div>
+
+
+<div class="summary mb-2">
+  
+  <h2 class="title-summary"><a href="/docs/05-implement-reconciliation-loop/">5. Implement reconciliation</a></h2>
+  <p>5.1. Create Controller   Create controller.
+What&rsquo;s inside the controller:
+ Define Controller struct with sampleclientset, foosLister, foosSynced, and workqueue. Define NewController function  Create Controller with the arguments sampleclientset and fooInformer, which will be passed in main.go. Add event handlers for addFunc and DeleteFunc to the informer. Return the controller.   Define Run, which will be called in main.go.  Wait until the cache is synced. Run c.</p>
+</div>
+
+
+
+
+        </div>
+      </div>
+    </div>
+    
+  </div>
+
+  <div class="sub-footer">
+  <div class="container">
+    <div class="row">
+      <div class="col-12">
+        <div class="sub-footer-inner">
+          <ul>
+            <li class="zerostatic"><a href="https://www.zerostatic.io">www.zerostatic.io</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/scripts.min.eaf147370baecdd07c022597db631f99cab1c9cd6479de586f30327a568d6a0f.js"></script>
+  
+
+  
+  
+  
+    
+  
+
+
+</body>
+
+</html>
