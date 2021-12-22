@@ -1,4 +1,4 @@
-baseURL = "/"
+baseURL = "sample-controller/"
 languageCode = "en-us"
 title = "sample controller"
 themesDir = "themes"
