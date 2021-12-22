@@ -2,7 +2,7 @@ baseURL = "/"
 languageCode = "en-us"
 title = "sample controller"
 themesDir = "themes"
-theme = "hugo-book"
+theme = "hugo-whisper-theme"
 
 pygmentsCodeFences = true
 pygmentsCodefencesGuessSyntax = true
@@ -20,7 +20,7 @@ archetypeDir = "docs/archetypes"
 
 # Controls how many words are printed in the content summary on the docs homepage.
 # See https://gohugo.io/content-management/summaries/
-summaryLength = 30
+summaryLength = 10
 
 [[menu.main]]
     name = "Home"
