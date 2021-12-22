@@ -1,0 +1,52 @@
+---
+title: '3. Create CRD yaml file'
+date: 2019-02-11T19:27:37+10:00
+weight: 5
+---
+
+## 3. Create CRD yaml file
+
+`config/crd/example.com_foos.yaml`:
+```yaml
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: foos.example.com
+spec:
+  group: example.com
+  names:
+    kind: Foo
+    listKind: FooList
+    plural: foos
+    singular: foo
+  scope: Namespaced
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          properties:
+            apiVersion:
+              type: string
+            kind:
+              type: string
+            metadata:
+              type: object
+            spec:
+              type: object
+              properties:
+                deploymentName:
+                  type: string
+                replicas:
+                  type: integer
+                  minimum: 1
+                  maximum: 10
+            status:
+              type: object
+              properties:
+                availableReplicas:
+                  type: integer
+```
+
+※ You can also use [controller-gen](https://github.com/kubernetes-sigs/controller-tools/tree/master/cmd/controller-gen), which is a subproject of the kubebuilder project, to generate CRD yaml.
