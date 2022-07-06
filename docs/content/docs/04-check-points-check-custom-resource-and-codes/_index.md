@@ -2,6 +2,7 @@
 title: '4. Checkpoint'
 date: 2019-02-11T19:27:37+10:00
 weight: 6
+summary: Check the behavior at this point.
 ---
 
 ## 4. Checkpoint: Check custom resource and codes

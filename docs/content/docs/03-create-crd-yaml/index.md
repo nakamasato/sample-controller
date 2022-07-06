@@ -2,6 +2,7 @@
 title: '3. Create CRD yaml file'
 date: 2019-02-11T19:27:37+10:00
 weight: 5
+summary: Create CustomResourceDefinition yaml file manually.
 ---
 
 ## 3. Create CRD yaml file
