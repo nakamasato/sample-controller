@@ -1,14 +1,33 @@
 # Sample Controller
 
-## Docs
-
-https://nakamasato.github.io/sample-controller
-
 ## Spec
+
+Sample Controller manages a custom resource `Foo` and to keep a `Deployment` always running for a `Foo` instance.
 
 - Group: example.com
 - CR: `Foo`
 - Version: `v1alpha1`
+
+## Docs
+
+https://nakamasato.github.io/sample-controller (by [Hugo](https://gohugo.io/))
+
+## Quickstart
+
+1. Install CRD. `kubectl apply -f config/crd/foos.yaml`
+1. Start controller. `go run main.go`
+1. Create CR. `kubectl apply -f config/sample/foo.yaml`
+1. Check.
+
+    ```
+    kubectl get deploy
+    NAME         READY   UP-TO-DATE   AVAILABLE   AGE
+    foo-sample   1/1     1            1           103s
+    ```
+1. Clean up.
+    1. Delete CR. `kubectl delete -f config/sample/foo.yaml`
+    1. Stop controller
+    1. Delete CRD. `kubectl delete -f config/crd/foos.yaml`
 
 ## Tools
 
