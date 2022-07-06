@@ -28,6 +28,7 @@ spec:
       storage: true
       schema:
         openAPIV3Schema:
+          type: object
           properties:
             apiVersion:
               type: string

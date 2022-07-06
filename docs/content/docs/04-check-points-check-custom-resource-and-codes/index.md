@@ -100,10 +100,10 @@ Steps:
         apiVersion: example.com/v1alpha1
         kind: Foo
         metadata:
-        name: foo-sample
+          name: foo-sample
         spec:
-        deploymentName: foo-sample
-        replicas: 1
+          deploymentName: foo-sample
+          replicas: 1
         ```
 
         ```

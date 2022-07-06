@@ -7,7 +7,6 @@ summary: Initialize a Go module.
 
 ## Init Go module
 
-
 ```
-go mod init <module name>
+go mod init github.com/<yourname>/sample-controller
 ```
