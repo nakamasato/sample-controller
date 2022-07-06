@@ -84,36 +84,27 @@
 </div>
 <div class="summary mb-2">
 <h2 class=title-summary><a href=https://www.nakamasato.com/sample-controller/docs/00-init-module/>0. Install Go module</a></h2>
-<p>Init Go module go mod init &lt;module name> </p>
+<p>Initialize a Go module.</p>
 </div>
 <div class="summary mb-2">
 <h2 class=title-summary><a href=https://www.nakamasato.com/sample-controller/docs/01-define-crd/>1. Define CRD</a></h2>
-<p>1. Define CRD Create a directory.
-mkdir -p pkg/apis/example.com/v1alpha1 Create pkg/apis/example.com/v1alpha1/doc.go.
-// +k8s:deepcopy-gen=package // +groupName=example.com package v1alpha1 Create pkg/apis/example.com/v1alpha1/types.go.
-package v1alpha1 import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1" // These const variables are used in our custom controller. const ( GroupName string = "example.com" Kind string = "Foo" Version string = "v1alpha1" Plural string = "foos" Singluar string = "foo" ShortName string = "foo" Name string = Plural + ".</p>
+<p>Define Custom Resource Definition <code>Foo</code>.</p>
 </div>
 <div class="summary mb-2">
 <h2 class=title-summary><a href=https://www.nakamasato.com/sample-controller/docs/02-generate-code/>2. Generate codes</a></h2>
-<p>Syntax highlighting and menus can be configured via <code>config.toml</code>.</p>
+<p>Generate Go codes with code-generator.</p>
 </div>
 <div class="summary mb-2">
 <h2 class=title-summary><a href=https://www.nakamasato.com/sample-controller/docs/03-create-crd-yaml/>3. Create CRD yaml file</a></h2>
-<p>3. Create CRD yaml file config/crd/example.com_foos.yaml:
-apiVersion:apiextensions.k8s.io/v1kind:CustomResourceDefinitionmetadata:name:foos.example.comspec:group:example.comnames:kind:FoolistKind:FooListplural:foossingular:fooscope:Namespacedversions:- name:v1alpha1served:truestorage:trueschema:openAPIV3Schema:properties:apiVersion:type:stringkind:type:stringmetadata:type:objectspec:type:objectproperties:deploymentName:type:stringreplicas:type:integerminimum:1maximum:10status:type:objectproperties:availableReplicas:type:integer※ You can also use controller-gen, which is a subproject of the kubebuilder project, to generate CRD yaml.</p>
+<p>Create CustomResourceDefinition yaml file manually.</p>
 </div>
 <div class="summary mb-2">
 <h2 class=title-summary><a href=https://www.nakamasato.com/sample-controller/docs/04-check-points-check-custom-resource-and-codes/>4. Checkpoint</a></h2>
-<p>4. Checkpoint: Check custom resource and codes What to check:
-Create CRD Create CR Read the CR from sample-controller Steps:
-Create main.go to retrieve custom resource Foo.
-package main import ( "context" "flag" "fmt" "log" "path/filepath" "k8s.io/client-go/tools/clientcmd" "k8s.io/client-go/util/homedir" client "github.com/nakamasato/sample-controller/pkg/client/clientset/versioned" metav1 "k8s.io/apimachinery/pkg/apis/meta/v1" ) func main() { var kubeconfig *string if home := homedir.HomeDir(); home != "" { kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional)") } else { kubeconfig = flag.</p>
+<p>Check the behavior at this point.</p>
 </div>
 <div class="summary mb-2">
 <h2 class=title-summary><a href=https://www.nakamasato.com/sample-controller/docs/05-implement-reconciliation-loop/>5. Implement reconciliation</a></h2>
-<p>5.1. Create Controller Create controller.
-What&rsquo;s inside the controller:
-Define Controller struct with sampleclientset, foosLister, foosSynced, and workqueue. Define NewController function Create Controller with the arguments sampleclientset and fooInformer, which will be passed in main.go. Add event handlers for addFunc and DeleteFunc to the informer. Return the controller. Define Run, which will be called in main.go. Wait until the cache is synced. Run c.</p>
+<p>Implement controller.</p>
 </div>
 </div>
 </div>
