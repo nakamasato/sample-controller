@@ -1,6 +1,6 @@
 baseURL = "https://www.nakamasato.com/sample-controller"
 languageCode = "en-us"
-title = "sample controller"
+title = "Sample Controller"
 themesDir = "themes"
 theme = "hugo-whisper-theme"
 
