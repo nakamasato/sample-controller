@@ -208,8 +208,7 @@ summary: Implement controller.
 1. Build and run the controller.
 
     ```
-    go build
-    ./sample-controller
+    go run main.go
     ```
 
 1. Create and delete CR.
