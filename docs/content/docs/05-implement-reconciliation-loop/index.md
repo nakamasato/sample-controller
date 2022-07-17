@@ -225,8 +225,8 @@ summary: Implement controller.
 1. Check the controller logs.
 
     ```
-    2021/12/19 17:31:25 handleAdd was called
-    2021/12/19 17:31:47 handleDelete was called
+    2022/07/18 06:36:35 handleAdd was called
+    2022/07/18 06:36:40 handleDelete was called
     ```
 
 ### 5.2. Fetch foo object
@@ -264,6 +264,7 @@ Steps:
         c.workqueue.Add(key)
     }
     ```
+
 1. Update `processNextItem`.
 
     ```go
