@@ -60,10 +60,10 @@
 <h4>Docs</h4>
 <ul>
 <li>
-<a href=https://www.nakamasato.com/sample-controller/docs/00-init-module/>0. Install Go module</a>
+<a href=https://www.nakamasato.com/sample-controller/docs/00-init-module/>0. Initialize Go module</a>
 </li>
 <li>
-<a href=https://www.nakamasato.com/sample-controller/docs/01-define-crd/>1. Define CRD</a>
+<a href=https://www.nakamasato.com/sample-controller/docs/01-define-go-types-for-crd/>1. Define Go types for CRD</a>
 </li>
 <li>
 <a href=https://www.nakamasato.com/sample-controller/docs/02-generate-code/>2. Generate codes</a>
@@ -164,10 +164,10 @@ length of foos is 0
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>example.com/v1alpha1</span><span class=w>
 </span><span class=w></span><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>Foo</span><span class=w>
 </span><span class=w></span><span class=nt>metadata</span><span class=p>:</span><span class=w>
-</span><span class=w></span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>foo-sample</span><span class=w>
+</span><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>foo-sample</span><span class=w>
 </span><span class=w></span><span class=nt>spec</span><span class=p>:</span><span class=w>
-</span><span class=w></span><span class=nt>deploymentName</span><span class=p>:</span><span class=w> </span><span class=l>foo-sample</span><span class=w>
-</span><span class=w></span><span class=nt>replicas</span><span class=p>:</span><span class=w> </span><span class=m>1</span><span class=w>
+</span><span class=w>  </span><span class=nt>deploymentName</span><span class=p>:</span><span class=w> </span><span class=l>foo-sample</span><span class=w>
+</span><span class=w>  </span><span class=nt>replicas</span><span class=p>:</span><span class=w> </span><span class=m>1</span><span class=w>
 </span></code></pre></div><div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>kubectl apply -f config/sample/foo.yaml
 </code></pre></div></li>
 <li>

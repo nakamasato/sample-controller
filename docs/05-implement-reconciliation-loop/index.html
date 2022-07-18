@@ -60,10 +60,10 @@
 <h4>Docs</h4>
 <ul>
 <li>
-<a href=https://www.nakamasato.com/sample-controller/docs/00-init-module/>0. Install Go module</a>
+<a href=https://www.nakamasato.com/sample-controller/docs/00-init-module/>0. Initialize Go module</a>
 </li>
 <li>
-<a href=https://www.nakamasato.com/sample-controller/docs/01-define-crd/>1. Define CRD</a>
+<a href=https://www.nakamasato.com/sample-controller/docs/01-define-go-types-for-crd/>1. Define Go types for CRD</a>
 </li>
 <li>
 <a href=https://www.nakamasato.com/sample-controller/docs/02-generate-code/>2. Generate codes</a>
@@ -274,9 +274,8 @@
 </code></pre></div>
 </li>
 <li>
-<p>Build and run the controller.</p>
-<div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>go build
-./sample-controller
+<p>Run the controller.</p>
+<div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>go run main.go
 </code></pre></div></li>
 <li>
 <p>Create and delete CR.</p>
@@ -285,8 +284,8 @@
 </code></pre></div></li>
 <li>
 <p>Check the controller logs.</p>
-<div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>2021/12/19 17:31:25 handleAdd was called
-2021/12/19 17:31:47 handleDelete was called
+<div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>2022/07/18 06:36:35 handleAdd was called
+2022/07/18 06:36:40 handleDelete was called
 </code></pre></div></li>
 </ol>
 <h3 id=52-fetch-foo-object>5.2. Fetch foo object</h3>
@@ -375,9 +374,8 @@
 <span class=p>}</span>
 </code></pre></div></li>
 <li>
-<p>Build and run the controller.</p>
-<div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>go build
-./sample-controller
+<p>Run the controller.</p>
+<div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>go run main.go
 </code></pre></div></li>
 <li>
 <p>Create and delete CR.</p>
@@ -386,16 +384,24 @@
 </code></pre></div></li>
 <li>
 <p>Check the controller logs.</p>
-<div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>./sample-controller
-2021/12/20 05:53:10 handleAdd was called
-2021/12/20 05:53:10 Got foo {DeploymentName:foo-sample Replicas:0xc0001a942c}
-2021/12/20 05:53:16 handleDelete was called
-2021/12/20 05:53:16 failed to get foo resource from lister foo.example.com &#34;foo-sample&#34; not found
+<div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>2022/07/18 07:46:42 handleAdd was called
+2022/07/18 07:46:42 Got foo {DeploymentName:foo-sample Replicas:0x1400030194c}
+2022/07/18 07:46:49 handleDelete was called
+2022/07/18 07:46:49 failed to get foo resource from lister foo.example.com &#34;foo-sample&#34; not found
 </code></pre></div></li>
 </ol>
 <h3 id=53-enable-to-createdelete-deployment-for-foo-resource>5.3. Enable to Create/Delete Deployment for Foo resource</h3>
 <p>At the end of this step, we&rsquo;ll be able to create <code>Deployment</code> for <code>Foo</code> resource.</p>
 <ol>
+<li>
+<p>Import the necessary packages.</p>
+<div class=highlight><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kn>import</span> <span class=p>(</span>
+    <span class=o>...</span>
+    <span class=nx>appsinformers</span> <span class=s>&#34;k8s.io/client-go/informers/apps/v1&#34;</span>
+    <span class=s>&#34;k8s.io/client-go/kubernetes&#34;</span>
+    <span class=nx>appslisters</span> <span class=s>&#34;k8s.io/client-go/listers/apps/v1&#34;</span>
+<span class=p>)</span>
+</code></pre></div></li>
 <li>
 <p>Add fields (<code>kubeclientset</code>, <code>deploymentsLister</code>, and <code>deploymentsSynced</code>) to <code>Controller</code>.</p>
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-diff data-lang=diff> type Controller struct {
@@ -472,7 +478,7 @@
 }
 </code></pre></div></li>
 <li>
-<p>Create <code>syncHandler</code> and <code>newDeployment</code>.</p>
+<p>Create <code>syncHandler</code> and <code>newDeployment</code> in <code>pkg/controller/foo.go</code>.</p>
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kd>func</span> <span class=p>(</span><span class=nx>c</span> <span class=o>*</span><span class=nx>Controller</span><span class=p>)</span> <span class=nf>syncHandler</span><span class=p>(</span><span class=nx>key</span> <span class=kt>string</span><span class=p>)</span> <span class=kt>error</span> <span class=p>{</span>
 	<span class=nx>ns</span><span class=p>,</span> <span class=nx>name</span><span class=p>,</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>cache</span><span class=p>.</span><span class=nf>SplitMetaNamespaceKey</span><span class=p>(</span><span class=nx>key</span><span class=p>)</span>
 	<span class=k>if</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
@@ -503,7 +509,7 @@
         <span class=k>return</span> <span class=nx>err</span>
 	<span class=p>}</span>
 
-	<span class=nx>log</span><span class=p>.</span><span class=nf>Printf</span><span class=p>(</span><span class=s>&#34;deployment %+v&#34;</span><span class=p>,</span> <span class=nx>deployment</span><span class=p>)</span>
+	<span class=nx>log</span><span class=p>.</span><span class=nf>Printf</span><span class=p>(</span><span class=s>&#34;deployment %s is valid&#34;</span><span class=p>,</span> <span class=nx>deployment</span><span class=p>.</span><span class=nx>Name</span><span class=p>)</span>
 
 	<span class=k>return</span> <span class=kc>nil</span>
 <span class=p>}</span>
@@ -540,6 +546,16 @@
         <span class=p>},</span>
 	<span class=p>}</span>
 <span class=p>}</span>
+</code></pre></div><p>Add necessary imports</p>
+<div class=highlight><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kn>import</span> <span class=p>(</span>
+    <span class=s>&#34;context&#34;</span>
+    <span class=s>&#34;fmt&#34;</span>
+    <span class=nx>appsv1</span> <span class=s>&#34;k8s.io/api/apps/v1&#34;</span>
+    <span class=nx>corev1</span> <span class=s>&#34;k8s.io/api/core/v1&#34;</span>
+    <span class=nx>metav1</span> <span class=s>&#34;k8s.io/apimachinery/pkg/apis/meta/v1&#34;</span>
+    <span class=s>&#34;k8s.io/apimachinery/pkg/api/errors&#34;</span>
+    <span class=nx>samplev1alpha1</span> <span class=s>&#34;github.com/nakamasato/sample-controller/pkg/apis/example.com/v1alpha1&#34;</span>
+<span class=p>)</span>
 </code></pre></div></li>
 <li>
 <p>Update <code>processNextItem</code> to call <code>syncHandler</code> for main logic.</p>
@@ -586,9 +602,8 @@
 <p>Test <code>sample-controller</code>.</p>
 <ol>
 <li>
-<p>Build and run the controller.</p>
-<div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>go build
-./sample-controller
+<p>Run the controller.</p>
+<div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>go run main.go
 </code></pre></div></li>
 <li>
 <p>Create <code>Foo</code> resource.</p>
@@ -598,8 +613,8 @@
 NAME         READY   UP-TO-DATE   AVAILABLE   AGE
 foo-sample   0/1     1            0           3s
 </code></pre></div><p>Check <code>sample-controller</code>&rsquo;s logs:</p>
-<div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>2021/12/20 19:58:30 handleAdd was called
-2021/12/20 19:58:30 deployment foo-sample exists
+<div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>2022/07/18 09:33:31 handleAdd was called
+2022/07/18 09:33:31 deployment foo-sample is valid
 </code></pre></div></li>
 <li>
 <p>Delete <code>Foo</code> resource.</p>
@@ -607,9 +622,6 @@ foo-sample   0/1     1            0           3s
 </code></pre></div><p>Check <code>Deployment</code>:</p>
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>kubectl get deploy
 No resources found in default namespace.
-</code></pre></div><p>Check <code>sample-controller</code>&rsquo;s logs:</p>
-<div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>2021/12/20 19:59:14 handleDelete was called
-2021/12/20 19:59:14 failed to get foo resource from lister foo.example.com &#34;foo-sample&#34; not found
 </code></pre></div><p><code>Deployment</code> is deleted when the corresponding <code>Foo</code> is deleted thanks to <code>OwnerReference</code>&rsquo;s <a href=https://kubernetes.io/docs/concepts/architecture/garbage-collection/#cascading-deletion>cascading deletion</a> feature:</p>
 <blockquote>
 <p>Kubernetes checks for and deletes objects that no longer have owner references, like the pods left behind when you delete a ReplicaSet. When you delete an object, you can control whether Kubernetes deletes the object&rsquo;s dependents automatically, in a process called cascading deletion.</p>
