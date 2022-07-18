@@ -434,7 +434,8 @@ At the end of this step, we'll be able to create `Deployment` for `Foo` resource
         ...
     }
     ```
-1. Create `syncHandler` and `newDeployment`.
+
+1. Create `syncHandler` and `newDeployment` in `pkg/controller/foo.go`.
 
     ```go
     func (c *Controller) syncHandler(key string) error {
@@ -467,7 +468,7 @@ At the end of this step, we'll be able to create `Deployment` for `Foo` resource
     		return err
     	}
 
-    	log.Printf("deployment %+v", deployment)
+    	log.Printf("deployment %s is valid", deployment.Name)
 
     	return nil
     }
@@ -506,6 +507,20 @@ At the end of this step, we'll be able to create `Deployment` for `Foo` resource
     }
     ```
 
+    Add necessary imports
+
+    ```go
+    import (
+        "context"
+	    "fmt"
+        appsv1 "k8s.io/api/apps/v1"
+	    corev1 "k8s.io/api/core/v1"
+        metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+        "k8s.io/apimachinery/pkg/api/errors"
+        samplev1alpha1 "github.com/nakamasato/sample-controller/pkg/apis/example.com/v1alpha1"
+    )
+    ```
+
 1. Update `processNextItem` to call `syncHandler` for main logic.
 
     ```diff
@@ -535,6 +550,7 @@ At the end of this step, we'll be able to create `Deployment` for `Foo` resource
                     // the item will not be requeued.
                     c.workqueue.Forget(obj)
     ```
+
 1. Delete `handleDelete` function as it's covered by `ownerReferences` (details mentioned in the next step) for delete action.
 
     ```diff
@@ -554,10 +570,9 @@ At the end of this step, we'll be able to create `Deployment` for `Foo` resource
 
 
 1. Test `sample-controller`.
-    1. Build and run the controller.
+    1. Run the controller.
         ```
-        go build
-        ./sample-controller
+        go run main.go
         ```
     1. Create `Foo` resource.
         ```
@@ -572,8 +587,8 @@ At the end of this step, we'll be able to create `Deployment` for `Foo` resource
         ```
         Check `sample-controller`'s logs:
         ```
-        2021/12/20 19:58:30 handleAdd was called
-        2021/12/20 19:58:30 deployment foo-sample exists
+        2022/07/18 09:33:31 handleAdd was called
+        2022/07/18 09:33:31 deployment foo-sample is valid
         ```
     1. Delete `Foo` resource.
         ```
@@ -584,11 +599,7 @@ At the end of this step, we'll be able to create `Deployment` for `Foo` resource
         kubectl get deploy
         No resources found in default namespace.
         ```
-        Check `sample-controller`'s logs:
-        ```
-        2021/12/20 19:59:14 handleDelete was called
-        2021/12/20 19:59:14 failed to get foo resource from lister foo.example.com "foo-sample" not found
-        ```
+
         `Deployment` is deleted when the corresponding `Foo` is deleted thanks to `OwnerReference`'s [cascading deletion](https://kubernetes.io/docs/concepts/architecture/garbage-collection/#cascading-deletion) feature:
 
         > Kubernetes checks for and deletes objects that no longer have owner references, like the pods left behind when you delete a ReplicaSet. When you delete an object, you can control whether Kubernetes deletes the object's dependents automatically, in a process called cascading deletion.
