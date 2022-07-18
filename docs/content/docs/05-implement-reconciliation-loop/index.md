@@ -205,7 +205,7 @@ summary: Implement controller.
 
     </details>
 
-1. Build and run the controller.
+1. Run the controller.
 
     ```
     go run main.go
@@ -316,11 +316,10 @@ Steps:
     }
     ```
 
-1. Build and run the controller.
+1. Run the controller.
 
     ```
-    go build
-    ./sample-controller
+    go run main.go
     ```
 
 1. Create and delete CR.
@@ -336,16 +335,26 @@ Steps:
 1. Check the controller logs.
 
     ```
-    ./sample-controller
-    2021/12/20 05:53:10 handleAdd was called
-    2021/12/20 05:53:10 Got foo {DeploymentName:foo-sample Replicas:0xc0001a942c}
-    2021/12/20 05:53:16 handleDelete was called
-    2021/12/20 05:53:16 failed to get foo resource from lister foo.example.com "foo-sample" not found
+    2022/07/18 07:46:42 handleAdd was called
+    2022/07/18 07:46:42 Got foo {DeploymentName:foo-sample Replicas:0x1400030194c}
+    2022/07/18 07:46:49 handleDelete was called
+    2022/07/18 07:46:49 failed to get foo resource from lister foo.example.com "foo-sample" not found
     ```
 
 ### 5.3. Enable to Create/Delete Deployment for Foo resource
 
 At the end of this step, we'll be able to create `Deployment` for `Foo` resource.
+
+1. Import the necessary packages.
+
+    ```go
+    import (
+        ...
+        appsinformers "k8s.io/client-go/informers/apps/v1"
+        "k8s.io/client-go/kubernetes"
+        appslisters "k8s.io/client-go/listers/apps/v1"
+    )
+    ```
 
 1. Add fields (`kubeclientset`, `deploymentsLister`, and `deploymentsSynced`) to `Controller`.
     ```diff
