@@ -139,7 +139,7 @@ summary: Implement controller.
     -       foos, err := clientset.ExampleV1alpha1().Foos("").List(context.Background(), metav1.ListOptions{})
     -       if err != nil {
     -               log.Printf("listing foos %s\n", err.Error())
-    +       exampleInformerFactory := informers.NewSharedInformerFactory(exampleClient, 20*time.Minute)
+    +       exampleInformerFactory := informers.NewSharedInformerFactory(exampleClient, time.Second*30)
     +       ch := make(chan struct{})
     +       controller := controller.NewController(exampleClient, informerFactory.Example().V1alpha1().Foos())
     +       exampleInformerFactory.Start(ch)
@@ -150,9 +150,7 @@ summary: Implement controller.
      }
     ```
 
-    At the line of `exampleInformerFactory := informers.NewSharedInformerFactory(exampleClient, 20*time.Minute)`, the second argument specifies ***ResyncPeriod***, which defines the interval of ***resync*** (*The resync operation consists of delivering to the handler an update notification for every object in the informer's local cache*). For more detail, please read [NewSharedIndexInformer](https://pkg.go.dev/k8s.io/client-go@v0.23.1/tools/cache#NewSharedIndexInformer)
-
-    I'm not exactly sure why [here](https://github.com/kubernetes/sample-controller/blob/0da864e270013aff1b6604a83b19356333d85ce9/main.go#L62-L63) specifies 30 seconds for **ResyncPeriod**.
+    At the line of `exampleInformerFactory := informers.NewSharedInformerFactory(exampleClient, time.Second*30)`, the second argument specifies ***ResyncPeriod***, which defines the interval of ***resync*** (*The resync operation consists of delivering to the handler an update notification for every object in the informer's local cache*). For more detail, please read [NewSharedIndexInformer](https://pkg.go.dev/k8s.io/client-go@v0.23.1/tools/cache#NewSharedIndexInformer)
 
     <details><summary>main.go</summary>
 
@@ -193,7 +191,7 @@ summary: Implement controller.
     		log.Printf("getting client set %s\n", err.Error())
     	}
 
-    	exampleInformerFactory := informers.NewSharedInformerFactory(exampleClient, 20*time.Minute)
+    	exampleInformerFactory := informers.NewSharedInformerFactory(exampleClient, time.Second*30)
     	ch := make(chan struct{})
     	controller := controller.NewController(exampleClient, exampleInformerFactory.Example().V1alpha1().Foos())
     	exampleInformerFactory.Start(ch)
@@ -419,9 +417,8 @@ At the end of this step, we'll be able to create `Deployment` for `Foo` resource
                     log.Printf("getting client set %s\n", err.Error())
             }
 
-    -       exampleInformerFactory := informers.NewSharedInformerFactory(exampleClient, 20*time.Minute)
     +       kubeInformerFactory := kubeinformers.NewSharedInformerFactory(kubeClient, time.Second*30)
-    +       exampleInformerFactory := informers.NewSharedInformerFactory(exampleClient, time.Second*30)
+            exampleInformerFactory := informers.NewSharedInformerFactory(exampleClient, time.Second*30)
             ch := make(chan struct{})
     -       controller := controller.NewController(exampleClient, exampleInformerFactory.Example().V1alpha1().Foos())
     +       controller := controller.NewController(
