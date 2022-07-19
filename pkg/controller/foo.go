@@ -23,6 +23,12 @@ import (
 	"k8s.io/client-go/util/workqueue"
 )
 
+const (
+	// MessageResourceExists is the message used for Events when a resource
+	// fails to sync due to a Deployment already existing
+	MessageResourceExists = "Resource %q already exists and is not managed by Foo"
+)
+
 type Controller struct {
 	// kubeclientset is a standard kubernetes clientset
 	kubeclientset kubernetes.Interface
@@ -56,7 +62,10 @@ func NewController(
 
 	fooInformer.Informer().AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
-			AddFunc: controller.handleAdd,
+			AddFunc: controller.enqueueFoo,
+			UpdateFunc: func(old, new interface{}) {
+				controller.enqueueFoo(new)
+			},
 		},
 	)
 	return controller
@@ -117,11 +126,6 @@ func (c *Controller) processNextItem() bool {
 	return true
 }
 
-func (c *Controller) handleAdd(obj interface{}) {
-	log.Println("handleAdd was called")
-	c.enqueueFoo(obj)
-}
-
 // enqueueFoo takes a Foo resource and converts it into a namespace/name
 // string which is then put onto the work queue. This method should *not* be
 // passed resources of any type other than Foo.
@@ -161,6 +165,28 @@ func (c *Controller) syncHandler(key string) error {
 		deployment, err = c.kubeclientset.AppsV1().Deployments(foo.Namespace).Create(context.TODO(), newDeployment(foo), metav1.CreateOptions{})
 	}
 
+	if err != nil {
+		return err
+	}
+
+	// If the Deployment is not controlled by this Foo resource, we should log
+	// a warning to the event recorder and return error msg.
+	if !metav1.IsControlledBy(deployment, foo) {
+		msg := fmt.Sprintf(MessageResourceExists, deployment.Name)
+		log.Println(msg)
+		return fmt.Errorf("%s", msg)
+	}
+
+	// If this number of the replicas on the Foo resource is specified, and the
+	// number does not equal the current desired replicas on the Deployment, we
+	// should update the Deployment resource.
+	if foo.Spec.Replicas != nil && *foo.Spec.Replicas != *deployment.Spec.Replicas {
+		log.Printf("Foo %s replicas: %d, deployment replicas: %d\n", name, *foo.Spec.Replicas, *deployment.Spec.Replicas)
+		deployment, err = c.kubeclientset.AppsV1().Deployments(foo.Namespace).Update(context.TODO(), newDeployment(foo), metav1.UpdateOptions{})
+	}
+	// If an error occurs during Update, we'll requeue the item so we can
+	// attempt processing again later. This could have been caused by a
+	// temporary network failure, or any other transient reason.
 	if err != nil {
 		return err
 	}
