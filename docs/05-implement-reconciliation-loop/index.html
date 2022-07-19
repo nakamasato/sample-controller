@@ -645,6 +645,13 @@ No resources found in default namespace.
 </ul>
 <p>Steps:</p>
 <ol>
+<li>Add constant variable before <code>type Controller struct</code>.
+<div class=highlight><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kd>const</span> <span class=p>(</span>
+    <span class=c1>// MessageResourceExists is the message used for Events when a resource
+</span><span class=c1></span>    <span class=c1>// fails to sync due to a Deployment already existing
+</span><span class=c1></span>    <span class=nx>MessageResourceExists</span> <span class=p>=</span> <span class=s>&#34;Resource %q already exists and is not managed by Foo&#34;</span>
+<span class=p>)</span>
+</code></pre></div></li>
 <li>Update <code>syncHandler</code>:
 <ol>
 <li>
@@ -705,7 +712,7 @@ foo-sample   1/1     1            1           3h41m
 <p>Increase replica to 2.</p>
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>kubectl patch foo foo-sample -p &#39;{&#34;spec&#34;:{&#34;replicas&#34;: 2}}&#39; --type=merge
 </code></pre></div><p>logs:</p>
-<div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>2021/12/21 10:08:19 Foo foo-sample replicas: 2, deployment replicas: 1
+<div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>2022/07/19 09:55:00 Foo foo-sample replicas: 2, deployment replicas: 1
 </code></pre></div><p>Replicas of Deployment increased.</p>
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>kubectl get deploy
 NAME         READY   UP-TO-DATE   AVAILABLE   AGE
@@ -729,8 +736,7 @@ foo-sample   2/2     2            2           3h42m
 </code></pre></div></li>
 <li>
 <p>Log:</p>
-<div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>2021/12/21 10:14:50 deployment foo-sample found
-2021/12/21 10:14:50 Resource &#34;foo-sample&#34; already exists and is not managed by Foo
+<div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>2022/07/19 09:58:27 Resource &#34;foo-sample&#34; already exists and is not managed by Foo
 </code></pre></div></li>
 <li>
 <p>Clean up.</p>
