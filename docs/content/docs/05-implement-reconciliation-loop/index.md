@@ -611,6 +611,14 @@ What needs to be done:
     - [x] Set `UpdateFunc` as an event handler for the informer in order to call `syncHandler` when `Foo` resource is updated.
 
 Steps:
+1. Add constant variable before `type Controller struct`.
+    ```go
+    const (
+        // MessageResourceExists is the message used for Events when a resource
+        // fails to sync due to a Deployment already existing
+        MessageResourceExists = "Resource %q already exists and is not managed by Foo"
+    )
+    ```
 1. Update `syncHandler`:
     1. Check if the `Deployment` is managed by the controller.
 
@@ -678,7 +686,7 @@ Steps:
         logs:
 
         ```
-        2021/12/21 10:08:19 Foo foo-sample replicas: 2, deployment replicas: 1
+        2022/07/19 09:55:00 Foo foo-sample replicas: 2, deployment replicas: 1
         ```
 
         Replicas of Deployment increased.
@@ -703,8 +711,7 @@ Steps:
         ```
     1. Log:
         ```
-        2021/12/21 10:14:50 deployment foo-sample found
-        2021/12/21 10:14:50 Resource "foo-sample" already exists and is not managed by Foo
+        2022/07/19 09:58:27 Resource "foo-sample" already exists and is not managed by Foo
         ```
 
     1. Clean up.
