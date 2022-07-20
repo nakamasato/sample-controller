@@ -620,6 +620,9 @@ Steps:
     )
     ```
 1. Update `syncHandler`:
+
+    1. Remove log `log.Printf("deployment %s is valid", deployment.Name)`.
+
     1. Check if the `Deployment` is managed by the controller.
 
         ```go
@@ -648,6 +651,7 @@ Steps:
                 return err
             }
         ```
+
 1. Update event handlers in `NewController`:
     ```diff
             fooInformer.Informer().AddEventHandler(
@@ -722,7 +726,7 @@ Steps:
 
 ### 5.5. Update Foo status
 
-1. Create `updateFooStatus` function and add the logic at the end of `syncHandler`
+1. Create `updateFooStatus` function.
 
     ```go
     func (c *Controller) updateFooStatus(foo *samplev1alpha1.Foo, deployment *appsv1.Deployment) error {
@@ -739,6 +743,8 @@ Steps:
         return err
     }
     ```
+
+1. Add the logic at the end of `syncHandler`
 
     ```go
     func (c *Controller) syncHandler() {
