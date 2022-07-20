@@ -761,6 +761,7 @@ Steps:
         return nil
     }
     ```
+
 1. Add `subresources` to `CustomResourceDefinition`.
 
     ```yaml
@@ -773,7 +774,16 @@ Steps:
     ```
 
     For more details, see [subresources](https://kubernetes.io/docs/tasks/extend-kubernetes/custom-resources/custom-resource-definitions/#subresources)
+
 1. Test status
+    1. Apply the changes in CRD.
+        ```
+        kubectl apply -f config/crd/foos.yaml
+        ```
+    1. Run the controller.
+        ```
+        go run main.go
+        ```
     1. Apply `Foo`
         ```
         kubectl apply -f config/sample/foo.yaml
@@ -784,6 +794,7 @@ Steps:
         {"availableReplicas":0}%
         ```
         Currently, the informer just monitors `Foo` resource, which cannot capture the update of `Deployment.status.availableReplicas`.
+
     1. Check status after a while
         ```
         kubectl get foo foo-sample -o jsonpath='{.status}'
@@ -801,6 +812,13 @@ Steps:
         foo-sample   3/3     3            3           95s
         ```
 
+        After waiting for a while, status is updated.
+
+        ```
+        kubectl get foo foo-sample -o jsonpath='{.status}'
+        {"availableReplicas":3}%
+        ```
+
         ```
         kubectl scale --replicas=1 foo foo-sample
         ```
@@ -812,6 +830,8 @@ Steps:
         ```
 
 ### 5.6. Capture the update of Deployment
+
+In the previous section, `status.availableReplicas` is not updated immediately. This is because we just monitor our custom resource `Foo`. In this section, we'll enable to capture changes of Deployment controlled by our custom resource `Foo`.
 
 1. Add handleObject function.
 
