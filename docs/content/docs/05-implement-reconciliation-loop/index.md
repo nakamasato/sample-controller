@@ -876,6 +876,15 @@ In the previous section, `status.availableReplicas` is not updated immediately. 
     ```
     When `Deployment` managed by `Foo` is added/updated/deleted, get the corresponding `Foo` and put the key (`naemspace/name`) to the workqueue.
 
+    Import necessary package.
+    ```go
+    import (
+        ...
+        utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+        ...
+    )
+    ```
+
 1. Add event handlers to `deploymentInformer` in `NewController`.
 
     ```go
@@ -901,6 +910,10 @@ In the previous section, `status.availableReplicas` is not updated immediately. 
         })
     ```
 1. Test the Foo's status after Deployment is updated.
+    1. Run the controller
+        ```
+        go run main.go
+        ```
     1. Create Foo resource.
         ```
         kubectl apply -f config/sample/foo.yaml
