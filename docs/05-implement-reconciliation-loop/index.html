@@ -645,15 +645,20 @@ No resources found in default namespace.
 </ul>
 <p>Steps:</p>
 <ol>
-<li>Add constant variable before <code>type Controller struct</code>.
+<li>
+<p>Add constant variable before <code>type Controller struct</code>.</p>
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kd>const</span> <span class=p>(</span>
     <span class=c1>// MessageResourceExists is the message used for Events when a resource
 </span><span class=c1></span>    <span class=c1>// fails to sync due to a Deployment already existing
 </span><span class=c1></span>    <span class=nx>MessageResourceExists</span> <span class=p>=</span> <span class=s>&#34;Resource %q already exists and is not managed by Foo&#34;</span>
 <span class=p>)</span>
 </code></pre></div></li>
-<li>Update <code>syncHandler</code>:
+<li>
+<p>Update <code>syncHandler</code>:</p>
 <ol>
+<li>
+<p>Remove log <code>log.Printf("deployment %s is valid", deployment.Name)</code>.</p>
+</li>
 <li>
 <p>Check if the <code>Deployment</code> is managed by the controller.</p>
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-go data-lang=go>    <span class=c1>// If the Deployment is not controlled by this Foo resource, we should log
@@ -682,7 +687,8 @@ No resources found in default namespace.
 </code></pre></div></li>
 </ol>
 </li>
-<li>Update event handlers in <code>NewController</code>:
+<li>
+<p>Update event handlers in <code>NewController</code>:</p>
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-diff data-lang=diff>        fooInformer.Informer().AddEventHandler(
                 cache.ResourceEventHandlerFuncs{
 <span class=gd>-                       AddFunc: controller.handleAdd,
@@ -693,13 +699,15 @@ No resources found in default namespace.
 </span><span class=gi></span>                },
         )
 </code></pre></div></li>
-<li>Remove unused <code>handleAdd</code> function.
+<li>
+<p>Remove unused <code>handleAdd</code> function.</p>
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-diff data-lang=diff><span class=gd>-func (c *Controller) handleAdd(obj interface{}) {
 </span><span class=gd>-       log.Println(&#34;handleAdd was called&#34;)
 </span><span class=gd>-       c.enqueueFoo(obj)
 </span><span class=gd>-}
 </span></code></pre></div></li>
-<li>Test if <code>sample-controller</code> updates replicas.
+<li>
+<p>Test if <code>sample-controller</code> updates replicas.</p>
 <ol>
 <li>
 <p>Apply <code>Foo</code> resource.</p>
@@ -724,7 +732,8 @@ foo-sample   2/2     2            2           3h42m
 </code></pre></div></li>
 </ol>
 </li>
-<li>Test if <code>sample-controller</code> wouldn&rsquo;t touch <code>Deployment</code> that is not managed by the controller.
+<li>
+<p>Test if <code>sample-controller</code> wouldn&rsquo;t touch <code>Deployment</code> that is not managed by the controller.</p>
 <ol>
 <li>
 <p>Apply <code>Deployment</code> with name <code>foo-sample</code>.</p>
@@ -749,7 +758,7 @@ kubectl delete deploy foo-sample
 <h3 id=55-update-foo-status>5.5. Update Foo status</h3>
 <ol>
 <li>
-<p>Create <code>updateFooStatus</code> function and add the logic at the end of <code>syncHandler</code></p>
+<p>Create <code>updateFooStatus</code> function.</p>
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kd>func</span> <span class=p>(</span><span class=nx>c</span> <span class=o>*</span><span class=nx>Controller</span><span class=p>)</span> <span class=nf>updateFooStatus</span><span class=p>(</span><span class=nx>foo</span> <span class=o>*</span><span class=nx>samplev1alpha1</span><span class=p>.</span><span class=nx>Foo</span><span class=p>,</span> <span class=nx>deployment</span> <span class=o>*</span><span class=nx>appsv1</span><span class=p>.</span><span class=nx>Deployment</span><span class=p>)</span> <span class=kt>error</span> <span class=p>{</span>
     <span class=c1>// NEVER modify objects from the store. It&#39;s a read-only, local cache.
 </span><span class=c1></span>    <span class=c1>// You can use DeepCopy() to make a deep copy of original object and modify this copy
@@ -763,7 +772,10 @@ kubectl delete deploy foo-sample
 </span><span class=c1></span>    <span class=nx>_</span><span class=p>,</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>c</span><span class=p>.</span><span class=nx>sampleclientset</span><span class=p>.</span><span class=nf>ExampleV1alpha1</span><span class=p>().</span><span class=nf>Foos</span><span class=p>(</span><span class=nx>foo</span><span class=p>.</span><span class=nx>Namespace</span><span class=p>).</span><span class=nf>UpdateStatus</span><span class=p>(</span><span class=nx>context</span><span class=p>.</span><span class=nf>TODO</span><span class=p>(),</span> <span class=nx>fooCopy</span><span class=p>,</span> <span class=nx>metav1</span><span class=p>.</span><span class=nx>UpdateOptions</span><span class=p>{})</span>
     <span class=k>return</span> <span class=nx>err</span>
 <span class=p>}</span>
-</code></pre></div><div class=highlight><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kd>func</span> <span class=p>(</span><span class=nx>c</span> <span class=o>*</span><span class=nx>Controller</span><span class=p>)</span> <span class=nf>syncHandler</span><span class=p>()</span> <span class=p>{</span>
+</code></pre></div></li>
+<li>
+<p>Add the logic at the end of <code>syncHandler</code></p>
+<div class=highlight><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kd>func</span> <span class=p>(</span><span class=nx>c</span> <span class=o>*</span><span class=nx>Controller</span><span class=p>)</span> <span class=nf>syncHandler</span><span class=p>()</span> <span class=p>{</span>
     <span class=o>...</span>
 
     <span class=c1>// Finally, we update the status block of the Foo resource to reflect the
@@ -790,15 +802,26 @@ kubectl delete deploy foo-sample
 <li>
 <p>Test status</p>
 <ol>
-<li>Apply <code>Foo</code>
+<li>
+<p>Apply the changes in CRD.</p>
+<div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>kubectl apply -f config/crd/foos.yaml
+</code></pre></div></li>
+<li>
+<p>Run the controller.</p>
+<div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>go run main.go
+</code></pre></div></li>
+<li>
+<p>Apply <code>Foo</code></p>
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>kubectl apply -f config/sample/foo.yaml
 </code></pre></div></li>
-<li>Check status (not updated immediately -> will be fixed in the next section.)
+<li>
+<p>Check status (not updated immediately -> will be fixed in the next section.)</p>
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>kubectl get foo foo-sample -o jsonpath=&#39;{.status}&#39;
 {&#34;availableReplicas&#34;:0}%
 </code></pre></div><p>Currently, the informer just monitors <code>Foo</code> resource, which cannot capture the update of <code>Deployment.status.availableReplicas</code>.</p>
 </li>
-<li>Check status after a while
+<li>
+<p>Check status after a while</p>
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>kubectl get foo foo-sample -o jsonpath=&#39;{.status}&#39;
 {&#34;availableReplicas&#34;:1}%
 </code></pre></div></li>
@@ -813,6 +836,9 @@ kubectl delete deploy foo-sample
 </code></pre></div><div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>kubectl get deploy
 NAME         READY   UP-TO-DATE   AVAILABLE   AGE
 foo-sample   3/3     3            3           95s
+</code></pre></div><p>After waiting for a while, status is updated.</p>
+<div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>kubectl get foo foo-sample -o jsonpath=&#39;{.status}&#39;
+{&#34;availableReplicas&#34;:3}%
 </code></pre></div><div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>kubectl scale --replicas=1 foo foo-sample
 </code></pre></div><div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>kubectl get deploy
 NAME         READY   UP-TO-DATE   AVAILABLE   AGE
@@ -822,6 +848,7 @@ foo-sample   1/1     1            1           9m10s
 </li>
 </ol>
 <h3 id=56-capture-the-update-of-deployment>5.6. Capture the update of Deployment</h3>
+<p>In the previous section, <code>status.availableReplicas</code> is not updated immediately. This is because we just monitor our custom resource <code>Foo</code>. In this section, we&rsquo;ll enable to capture changes of Deployment controlled by our custom resource <code>Foo</code>.</p>
 <ol>
 <li>
 <p>Add handleObject function.</p>
