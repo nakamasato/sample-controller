@@ -6,7 +6,7 @@ weight: 4
 summary: Generate Go codes with code-generator.
 ---
 
-## 2. Generate code
+## [Generate code]
 
 1. Set `codeGeneratorDir` env var for `code-generator`.
 

@@ -6,7 +6,7 @@ weight: 3
 summary: Define Go types for Custom Resource Definition `Foo`.
 ---
 
-## 1. Define Go types for CRD
+## [Define Go types for CRD](https://github.com/nakamasato/sample-controller/commit/6b1933e5a627cc1d49dc027a0dcd65182f99f5be)
 
 1. Create a directory.
 

@@ -6,7 +6,7 @@ weight: 5
 summary: Create CustomResourceDefinition yaml file manually.
 ---
 
-## 3. Create CRD yaml file
+## [Create CRD yaml file]
 
 `config/crd/example.com_foos.yaml`:
 ```yaml

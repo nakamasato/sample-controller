@@ -6,7 +6,7 @@ weight: 7
 summary: Implement controller.
 ---
 
-### 5.1. Create Controller
+## [5.1. Create Controller]
 
 1. Create controller.
 
@@ -226,7 +226,7 @@ summary: Implement controller.
     2022/07/18 06:36:40 handleDelete was called
     ```
 
-### 5.2. Fetch foo object
+## [5.2. Fetch foo object](https://github.com/nakamasato/sample-controller/commit/test)
 
 Implement the following logic:
 1. Get a workqueue item.
@@ -341,7 +341,7 @@ Steps:
     2022/07/18 07:46:49 failed to get foo resource from lister foo.example.com "foo-sample" not found
     ```
 
-### 5.3. Enable to Create/Delete Deployment for Foo resource
+## [5.3. Enable to Create/Delete Deployment for Foo resource]
 
 At the end of this step, we'll be able to create `Deployment` for `Foo` resource.
 
@@ -603,7 +603,7 @@ At the end of this step, we'll be able to create `Deployment` for `Foo` resource
 
         > Kubernetes checks for and deletes objects that no longer have owner references, like the pods left behind when you delete a ReplicaSet. When you delete an object, you can control whether Kubernetes deletes the object's dependents automatically, in a process called cascading deletion.
 
-### 5.4. Check and update Deployment if necessary
+## [5.4. Check and update Deployment if necessary]
 
 What needs to be done:
 - In `syncHandler`
@@ -726,7 +726,7 @@ Steps:
         kubectl delete deploy foo-sample
         ```
 
-### 5.5. Update Foo status
+## [5.5. Update Foo status]
 
 1. Create `updateFooStatus` function.
 
@@ -834,7 +834,7 @@ Steps:
     ```
     kubectl delete -f config/sample/foo.yaml
     ```
-### 5.6. Capture the update of Deployment
+## [5.6. Capture the update of Deployment]
 
 In the previous section, `status.availableReplicas` is not updated immediately. This is because we just monitor our custom resource `Foo`. In this section, we'll enable to capture changes of Deployment controlled by our custom resource `Foo`.
 
@@ -933,7 +933,7 @@ In the previous section, `status.availableReplicas` is not updated immediately. 
         kubectl delete -f config/sample/foo.yaml
         ```
 
-### 5.7. Create events for Foo resource
+### [5.7. Create events for Foo resource]
 
 1. Add necessary packages.
     ```diff

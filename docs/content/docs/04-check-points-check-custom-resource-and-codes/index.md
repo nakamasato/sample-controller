@@ -6,7 +6,7 @@ weight: 6
 summary: Check the behavior at this point.
 ---
 
-## 4. Checkpoint: Check custom resource and codes
+## [Checkpoint: Check custom resource and codes]
 
 What to check:
 - [x] Create CRD
