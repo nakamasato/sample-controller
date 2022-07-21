@@ -1,12 +1,12 @@
 ---
 title: '5. Implement reconciliation'
-date: 2022-07-22
+date: 2022-07-22T07:39:49+0900
 draft: false
 weight: 7
 summary: Implement controller.
 ---
 
-## [5.1. Create Controller](https://github.com/nakamasato/sample-controller/commit/31df2b4bdcfe8efbae7aefb5e1deba8899d19926)
+## [5.1. Create Controller](https://github.com/nakamasato/sample-controller/commit/ee3fd613477b23829d2bbf4ead28c662cb0dcf5d)
 
 1. Create controller.
 
@@ -341,7 +341,7 @@ Steps:
     2022/07/18 07:46:49 failed to get foo resource from lister foo.example.com "foo-sample" not found
     ```
 
-## [5.3. Enable to Create/Delete Deployment for Foo resource](https://github.com/nakamasato/sample-controller/commit/56cc0d525259ded8210bd2931fbca59fd76bc4d1)
+## [5.3. Enable to Create/Delete Deployment for Foo resource](https://github.com/nakamasato/sample-controller/commit/0524614c1810474526fca8385255aff5bc78b690)
 
 At the end of this step, we'll be able to create `Deployment` for `Foo` resource.
 
@@ -603,7 +603,7 @@ At the end of this step, we'll be able to create `Deployment` for `Foo` resource
 
         > Kubernetes checks for and deletes objects that no longer have owner references, like the pods left behind when you delete a ReplicaSet. When you delete an object, you can control whether Kubernetes deletes the object's dependents automatically, in a process called cascading deletion.
 
-## [5.4. Check and update Deployment if necessary](https://github.com/nakamasato/sample-controller/commit/c578d19c84878c2d3a5e654939e22d1c106fe8e4)
+## [5.4. Check and update Deployment if necessary](https://github.com/nakamasato/sample-controller/commit/4ad1a675a3afe2c2a59d1b92b04dc1cc6bf4bd5e)
 
 What needs to be done:
 - In `syncHandler`
@@ -726,7 +726,7 @@ Steps:
         kubectl delete deploy foo-sample
         ```
 
-## [5.5. Update Foo status](https://github.com/nakamasato/sample-controller/commit/9f3de4882f808157492f15cde880b69f354b65ed)
+## [5.5. Update Foo status](https://github.com/nakamasato/sample-controller/commit/32a856fc80b1e9af8c8db5b32d1a54d3ac9a7c51)
 
 1. Create `updateFooStatus` function.
 
@@ -834,7 +834,7 @@ Steps:
     ```
     kubectl delete -f config/sample/foo.yaml
     ```
-## [5.6. Capture the update of Deployment](https://github.com/nakamasato/sample-controller/commit/ccf18861dee9cd1a80bddebd717a04611d74898d)
+## [5.6. Capture the update of Deployment](https://github.com/nakamasato/sample-controller/commit/dcaec06771e461dd302a3799cac9c7c097f3708a)
 
 In the previous section, `status.availableReplicas` is not updated immediately. This is because we just monitor our custom resource `Foo`. In this section, we'll enable to capture changes of Deployment controlled by our custom resource `Foo`.
 
@@ -933,7 +933,7 @@ In the previous section, `status.availableReplicas` is not updated immediately. 
         kubectl delete -f config/sample/foo.yaml
         ```
 
-## [5.7. Create events for Foo resource](https://github.com/nakamasato/sample-controller/commit/3607b2454cbb00444e58a1070d6e9b018b0c3687)
+## [5.7. Create events for Foo resource](https://github.com/nakamasato/sample-controller/commit/68a441efd814a38d2a3c51876ffb94df0b0a3435)
 
 1. Add necessary packages.
     ```diff
