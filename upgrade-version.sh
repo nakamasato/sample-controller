@@ -16,9 +16,11 @@ MAIN_GO_FILE=main.go
 for f in go.mod go.sum $MAIN_GO_FILE config/**/*.yaml;do
     if [ -f $f ];then
         rm $f
+        git add $f
     fi
 done
 rm -rf pkg
+git add pkg
 git commit -am "Remove files"
 
 # 0. Init Go module
