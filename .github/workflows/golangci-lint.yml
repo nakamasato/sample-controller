@@ -9,6 +9,7 @@ on:
     paths:
       - '*.go'
       - 'go.*'
+      - .github/workflows/golangci-lint.yml
 permissions:
   contents: read
   # Optional: allow read access to pull request. Use with `only-new-issues` option.
