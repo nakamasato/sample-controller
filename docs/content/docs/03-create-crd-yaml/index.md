@@ -6,7 +6,7 @@ weight: 5
 summary: Create CustomResourceDefinition yaml file manually.
 ---
 
-## [3. Create CRD yaml file](https://github.com/nakamasato/sample-controller/commit/7a2ca160582e5fd08111490828c052ec5e2198d3)
+## [3. Create CRD yaml file](https://github.com/nakamasato/sample-controller/commit/a90522c8bd8059c7a054a3016fd8610431ed265f)
 
 `config/crd/example.com_foos.yaml`:
 ```yaml
