@@ -23,10 +23,11 @@ git commit -am "Remove files"
 
 # 0. Init Go module
 go mod init $MODULE_NAME
-TITLE_AND_MESSAGE="0. Init Go module"
+TITLE_AND_MESSAGE="0. Initialize Go module"
 git add go.mod && git commit -m "$TITLE_AND_MESSAGE"
 commit_hash=$(git rev-parse HEAD)
 gsed -i "s#\[$TITLE_AND_MESSAGE\].*#[$TITLE_AND_MESSAGE]($REPO_URL/commit/$commit_hash)#" docs/content/docs/00-init-module/index.md
+gsed -i "s/date:.*/date: $(date +"%Y-%m-%d")/" docs/content/docs/00-init-module/index.md
 
 # 1. Define Go types for CRD
 mkdir -p pkg/apis/example.com/v1alpha1
@@ -129,6 +130,7 @@ TITLE_AND_MESSAGE="1. Define Go types for CRD"
 git add go.sum go.mod pkg/apis/example.com/v1alpha1 && git commit -m "$TITLE_AND_MESSAGE"
 commit_hash=$(git rev-parse HEAD)
 gsed -i "s#\[$TITLE_AND_MESSAGE\].*#[$TITLE_AND_MESSAGE]($REPO_URL/commit/$commit_hash)#" docs/content/docs/01-define-go-types-for-crd/index.md
+gsed -i "s/date:.*/date: $(date +"%Y-%m-%d")/" docs/content/docs/01-define-go-types-for-crd/index.md
 
 # 2. Generate codes
 codeGeneratorDir=~/repos/kubernetes/code-generator
@@ -190,6 +192,7 @@ TITLE_AND_MESSAGE="3. Create CRD yaml file"
 git add config && git commit -m TITLE_AND_MESSAGE
 commit_hash=$(git rev-parse HEAD)
 gsed -i "s#\[$TITLE_AND_MESSAGE\].*#[$TITLE_AND_MESSAGE]($REPO_URL/commit/$commit_hash)#" docs/content/docs/03-create-crd-yaml/index.md
+gsed -i "s/date:.*/date: $(date +"%Y-%m-%d")/" docs/content/docs/03-create-crd-yaml/index.md
 
 # 4. Checkpoint
 cat <<EOF >> $MAIN_GO_FILE
@@ -253,6 +256,7 @@ TITLE_AND_MESSAGE="4. Checkpoint: Check custom resource and codes"
 git add config $MAIN_GO_FILE && git commit -m "$TITLE_AND_MESSAGE"
 commit_hash=$(git rev-parse HEAD)
 gsed -i "s#\[$TITLE_AND_MESSAGE\].*#[$TITLE_AND_MESSAGE]($REPO_URL/commit/$commit_hash)#" docs/content/docs/04-check-points-check-custom-resource-and-codes/index.md
+gsed -i "s/date:.*/date: $(date +"%Y-%m-%d")/" docs/content/docs/04-check-points-check-custom-resource-and-codes/index.md
 
 echo "
 You can check the behavior at this point:
@@ -264,6 +268,9 @@ You can check the behavior at this point:
     6. stop $MAIN_GO_FILE
     7. kubectl delete -f config/crd/foos.yaml
 "
+
+# 5. Implement reconciliation loop
+gsed -i "s/date:.*/date: $(date +"%Y-%m-%d")/" docs/content/docs/05-implement-reconciliation-loop/index.md
 
 # 5.1. Create controller
 mkdir -p pkg/controller
