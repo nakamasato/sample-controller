@@ -2,12 +2,12 @@
 <head>
 <meta charset=utf-8>
 <meta http-equiv=x-ua-compatible content="ie=edge">
-<title>Overview - Sample Controller</title>
+<title>0. Initialize Go module - Sample Controller</title>
 <meta name=viewport content="width=device-width,initial-scale=1">
 <link rel=icon href=https://www.nakamasato.com/sample-controller/favicon.png>
 <link rel=stylesheet href=/sample-controller/css/style.min.6719d72e323121369d5caeb4264b95d8a63cf1deaab029da67602fe5a046e0a4.css>
 </head>
-<body class="page page-default-list">
+<body class="page page-default-single">
 <div id=main-menu-mobile class=main-menu-mobile>
 <ul>
 <li class=menu-item-home>
@@ -59,7 +59,7 @@
 <div class=docs-menu>
 <h4>Docs</h4>
 <ul>
-<li>
+<li class=active>
 <a href=https://www.nakamasato.com/sample-controller/docs/00-init-module/>0. Initialize Go module</a>
 </li>
 <li>
@@ -82,35 +82,12 @@
 </div>
 </div>
 <div class="col-12 col-md-9">
-<span class=overview>Overview</span>
-<h1 class=title>Overview</h1>
+<h1 class=title>0. Initialize Go module</h1>
 <div class=content>
-<h2 id=overview>Overview</h2>
-<p>Here I will explain about how to write <a href=https://github.com/kubernetes/sample-controller/>sample-controller</a> step by step. Although this is not the only way to implement a Kubernetes operator and there are very convenient tools to help create a custom Kubernetes operator e.g. <a href=https://book.kubebuilder.io/>kubebuilder</a>, <a href=https://sdk.operatorframework.io/>operator-sdk</a>, you&rsquo;ll gain deeper understanding of Kubernetes internal implementaion with this documentation, which will be helpful for OSS code reading, daily debuging, and implementing Kubernetes operators.</p>
+<h2 id=0-initialize-go-modulehttpsgithubcomnakamasatosample-controllercommit61f7aee1df8a1f36daf5124441b5db7a156be500><a href=https://github.com/nakamasato/sample-controller/commit/61f7aee1df8a1f36daf5124441b5db7a156be500>0. Initialize Go module</a></h2>
+<div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>go mod init github.com/&lt;yourname&gt;/sample-controller
+</code></pre></div>
 </div>
-<div class="summary mb-2">
-<h2 class=title-summary><a href=https://www.nakamasato.com/sample-controller/docs/00-init-module/>0. Initialize Go module</a></h2>
-<p>Initialize Go module.</p>
-</div>
-<div class="summary mb-2">
-<h2 class=title-summary><a href=https://www.nakamasato.com/sample-controller/docs/01-define-go-types-for-crd/>1. Define Go types for CRD</a></h2>
-<p>Define Go types for Custom Resource Definition <code>Foo</code>.</p>
-</div>
-<div class="summary mb-2">
-<h2 class=title-summary><a href=https://www.nakamasato.com/sample-controller/docs/02-generate-code/>2. Generate codes</a></h2>
-<p>Generate Go codes with code-generator.</p>
-</div>
-<div class="summary mb-2">
-<h2 class=title-summary><a href=https://www.nakamasato.com/sample-controller/docs/03-create-crd-yaml/>3. Create CRD yaml file</a></h2>
-<p>Create CustomResourceDefinition yaml file manually.</p>
-</div>
-<div class="summary mb-2">
-<h2 class=title-summary><a href=https://www.nakamasato.com/sample-controller/docs/04-check-points-check-custom-resource-and-codes/>4. Checkpoint</a></h2>
-<p>Check the behavior at this point.</p>
-</div>
-<div class="summary mb-2">
-<h2 class=title-summary><a href=https://www.nakamasato.com/sample-controller/docs/05-implement-reconciliation-loop/>5. Implement reconciliation</a></h2>
-<p>Implement controller.</p>
 </div>
 </div>
 </div>
