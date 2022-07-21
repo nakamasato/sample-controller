@@ -143,6 +143,7 @@ TITLE_AND_MESSAGE="2. Generate codes"
 git add pkg && git commit -m "$TITLE_AND_MESSAGE"
 commit_hash=$(git rev-parse HEAD)
 gsed -i "s#\[$TITLE_AND_MESSAGE\].*#[$TITLE_AND_MESSAGE]($REPO_URL/commit/$commit_hash)#" docs/content/docs/02-generate-code/index.md
+gsed -i "s/date:.*/date: $(date +"%Y-%m-%d")/" docs/content/docs/02-generate-code/index.md
 
 # 3. Create CRD
 
