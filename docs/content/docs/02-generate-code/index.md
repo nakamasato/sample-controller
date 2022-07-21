@@ -6,12 +6,12 @@ weight: 4
 summary: Generate Go codes with code-generator.
 ---
 
-## 2. Generate code
+## [2. Generate codes](https://github.com/nakamasato/sample-controller/commit/efda3945b9ac91ce71caa33df5407581a1143c76)
 
-1. Set `execDir` env var for `code-generator`.
+1. Set `codeGeneratorDir` env var for `code-generator`.
 
     ```
-    execDir=~/repos/kubernetes/code-generator
+    codeGeneratorDir=~/repos/kubernetes/code-generator
     ```
 
     If you already cloned, you can specify the directory.
@@ -19,13 +19,13 @@ summary: Generate Go codes with code-generator.
 1. Clone code-generator if you haven't cloned.
 
     ```
-    git clone https://github.com/kubernetes/code-generator.git $execDir
+    git clone https://github.com/kubernetes/code-generator.git $codeGeneratorDir
     ```
 
     <details><summary>generate-groups.sh Usage</summary>
 
     ```
-    "${execDir}"/generate-groups.sh
+    "${codeGeneratorDir}"/generate-groups.sh
     Usage: generate-groups.sh <generators> <output-package> <apis-package> <groups-versions> ...
 
       <generators>        the generators comma separated to run (deepcopy,defaulter,client,lister,informer) or "all".
@@ -45,10 +45,31 @@ summary: Generate Go codes with code-generator.
 
 1. Generate codes (deepcopy, clientset, listers, and informers).
 
-    ※ You need to replace `github.com/nakamasato/sample-controller` with your package name.
+    ※ You need to replace `github.com/nakamasato/sample-controller` with your module name.
 
     ```
-    "${execDir}"/generate-groups.sh all github.com/nakamasato/sample-controller/pkg/client github.com/nakamasato/sample-controller/pkg/apis example.com:v1alpha1 --go-header-file "${execDir}"/hack/boilerplate.go.txt
+    module=github.com/nakamasato/sample-controller; "${codeGeneratorDir}"/generate-groups.sh all ${module}/pkg/client ${module}/pkg/apis example.com:v1alpha1 --go-header-file "${codeGeneratorDir}"/hack/boilerplate.go.txt --trim-path-prefix $module
+    ```
+
+    <details>
+
+    The actually executed commands are the followings:
+
+    ```
+    GOBIN="$(go env GOBIN)"
+    gobin="${GOBIN:-$(go env GOPATH)/bin}"
+    ${gobin}/deepcopy-gen --input-dirs github.com/nakamasato/sample-controller/pkg/apis/example.com/v1alpha1 -O zz_generated.deepcopy --go-header-file /Users/m.naka/repos/kubernetes/code-generator/hack/boilerplate.go.txt --trim-path-prefix github.com/nakamasato/sample-controller
+    ${gobin}/client-gen --clientset-name versioned --input-base '' --input github.com/nakamasato/sample-controller/pkg/apis/example.com/v1alpha1 --output-package github.com/nakamasato/sample-controller/pkg/client/clientset --go-header-file /Users/m.naka/repos/kubernetes/code-generator/hack/boilerplate.go.txt --trim-path-prefix github.com/nakamasato/sample-controller
+    ${gobin}/lister-gen --input-dirs github.com/nakamasato/sample-controller/pkg/apis/example.com/v1alpha1 --output-package github.com/nakamasato/sample-controller/pkg/client/listers --go-header-file /Users/m.naka/repos/kubernetes/code-generator/hack/boilerplate.go.txt --trim-path-prefix github.com/nakamasato/sample-controller
+    ${gobin}/informer-gen --input-dirs github.com/nakamasato/sample-controller/pkg/apis/example.com/v1alpha1 --versioned-clientset-package github.com/nakamasato/sample-controller/pkg/client/clientset/versioned --listers-package github.com/nakamasato/sample-controller/pkg/client/listers --output-package github.com/nakamasato/sample-controller/pkg/client/informers --go-header-file /Users/m.naka/repos/kubernetes/code-generator/hack/boilerplate.go.txt --trim-path-prefix github.com/nakamasato/sample-controller
+    ```
+
+    </deitals>
+
+    -> `pkg/apis/example.com/v1alpha1/zz_generated.deepcopy.go`
+
+    ```
+    go mod tidy
     ```
 
     <details><summary>files</summary>
@@ -111,4 +132,5 @@ summary: Generate Go codes with code-generator.
     ```
 
     <details>
+
 1. Run `go mod tidy`.

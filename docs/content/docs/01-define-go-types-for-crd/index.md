@@ -1,12 +1,12 @@
 ---
-title: '1. Define CRD'
+title: '1. Define Go types for CRD'
 date: 2019-02-11T19:27:37+10:00
 draft: false
 weight: 3
-summary: Define Custom Resource Definition `Foo`.
+summary: Define Go types for Custom Resource Definition `Foo`.
 ---
 
-## 1. Define CRD
+## [1. Define Go types for CRD](https://github.com/nakamasato/sample-controller/commit/5397d84d70d3f9a43e76a52d1f1721db6e006e90)
 
 1. Create a directory.
 
@@ -72,7 +72,9 @@ summary: Define Custom Resource Definition `Foo`.
         Items []Foo `json:"items"`
     }
     ```
+
 1. Create `pkg/apis/example.com/v1alpha1/register.go`.
+
     ```go
     package v1alpha1
 

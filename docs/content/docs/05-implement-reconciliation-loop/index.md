@@ -6,7 +6,7 @@ weight: 7
 summary: Implement controller.
 ---
 
-### 5.1. Create Controller
+## [5.1. Create Controller](https://github.com/nakamasato/sample-controller/commit/eece1df33e26fcc20c7ea7ac82e71bd0a83d0c29)
 
 1. Create controller.
 
@@ -139,7 +139,7 @@ summary: Implement controller.
     -       foos, err := clientset.ExampleV1alpha1().Foos("").List(context.Background(), metav1.ListOptions{})
     -       if err != nil {
     -               log.Printf("listing foos %s\n", err.Error())
-    +       exampleInformerFactory := informers.NewSharedInformerFactory(exampleClient, 20*time.Minute)
+    +       exampleInformerFactory := informers.NewSharedInformerFactory(exampleClient, time.Second*30)
     +       ch := make(chan struct{})
     +       controller := controller.NewController(exampleClient, informerFactory.Example().V1alpha1().Foos())
     +       exampleInformerFactory.Start(ch)
@@ -150,9 +150,7 @@ summary: Implement controller.
      }
     ```
 
-    At the line of `exampleInformerFactory := informers.NewSharedInformerFactory(exampleClient, 20*time.Minute)`, the second argument specifies ***ResyncPeriod***, which defines the interval of ***resync*** (*The resync operation consists of delivering to the handler an update notification for every object in the informer's local cache*). For more detail, please read [NewSharedIndexInformer](https://pkg.go.dev/k8s.io/client-go@v0.23.1/tools/cache#NewSharedIndexInformer)
-
-    I'm not exactly sure why [here](https://github.com/kubernetes/sample-controller/blob/0da864e270013aff1b6604a83b19356333d85ce9/main.go#L62-L63) specifies 30 seconds for **ResyncPeriod**.
+    At the line of `exampleInformerFactory := informers.NewSharedInformerFactory(exampleClient, time.Second*30)`, the second argument specifies ***ResyncPeriod***, which defines the interval of ***resync*** (*The resync operation consists of delivering to the handler an update notification for every object in the informer's local cache*). For more detail, please read [NewSharedIndexInformer](https://pkg.go.dev/k8s.io/client-go@v0.23.1/tools/cache#NewSharedIndexInformer)
 
     <details><summary>main.go</summary>
 
@@ -193,7 +191,7 @@ summary: Implement controller.
     		log.Printf("getting client set %s\n", err.Error())
     	}
 
-    	exampleInformerFactory := informers.NewSharedInformerFactory(exampleClient, 20*time.Minute)
+    	exampleInformerFactory := informers.NewSharedInformerFactory(exampleClient, time.Second*30)
     	ch := make(chan struct{})
     	controller := controller.NewController(exampleClient, exampleInformerFactory.Example().V1alpha1().Foos())
     	exampleInformerFactory.Start(ch)
@@ -205,11 +203,10 @@ summary: Implement controller.
 
     </details>
 
-1. Build and run the controller.
+1. Run the controller.
 
     ```
-    go build
-    ./sample-controller
+    go run main.go
     ```
 
 1. Create and delete CR.
@@ -225,11 +222,11 @@ summary: Implement controller.
 1. Check the controller logs.
 
     ```
-    2021/12/19 17:31:25 handleAdd was called
-    2021/12/19 17:31:47 handleDelete was called
+    2022/07/18 06:36:35 handleAdd was called
+    2022/07/18 06:36:40 handleDelete was called
     ```
 
-### 5.2. Fetch foo object
+## [5.2. Fetch foo object](https://github.com/nakamasato/sample-controller/commit/0d9c689f4ecb707e6c160632ad7a397d89f0c5ab)
 
 Implement the following logic:
 1. Get a workqueue item.
@@ -264,6 +261,7 @@ Steps:
         c.workqueue.Add(key)
     }
     ```
+
 1. Update `processNextItem`.
 
     ```go
@@ -285,6 +283,7 @@ Steps:
                 // Forget here else we'd go into a loop of attempting to
                 // process a work item that is invalid.
                 c.workqueue.Forget(obj)
+                log.Printf("expected string in workqueue but got %#v", obj)
                 return nil
             }
 
@@ -305,6 +304,7 @@ Steps:
             // Forget the queue item as it's successfully processed and
             // the item will not be requeued.
             c.workqueue.Forget(obj)
+            log.Printf("Successfully synced '%s'", key)
             return nil
         }(obj)
 
@@ -316,11 +316,10 @@ Steps:
     }
     ```
 
-1. Build and run the controller.
+1. Run the controller.
 
     ```
-    go build
-    ./sample-controller
+    go run main.go
     ```
 
 1. Create and delete CR.
@@ -336,16 +335,26 @@ Steps:
 1. Check the controller logs.
 
     ```
-    ./sample-controller
-    2021/12/20 05:53:10 handleAdd was called
-    2021/12/20 05:53:10 Got foo {DeploymentName:foo-sample Replicas:0xc0001a942c}
-    2021/12/20 05:53:16 handleDelete was called
-    2021/12/20 05:53:16 failed to get foo resource from lister foo.example.com "foo-sample" not found
+    2022/07/18 07:46:42 handleAdd was called
+    2022/07/18 07:46:42 Got foo {DeploymentName:foo-sample Replicas:0x1400030194c}
+    2022/07/18 07:46:49 handleDelete was called
+    2022/07/18 07:46:49 failed to get foo resource from lister foo.example.com "foo-sample" not found
     ```
 
-### 5.3. Enable to Create/Delete Deployment for Foo resource
+## [5.3. Enable to Create/Delete Deployment for Foo resource](https://github.com/nakamasato/sample-controller/commit/b7b85f7f6e1c71796793645c2bb56acdafec67ac)
 
 At the end of this step, we'll be able to create `Deployment` for `Foo` resource.
+
+1. Import the necessary packages.
+
+    ```go
+    import (
+        ...
+        appsinformers "k8s.io/client-go/informers/apps/v1"
+        "k8s.io/client-go/kubernetes"
+        appslisters "k8s.io/client-go/listers/apps/v1"
+    )
+    ```
 
 1. Add fields (`kubeclientset`, `deploymentsLister`, and `deploymentsSynced`) to `Controller`.
     ```diff
@@ -410,9 +419,8 @@ At the end of this step, we'll be able to create `Deployment` for `Foo` resource
                     log.Printf("getting client set %s\n", err.Error())
             }
 
-    -       exampleInformerFactory := informers.NewSharedInformerFactory(exampleClient, 20*time.Minute)
     +       kubeInformerFactory := kubeinformers.NewSharedInformerFactory(kubeClient, time.Second*30)
-    +       exampleInformerFactory := informers.NewSharedInformerFactory(exampleClient, time.Second*30)
+            exampleInformerFactory := informers.NewSharedInformerFactory(exampleClient, time.Second*30)
             ch := make(chan struct{})
     -       controller := controller.NewController(exampleClient, exampleInformerFactory.Example().V1alpha1().Foos())
     +       controller := controller.NewController(
@@ -425,7 +433,8 @@ At the end of this step, we'll be able to create `Deployment` for `Foo` resource
         ...
     }
     ```
-1. Create `syncHandler` and `newDeployment`.
+
+1. Create `syncHandler` and `newDeployment` in `pkg/controller/foo.go`.
 
     ```go
     func (c *Controller) syncHandler(key string) error {
@@ -458,7 +467,7 @@ At the end of this step, we'll be able to create `Deployment` for `Foo` resource
     		return err
     	}
 
-    	log.Printf("deployment %+v", deployment)
+    	log.Printf("deployment %s is valid", deployment.Name)
 
     	return nil
     }
@@ -497,6 +506,20 @@ At the end of this step, we'll be able to create `Deployment` for `Foo` resource
     }
     ```
 
+    Add necessary imports
+
+    ```go
+    import (
+        "context"
+	    "fmt"
+        appsv1 "k8s.io/api/apps/v1"
+	    corev1 "k8s.io/api/core/v1"
+        metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+        "k8s.io/apimachinery/pkg/api/errors"
+        samplev1alpha1 "github.com/nakamasato/sample-controller/pkg/apis/example.com/v1alpha1"
+    )
+    ```
+
 1. Update `processNextItem` to call `syncHandler` for main logic.
 
     ```diff
@@ -526,6 +549,7 @@ At the end of this step, we'll be able to create `Deployment` for `Foo` resource
                     // the item will not be requeued.
                     c.workqueue.Forget(obj)
     ```
+
 1. Delete `handleDelete` function as it's covered by `ownerReferences` (details mentioned in the next step) for delete action.
 
     ```diff
@@ -545,10 +569,9 @@ At the end of this step, we'll be able to create `Deployment` for `Foo` resource
 
 
 1. Test `sample-controller`.
-    1. Build and run the controller.
+    1. Run the controller.
         ```
-        go build
-        ./sample-controller
+        go run main.go
         ```
     1. Create `Foo` resource.
         ```
@@ -563,8 +586,8 @@ At the end of this step, we'll be able to create `Deployment` for `Foo` resource
         ```
         Check `sample-controller`'s logs:
         ```
-        2021/12/20 19:58:30 handleAdd was called
-        2021/12/20 19:58:30 deployment foo-sample exists
+        2022/07/18 09:33:31 handleAdd was called
+        2022/07/18 09:33:31 deployment foo-sample is valid
         ```
     1. Delete `Foo` resource.
         ```
@@ -575,16 +598,12 @@ At the end of this step, we'll be able to create `Deployment` for `Foo` resource
         kubectl get deploy
         No resources found in default namespace.
         ```
-        Check `sample-controller`'s logs:
-        ```
-        2021/12/20 19:59:14 handleDelete was called
-        2021/12/20 19:59:14 failed to get foo resource from lister foo.example.com "foo-sample" not found
-        ```
+
         `Deployment` is deleted when the corresponding `Foo` is deleted thanks to `OwnerReference`'s [cascading deletion](https://kubernetes.io/docs/concepts/architecture/garbage-collection/#cascading-deletion) feature:
 
         > Kubernetes checks for and deletes objects that no longer have owner references, like the pods left behind when you delete a ReplicaSet. When you delete an object, you can control whether Kubernetes deletes the object's dependents automatically, in a process called cascading deletion.
 
-### 5.4. Check and update Deployment if necessary
+## [5.4. Check and update Deployment if necessary](https://github.com/nakamasato/sample-controller/commit/38d69feda6fe4d312a3ec60aa1921bcd0022d0b4)
 
 What needs to be done:
 - In `syncHandler`
@@ -594,7 +613,18 @@ What needs to be done:
     - [x] Set `UpdateFunc` as an event handler for the informer in order to call `syncHandler` when `Foo` resource is updated.
 
 Steps:
+1. Add constant variable before `type Controller struct`.
+    ```go
+    const (
+        // MessageResourceExists is the message used for Events when a resource
+        // fails to sync due to a Deployment already existing
+        MessageResourceExists = "Resource %q already exists and is not managed by Foo"
+    )
+    ```
 1. Update `syncHandler`:
+
+    1. Remove log `log.Printf("deployment %s is valid", deployment.Name)`.
+
     1. Check if the `Deployment` is managed by the controller.
 
         ```go
@@ -623,6 +653,7 @@ Steps:
                 return err
             }
         ```
+
 1. Update event handlers in `NewController`:
     ```diff
             fooInformer.Informer().AddEventHandler(
@@ -661,7 +692,7 @@ Steps:
         logs:
 
         ```
-        2021/12/21 10:08:19 Foo foo-sample replicas: 2, deployment replicas: 1
+        2022/07/19 09:55:00 Foo foo-sample replicas: 2, deployment replicas: 1
         ```
 
         Replicas of Deployment increased.
@@ -686,8 +717,7 @@ Steps:
         ```
     1. Log:
         ```
-        2021/12/21 10:14:50 deployment foo-sample found
-        2021/12/21 10:14:50 Resource "foo-sample" already exists and is not managed by Foo
+        2022/07/19 09:58:27 Resource "foo-sample" already exists and is not managed by Foo
         ```
 
     1. Clean up.
@@ -696,9 +726,9 @@ Steps:
         kubectl delete deploy foo-sample
         ```
 
-### 5.5. Update Foo status
+## [5.5. Update Foo status](https://github.com/nakamasato/sample-controller/commit/e8f80003dcfc3d2f41418c2098e31ee71e9c58da)
 
-1. Create `updateFooStatus` function and add the logic at the end of `syncHandler`
+1. Create `updateFooStatus` function.
 
     ```go
     func (c *Controller) updateFooStatus(foo *samplev1alpha1.Foo, deployment *appsv1.Deployment) error {
@@ -716,6 +746,8 @@ Steps:
     }
     ```
 
+1. Add the logic at the end of `syncHandler`
+
     ```go
     func (c *Controller) syncHandler() {
         ...
@@ -731,6 +763,7 @@ Steps:
         return nil
     }
     ```
+
 1. Add `subresources` to `CustomResourceDefinition`.
 
     ```yaml
@@ -743,7 +776,16 @@ Steps:
     ```
 
     For more details, see [subresources](https://kubernetes.io/docs/tasks/extend-kubernetes/custom-resources/custom-resource-definitions/#subresources)
+
 1. Test status
+    1. Apply the changes in CRD.
+        ```
+        kubectl apply -f config/crd/foos.yaml
+        ```
+    1. Run the controller.
+        ```
+        go run main.go
+        ```
     1. Apply `Foo`
         ```
         kubectl apply -f config/sample/foo.yaml
@@ -754,6 +796,7 @@ Steps:
         {"availableReplicas":0}%
         ```
         Currently, the informer just monitors `Foo` resource, which cannot capture the update of `Deployment.status.availableReplicas`.
+
     1. Check status after a while
         ```
         kubectl get foo foo-sample -o jsonpath='{.status}'
@@ -771,6 +814,13 @@ Steps:
         foo-sample   3/3     3            3           95s
         ```
 
+        After waiting for a while, status is updated.
+
+        ```
+        kubectl get foo foo-sample -o jsonpath='{.status}'
+        {"availableReplicas":3}%
+        ```
+
         ```
         kubectl scale --replicas=1 foo foo-sample
         ```
@@ -780,8 +830,13 @@ Steps:
         NAME         READY   UP-TO-DATE   AVAILABLE   AGE
         foo-sample   1/1     1            1           9m10s
         ```
+1. Delete `Foo`.
+    ```
+    kubectl delete -f config/sample/foo.yaml
+    ```
+## [5.6. Capture the update of Deployment](https://github.com/nakamasato/sample-controller/commit/ddbe6e47a72800bd3570823a6eb6f4aabc4b362b)
 
-### 5.6. Capture the update of Deployment
+In the previous section, `status.availableReplicas` is not updated immediately. This is because we just monitor our custom resource `Foo`. In this section, we'll enable to capture changes of Deployment controlled by our custom resource `Foo`.
 
 1. Add handleObject function.
 
@@ -826,6 +881,15 @@ Steps:
     ```
     When `Deployment` managed by `Foo` is added/updated/deleted, get the corresponding `Foo` and put the key (`naemspace/name`) to the workqueue.
 
+    Import necessary package.
+    ```go
+    import (
+        ...
+        utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+        ...
+    )
+    ```
+
 1. Add event handlers to `deploymentInformer` in `NewController`.
 
     ```go
@@ -851,6 +915,10 @@ Steps:
         })
     ```
 1. Test the Foo's status after Deployment is updated.
+    1. Run the controller
+        ```
+        go run main.go
+        ```
     1. Create Foo resource.
         ```
         kubectl apply -f config/sample/foo.yaml
@@ -860,9 +928,12 @@ Steps:
         kubectl get foo foo-sample -o jsonpath='{.status}'
         {"availableReplicas":1}
         ```
+    1. Delete `Foo`.
+        ```
+        kubectl delete -f config/sample/foo.yaml
+        ```
 
-
-### 5.7. Create events for Foo resource
+### [5.7. Create events for Foo resource](https://github.com/nakamasato/sample-controller/commit/bbaddf1ee528dc9566544ce37245ad8b2001433e)
 
 1. Add necessary packages.
     ```diff
@@ -909,20 +980,22 @@ Steps:
     +
     +       eventBroadcaster := record.NewBroadcaster()
     +       eventBroadcaster.StartStructuredLogging(0)
-    +       eventBroadcaster.StartRecordingToSink(&typedcorev1.EventSinkImpl{Interface:     kubeclientset.CoreV1().Events("")})
-    +       recorder := eventBroadcaster.NewRecorder(scheme.Scheme, corev1.EventSource{Component:     controllerAgentName})
+    +       eventBroadcaster.StartRecordingToSink(&typedcorev1.EventSinkImpl{Interface: kubeclientset.CoreV1().Events("")})
+    +       recorder := eventBroadcaster.NewRecorder(scheme.Scheme, corev1.EventSource{Component: controllerAgentName})
             controller := &Controller{
                     kubeclientset:     kubeclientset,
                     sampleclientset:   sampleclientset,
     @@ -58,6 +81,7 @@ func NewController(
                     foosLister:        fooInformer.Lister(),
                     foosSynced:        fooInformer.Informer().HasSynced,
-                    workqueue:         workqueue.NewNamedRateLimitingQueue(workqueue.    DefaultControllerRateLimiter(), "foo"),
+                    workqueue:         workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "foo"),
     +               recorder:          recorder,
             }
     ```
 1. Define constants.
     ```diff
+    + const controllerAgentName = "sample-controller"
+
      const (
     +       // SuccessSynced is used as part of the Event 'reason' when a Foo is synced
     +       SuccessSynced = "Synced"
@@ -936,11 +1009,9 @@ Steps:
     +       // MessageResourceSynced is the message used for an Event fired when a Foo
     +       // is synced successfully
     +       MessageResourceSynced = "Foo synced successfully"
-    +
-    +       controllerAgentName = "sample-controller"
      )
     ```
-1. Record events.
+1. Record events in `syncHandler`.
     ```diff
     @@ -199,6 +223,7 @@ func (c *Controller) syncHandler(key string) error {
             // a warning to the event recorder and return error msg.
@@ -959,10 +1030,21 @@ Steps:
      }
     ```
 1. Test event.
+    1. Run the controller.
+        ```
+        go run main.go
+        ```
     1. Apply `Foo`.
+        ```
+         kubectl apply -f config/sample/foo.yaml
+        ```
     1. Check `event`.
         ```
         kubectl get event --field-selector involvedObject.kind=Foo
         LAST SEEN   TYPE     REASON   OBJECT           MESSAGE
         22s         Normal   Synced   foo/foo-sample   Foo synced successfully
+        ```
+    1. Delete `Foo`.
+        ```
+        kubectl delete -f config/sample/foo.yaml
         ```

@@ -6,7 +6,7 @@ weight: 5
 summary: Create CustomResourceDefinition yaml file manually.
 ---
 
-## 3. Create CRD yaml file
+## [3. Create CRD yaml file](https://github.com/nakamasato/sample-controller/commit/288fee4a3ceee411d8e595f6b7cd5eb8c3a53786)
 
 `config/crd/example.com_foos.yaml`:
 ```yaml
@@ -28,6 +28,7 @@ spec:
       storage: true
       schema:
         openAPIV3Schema:
+          type: object
           properties:
             apiVersion:
               type: string

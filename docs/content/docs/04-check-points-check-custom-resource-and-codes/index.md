@@ -6,7 +6,7 @@ weight: 6
 summary: Check the behavior at this point.
 ---
 
-## 4. Checkpoint: Check custom resource and codes
+## [4. Checkpoint: Check custom resource and codes](https://github.com/nakamasato/sample-controller/commit/5f5c8c7d4d51096193469235125b28b219f4e124)
 
 What to check:
 - [x] Create CRD
@@ -100,10 +100,10 @@ Steps:
         apiVersion: example.com/v1alpha1
         kind: Foo
         metadata:
-        name: foo-sample
+          name: foo-sample
         spec:
-        deploymentName: foo-sample
-        replicas: 1
+          deploymentName: foo-sample
+          replicas: 1
         ```
 
         ```

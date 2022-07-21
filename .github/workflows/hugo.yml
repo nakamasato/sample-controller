@@ -3,25 +3,25 @@ name: github-pages
 on:
   push:
     branches:
-      - main  # Set a branch to deploy
-  pull_request:
-    types: [ labeled ] # You can deploy by adding deploy-gh-pages label in pr
+      - main # Set a branch to deploy
+  pull_request: # You can deploy for pull_request with deploy-gh-pages label
 
 jobs:
   deploy:
     runs-on: ubuntu-20.04
     concurrency:
       group: ${{ github.workflow }}-${{ github.ref }}
+    if: ${{ github.ref == 'refs/heads/main' || contains( github.event.pull_request.labels.*.name, 'deploy-gh-pages') }}
     steps:
       - uses: actions/checkout@v3
         with:
-          submodules: true  # Fetch Hugo themes (true OR recursive)
-          fetch-depth: 0    # Fetch all history for .GitInfo and .Lastmod
+          submodules: true # Fetch Hugo themes (true OR recursive)
+          fetch-depth: 0 # Fetch all history for .GitInfo and .Lastmod
 
       - name: Setup Hugo
         uses: peaceiris/actions-hugo@v2
         with:
-          hugo-version: '0.88.0'
+          hugo-version: "0.88.0"
           extended: true
 
       - name: Build
@@ -29,7 +29,6 @@ jobs:
 
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
-        if: ${{ github.ref == 'refs/heads/main' || github.event.label.name == 'deploy-gh-pages' }}
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./public

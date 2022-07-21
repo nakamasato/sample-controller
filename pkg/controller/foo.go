@@ -6,6 +6,12 @@ import (
 	"log"
 	"time"
 
+	samplev1alpha1 "github.com/nakamasato/sample-controller/pkg/apis/example.com/v1alpha1"
+	clientset "github.com/nakamasato/sample-controller/pkg/client/clientset/versioned"
+	"github.com/nakamasato/sample-controller/pkg/client/clientset/versioned/scheme"
+	informers "github.com/nakamasato/sample-controller/pkg/client/informers/externalversions/example.com/v1alpha1"
+	listers "github.com/nakamasato/sample-controller/pkg/client/listers/example.com/v1alpha1"
+
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -18,13 +24,9 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
-
-	samplev1alpha1 "github.com/nakamasato/sample-controller/pkg/apis/example.com/v1alpha1"
-	clientset "github.com/nakamasato/sample-controller/pkg/client/clientset/versioned"
-	"github.com/nakamasato/sample-controller/pkg/client/clientset/versioned/scheme"
-	informers "github.com/nakamasato/sample-controller/pkg/client/informers/externalversions/example.com/v1alpha1"
-	listers "github.com/nakamasato/sample-controller/pkg/client/listers/example.com/v1alpha1"
 )
+
+const controllerAgentName = "sample-controller"
 
 const (
 	// SuccessSynced is used as part of the Event 'reason' when a Foo is synced
@@ -36,11 +38,10 @@ const (
 	// MessageResourceExists is the message used for Events when a resource
 	// fails to sync due to a Deployment already existing
 	MessageResourceExists = "Resource %q already exists and is not managed by Foo"
+
 	// MessageResourceSynced is the message used for an Event fired when a Foo
 	// is synced successfully
 	MessageResourceSynced = "Foo synced successfully"
-
-	controllerAgentName = "sample-controller"
 )
 
 type Controller struct {
@@ -73,7 +74,6 @@ func NewController(
 	eventBroadcaster.StartStructuredLogging(0)
 	eventBroadcaster.StartRecordingToSink(&typedcorev1.EventSinkImpl{Interface: kubeclientset.CoreV1().Events("")})
 	recorder := eventBroadcaster.NewRecorder(scheme.Scheme, corev1.EventSource{Component: controllerAgentName})
-
 	controller := &Controller{
 		kubeclientset:     kubeclientset,
 		sampleclientset:   sampleclientset,
@@ -114,17 +114,18 @@ func NewController(
 		},
 		DeleteFunc: controller.handleObject,
 	})
+
 	return controller
 }
 
-func (c *Controller) Run(ch chan struct{}) error {
-	if ok := cache.WaitForCacheSync(ch, c.foosSynced); !ok {
+func (c *Controller) Run(stopCh <-chan struct{}) error {
+	if ok := cache.WaitForCacheSync(stopCh, c.foosSynced); !ok {
 		log.Printf("cache is not synced")
 	}
 
-	go wait.Until(c.worker, time.Second, ch)
+	go wait.Until(c.worker, time.Second, stopCh)
 
-	<-ch
+	<-stopCh
 	return nil
 }
 
@@ -150,7 +151,7 @@ func (c *Controller) processNextItem() bool {
 			// Forget here else we'd go into a loop of attempting to
 			// process a work item that is invalid.
 			c.workqueue.Forget(obj)
-			log.Printf("%v is removed from workqueue\n", obj)
+			log.Printf("expected string in workqueue but got %#v", obj)
 			return nil
 		}
 
@@ -163,7 +164,7 @@ func (c *Controller) processNextItem() bool {
 		// Forget the queue item as it's successfully processed and
 		// the item will not be requeued.
 		c.workqueue.Forget(obj)
-		log.Printf("%s is removed from workqueue\n", obj)
+		log.Printf("Successfully synced '%s'", key)
 		return nil
 	}(obj)
 
@@ -184,7 +185,6 @@ func (c *Controller) enqueueFoo(obj interface{}) {
 		log.Printf("failed to get key from the cache %s\n", err.Error())
 		return
 	}
-	log.Printf("%s is added to workqueue\n", key)
 	c.workqueue.Add(key)
 }
 
@@ -218,8 +218,6 @@ func (c *Controller) syncHandler(key string) error {
 		return err
 	}
 
-	log.Printf("deployment %s found", deployment.Name)
-
 	// If the Deployment is not controlled by this Foo resource, we should log
 	// a warning to the event recorder and return error msg.
 	if !metav1.IsControlledBy(deployment, foo) {
@@ -244,18 +242,48 @@ func (c *Controller) syncHandler(key string) error {
 		return err
 	}
 
-	log.Printf("deployment %s is valid", deployment.Name)
-
 	// Finally, we update the status block of the Foo resource to reflect the
 	// current state of the world
 	err = c.updateFooStatus(foo, deployment)
 	if err != nil {
-		log.Printf("failed to update Foo status for %s", foo.Name)
 		return err
 	}
 
 	c.recorder.Event(foo, corev1.EventTypeNormal, SuccessSynced, MessageResourceSynced)
 	return nil
+}
+
+func newDeployment(foo *samplev1alpha1.Foo) *appsv1.Deployment {
+	labels := map[string]string{
+		"app":        "nginx",
+		"controller": foo.Name,
+	}
+	return &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:            foo.Spec.DeploymentName,
+			Namespace:       foo.Namespace,
+			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(foo, samplev1alpha1.SchemeGroupVersion.WithKind("Foo"))},
+		},
+		Spec: appsv1.DeploymentSpec{
+			Replicas: foo.Spec.Replicas,
+			Selector: &metav1.LabelSelector{
+				MatchLabels: labels,
+			},
+			Template: corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: labels,
+				},
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{
+							Name:  "nginx",
+							Image: "nginx:latest",
+						},
+					},
+				},
+			},
+		},
+	}
 }
 
 func (c *Controller) updateFooStatus(foo *samplev1alpha1.Foo, deployment *appsv1.Deployment) error {
@@ -307,38 +335,5 @@ func (c *Controller) handleObject(obj interface{}) {
 
 		c.enqueueFoo(foo)
 		return
-	}
-}
-
-func newDeployment(foo *samplev1alpha1.Foo) *appsv1.Deployment {
-	labels := map[string]string{
-		"app":        "nginx",
-		"controller": foo.Name,
-	}
-	return &appsv1.Deployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:            foo.Spec.DeploymentName,
-			Namespace:       foo.Namespace,
-			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(foo, samplev1alpha1.SchemeGroupVersion.WithKind("Foo"))},
-		},
-		Spec: appsv1.DeploymentSpec{
-			Replicas: foo.Spec.Replicas,
-			Selector: &metav1.LabelSelector{
-				MatchLabels: labels,
-			},
-			Template: corev1.PodTemplateSpec{
-				ObjectMeta: metav1.ObjectMeta{
-					Labels: labels,
-				},
-				Spec: corev1.PodSpec{
-					Containers: []corev1.Container{
-						{
-							Name:  "nginx",
-							Image: "nginx:latest",
-						},
-					},
-				},
-			},
-		},
 	}
 }
