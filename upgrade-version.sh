@@ -21,7 +21,7 @@ for f in go.mod go.sum $MAIN_GO_FILE config/**/*.yaml;do
 done
 rm -rf pkg
 git add pkg
-git commit -am "Remove files"
+git commit -m "Remove files"
 
 # 0. Init Go module
 go mod init $MODULE_NAME
