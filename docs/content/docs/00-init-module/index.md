@@ -5,7 +5,7 @@ weight: 2
 summary: Initialize a Go module.
 ---
 
-## [0. Init Go module](https://github.com/nakamasato/sample-controller/commit/4a141b3520a6c4500d37af7de93eff60a9ffcd2b)
+## [0. Init Go module](https://github.com/nakamasato/sample-controller/commit/bc784bc88ce513a62e3307c91c472a85f3408c9f)
 
 ```
 go mod init github.com/<yourname>/sample-controller
