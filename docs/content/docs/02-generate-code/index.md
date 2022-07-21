@@ -6,7 +6,7 @@ weight: 4
 summary: Generate Go codes with code-generator.
 ---
 
-## [2. Generate codes](https://github.com/nakamasato/sample-controller/commit/89129b52cbed2b9799a830789171f68c61e7446c)
+## [2. Generate codes](https://github.com/nakamasato/sample-controller/commit/3d2f96f159a36ee0680d85c36ece21a5cbad27f5)
 
 1. Set `codeGeneratorDir` env var for `code-generator`.
 
