@@ -828,7 +828,10 @@ Steps:
         NAME         READY   UP-TO-DATE   AVAILABLE   AGE
         foo-sample   1/1     1            1           9m10s
         ```
-
+1. Delete `Foo`.
+    ```
+    kubectl delete -f config/sample/foo.yaml
+    ```
 ### 5.6. Capture the update of Deployment
 
 In the previous section, `status.availableReplicas` is not updated immediately. This is because we just monitor our custom resource `Foo`. In this section, we'll enable to capture changes of Deployment controlled by our custom resource `Foo`.
@@ -923,7 +926,10 @@ In the previous section, `status.availableReplicas` is not updated immediately. 
         kubectl get foo foo-sample -o jsonpath='{.status}'
         {"availableReplicas":1}
         ```
-
+    1. Delete `Foo`.
+        ```
+        kubectl delete -f config/sample/foo.yaml
+        ```
 
 ### 5.7. Create events for Foo resource
 
@@ -972,20 +978,22 @@ In the previous section, `status.availableReplicas` is not updated immediately. 
     +
     +       eventBroadcaster := record.NewBroadcaster()
     +       eventBroadcaster.StartStructuredLogging(0)
-    +       eventBroadcaster.StartRecordingToSink(&typedcorev1.EventSinkImpl{Interface:     kubeclientset.CoreV1().Events("")})
-    +       recorder := eventBroadcaster.NewRecorder(scheme.Scheme, corev1.EventSource{Component:     controllerAgentName})
+    +       eventBroadcaster.StartRecordingToSink(&typedcorev1.EventSinkImpl{Interface: kubeclientset.CoreV1().Events("")})
+    +       recorder := eventBroadcaster.NewRecorder(scheme.Scheme, corev1.EventSource{Component: controllerAgentName})
             controller := &Controller{
                     kubeclientset:     kubeclientset,
                     sampleclientset:   sampleclientset,
     @@ -58,6 +81,7 @@ func NewController(
                     foosLister:        fooInformer.Lister(),
                     foosSynced:        fooInformer.Informer().HasSynced,
-                    workqueue:         workqueue.NewNamedRateLimitingQueue(workqueue.    DefaultControllerRateLimiter(), "foo"),
+                    workqueue:         workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "foo"),
     +               recorder:          recorder,
             }
     ```
 1. Define constants.
     ```diff
+    + const controllerAgentName = "sample-controller"
+
      const (
     +       // SuccessSynced is used as part of the Event 'reason' when a Foo is synced
     +       SuccessSynced = "Synced"
@@ -999,11 +1007,9 @@ In the previous section, `status.availableReplicas` is not updated immediately. 
     +       // MessageResourceSynced is the message used for an Event fired when a Foo
     +       // is synced successfully
     +       MessageResourceSynced = "Foo synced successfully"
-    +
-    +       controllerAgentName = "sample-controller"
      )
     ```
-1. Record events.
+1. Record events in `syncHandler`.
     ```diff
     @@ -199,6 +223,7 @@ func (c *Controller) syncHandler(key string) error {
             // a warning to the event recorder and return error msg.
@@ -1022,10 +1028,21 @@ In the previous section, `status.availableReplicas` is not updated immediately. 
      }
     ```
 1. Test event.
+    1. Run the controller.
+        ```
+        go run main.go
+        ```
     1. Apply `Foo`.
+        ```
+         kubectl apply -f config/sample/foo.yaml
+        ```
     1. Check `event`.
         ```
         kubectl get event --field-selector involvedObject.kind=Foo
         LAST SEEN   TYPE     REASON   OBJECT           MESSAGE
         22s         Normal   Synced   foo/foo-sample   Foo synced successfully
+        ```
+    1. Delete `Foo`.
+        ```
+        kubectl delete -f config/sample/foo.yaml
         ```
