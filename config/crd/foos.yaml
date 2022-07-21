@@ -38,3 +38,9 @@ spec:
               properties:
                 availableReplicas:
                   type: integer
+      subresources:
+        status: {}
+        scale:
+          specReplicasPath: .spec.replicas
+          statusReplicasPath: .status.replicas
+          labelSelectorPath: .status.labelSelector
