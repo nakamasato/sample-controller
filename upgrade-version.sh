@@ -189,7 +189,7 @@ spec:
                   type: integer
 EOF
 TITLE_AND_MESSAGE="3. Create CRD yaml file"
-git add config && git commit -m TITLE_AND_MESSAGE
+git add config && git commit -m "$TITLE_AND_MESSAGE"
 commit_hash=$(git rev-parse HEAD)
 gsed -i "s#\[$TITLE_AND_MESSAGE\].*#[$TITLE_AND_MESSAGE]($REPO_URL/commit/$commit_hash)#" docs/content/docs/03-create-crd-yaml/index.md
 gsed -i "s/date:.*/date: $(date +"%Y-%m-%d")/" docs/content/docs/03-create-crd-yaml/index.md
