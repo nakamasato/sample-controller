@@ -84,7 +84,7 @@
 <div class="col-12 col-md-9">
 <h1 class=title>5. Implement reconciliation</h1>
 <div class=content>
-<h3 id=51-create-controller>5.1. Create Controller</h3>
+<h2 id=51-create-controllerhttpsgithubcomnakamasatosample-controllercommite79bf6d12b1c3c8b12c94e87bf3f684c528fc28c><a href=https://github.com/nakamasato/sample-controller/commit/e79bf6d12b1c3c8b12c94e87bf3f684c528fc28c>5.1. Create Controller</a></h2>
 <ol>
 <li>
 <p>Create controller.</p>
@@ -287,7 +287,7 @@
 2022/07/18 06:36:40 handleDelete was called
 </code></pre></div></li>
 </ol>
-<h3 id=52-fetch-foo-object>5.2. Fetch foo object</h3>
+<h2 id=52-fetch-foo-objecthttpsgithubcomnakamasatosample-controllercommit0d9c689f4ecb707e6c160632ad7a397d89f0c5ab><a href=https://github.com/nakamasato/sample-controller/commit/0d9c689f4ecb707e6c160632ad7a397d89f0c5ab>5.2. Fetch foo object</a></h2>
 <p>Implement the following logic:</p>
 <ol>
 <li>Get a workqueue item.</li>
@@ -391,7 +391,7 @@
 2022/07/18 07:46:49 failed to get foo resource from lister foo.example.com &#34;foo-sample&#34; not found
 </code></pre></div></li>
 </ol>
-<h3 id=53-enable-to-createdelete-deployment-for-foo-resource>5.3. Enable to Create/Delete Deployment for Foo resource</h3>
+<h2 id=53-enable-to-createdelete-deployment-for-foo-resourcehttpsgithubcomnakamasatosample-controllercommit124c68d1466c177c122d19138ed45e182a23e2fc><a href=https://github.com/nakamasato/sample-controller/commit/124c68d1466c177c122d19138ed45e182a23e2fc>5.3. Enable to Create/Delete Deployment for Foo resource</a></h2>
 <p>At the end of this step, we&rsquo;ll be able to create <code>Deployment</code> for <code>Foo</code> resource.</p>
 <ol>
 <li>
@@ -630,7 +630,7 @@ No resources found in default namespace.
 </ol>
 </li>
 </ol>
-<h3 id=54-check-and-update-deployment-if-necessary>5.4. Check and update Deployment if necessary</h3>
+<h2 id=54-check-and-update-deployment-if-necessaryhttpsgithubcomnakamasatosample-controllercommit0a34a53e23062a75fd45fc7d0907431c87c447e4><a href=https://github.com/nakamasato/sample-controller/commit/0a34a53e23062a75fd45fc7d0907431c87c447e4>5.4. Check and update Deployment if necessary</a></h2>
 <p>What needs to be done:</p>
 <ul>
 <li>In <code>syncHandler</code>
@@ -757,7 +757,7 @@ kubectl delete deploy foo-sample
 </ol>
 </li>
 </ol>
-<h3 id=55-update-foo-status>5.5. Update Foo status</h3>
+<h2 id=55-update-foo-statushttpsgithubcomnakamasatosample-controllercommitaaba69bd2d32f830aa71c9543d918df4fd379f0a><a href=https://github.com/nakamasato/sample-controller/commit/aaba69bd2d32f830aa71c9543d918df4fd379f0a>5.5. Update Foo status</a></h2>
 <ol>
 <li>
 <p>Create <code>updateFooStatus</code> function.</p>
@@ -853,7 +853,7 @@ foo-sample   1/1     1            1           9m10s
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>kubectl delete -f config/sample/foo.yaml
 </code></pre></div></li>
 </ol>
-<h3 id=56-capture-the-update-of-deployment>5.6. Capture the update of Deployment</h3>
+<h2 id=56-capture-the-update-of-deploymenthttpsgithubcomnakamasatosample-controllercommit06a3aba710337ebdb207f3e385e9018d169ca6ef><a href=https://github.com/nakamasato/sample-controller/commit/06a3aba710337ebdb207f3e385e9018d169ca6ef>5.6. Capture the update of Deployment</a></h2>
 <p>In the previous section, <code>status.availableReplicas</code> is not updated immediately. This is because we just monitor our custom resource <code>Foo</code>. In this section, we&rsquo;ll enable to capture changes of Deployment controlled by our custom resource <code>Foo</code>.</p>
 <ol>
 <li>
@@ -945,7 +945,7 @@ foo-sample   1/1     1            1           9m10s
 </ol>
 </li>
 </ol>
-<h3 id=57-create-events-for-foo-resource>5.7. Create events for Foo resource</h3>
+<h3 id=57-create-events-for-foo-resourcehttpsgithubcomnakamasatosample-controllercommit5ae8180400ba1972215a240a79e925d02bfa67af><a href=https://github.com/nakamasato/sample-controller/commit/5ae8180400ba1972215a240a79e925d02bfa67af>5.7. Create events for Foo resource</a></h3>
 <ol>
 <li>Add necessary packages.
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-diff data-lang=diff><span class=gu>@@ -13,20 +13,34 @@ import (
