@@ -933,7 +933,7 @@ In the previous section, `status.availableReplicas` is not updated immediately. 
         kubectl delete -f config/sample/foo.yaml
         ```
 
-### [5.7. Create events for Foo resource](https://github.com/nakamasato/sample-controller/commit/bbaddf1ee528dc9566544ce37245ad8b2001433e)
+## [5.7. Create events for Foo resource](https://github.com/nakamasato/sample-controller/commit/bbaddf1ee528dc9566544ce37245ad8b2001433e)
 
 1. Add necessary packages.
     ```diff
