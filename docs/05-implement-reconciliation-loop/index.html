@@ -846,6 +846,10 @@ foo-sample   1/1     1            1           9m10s
 </code></pre></div></li>
 </ol>
 </li>
+<li>
+<p>Delete <code>Foo</code>.</p>
+<div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>kubectl delete -f config/sample/foo.yaml
+</code></pre></div></li>
 </ol>
 <h3 id=56-capture-the-update-of-deployment>5.6. Capture the update of Deployment</h3>
 <p>In the previous section, <code>status.availableReplicas</code> is not updated immediately. This is because we just monitor our custom resource <code>Foo</code>. In this section, we&rsquo;ll enable to capture changes of Deployment controlled by our custom resource <code>Foo</code>.</p>
@@ -890,7 +894,13 @@ foo-sample   1/1     1            1           9m10s
     <span class=p>}</span>
 <span class=p>}</span>
 </code></pre></div><p>When <code>Deployment</code> managed by <code>Foo</code> is added/updated/deleted, get the corresponding <code>Foo</code> and put the key (<code>naemspace/name</code>) to the workqueue.</p>
-</li>
+<p>Import necessary package.</p>
+<div class=highlight><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kn>import</span> <span class=p>(</span>
+    <span class=o>...</span>
+    <span class=nx>utilruntime</span> <span class=s>&#34;k8s.io/apimachinery/pkg/util/runtime&#34;</span>
+    <span class=o>...</span>
+<span class=p>)</span>
+</code></pre></div></li>
 <li>
 <p>Add event handlers to <code>deploymentInformer</code> in <code>NewController</code>.</p>
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-go data-lang=go>    <span class=c1>// Set up an event handler for when Deployment resources change. This
@@ -917,12 +927,18 @@ foo-sample   1/1     1            1           9m10s
 <li>
 <p>Test the Foo&rsquo;s status after Deployment is updated.</p>
 <ol>
+<li>Run the controller
+<div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>go run main.go
+</code></pre></div></li>
 <li>Create Foo resource.
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>kubectl apply -f config/sample/foo.yaml
 </code></pre></div></li>
 <li>Check Foo&rsquo;s status (will be immediately updated.)
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>kubectl get foo foo-sample -o jsonpath=&#39;{.status}&#39;
 {&#34;availableReplicas&#34;:1}
+</code></pre></div></li>
+<li>Delete <code>Foo</code>.
+<div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>kubectl delete -f config/sample/foo.yaml
 </code></pre></div></li>
 </ol>
 </li>
@@ -971,20 +987,22 @@ alversions/example.com/v1alpha1&#34;
 <span class=gi>+
 </span><span class=gi>+       eventBroadcaster := record.NewBroadcaster()
 </span><span class=gi>+       eventBroadcaster.StartStructuredLogging(0)
-</span><span class=gi>+       eventBroadcaster.StartRecordingToSink(&amp;typedcorev1.EventSinkImpl{Interface:     kubeclientset.CoreV1().Events(&#34;&#34;)})
-</span><span class=gi>+       recorder := eventBroadcaster.NewRecorder(scheme.Scheme, corev1.EventSource{Component:     controllerAgentName})
+</span><span class=gi>+       eventBroadcaster.StartRecordingToSink(&amp;typedcorev1.EventSinkImpl{Interface: kubeclientset.CoreV1().Events(&#34;&#34;)})
+</span><span class=gi>+       recorder := eventBroadcaster.NewRecorder(scheme.Scheme, corev1.EventSource{Component: controllerAgentName})
 </span><span class=gi></span>        controller := &amp;Controller{
                 kubeclientset:     kubeclientset,
                 sampleclientset:   sampleclientset,
 <span class=gu>@@ -58,6 +81,7 @@ func NewController(
 </span><span class=gu></span>                foosLister:        fooInformer.Lister(),
                 foosSynced:        fooInformer.Informer().HasSynced,
-                workqueue:         workqueue.NewNamedRateLimitingQueue(workqueue.    DefaultControllerRateLimiter(), &#34;foo&#34;),
+                workqueue:         workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), &#34;foo&#34;),
 <span class=gi>+               recorder:          recorder,
 </span><span class=gi></span>        }
 </code></pre></div></li>
 <li>Define constants.
-<div class=highlight><pre tabindex=0 class=chroma><code class=language-diff data-lang=diff> const (
+<div class=highlight><pre tabindex=0 class=chroma><code class=language-diff data-lang=diff><span class=gi>+ const controllerAgentName = &#34;sample-controller&#34;
+</span><span class=gi></span>
+ const (
 <span class=gi>+       // SuccessSynced is used as part of the Event &#39;reason&#39; when a Foo is synced
 </span><span class=gi>+       SuccessSynced = &#34;Synced&#34;
 </span><span class=gi>+       // ErrResourceExists is used as part of the Event &#39;reason&#39; when a Foo fails
@@ -997,11 +1015,9 @@ alversions/example.com/v1alpha1&#34;
 <span class=gi>+       // MessageResourceSynced is the message used for an Event fired when a Foo
 </span><span class=gi>+       // is synced successfully
 </span><span class=gi>+       MessageResourceSynced = &#34;Foo synced successfully&#34;
-</span><span class=gi>+
-</span><span class=gi>+       controllerAgentName = &#34;sample-controller&#34;
 </span><span class=gi></span> )
 </code></pre></div></li>
-<li>Record events.
+<li>Record events in <code>syncHandler</code>.
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-diff data-lang=diff><span class=gu>@@ -199,6 +223,7 @@ func (c *Controller) syncHandler(key string) error {
 </span><span class=gu></span>        // a warning to the event recorder and return error msg.
         if !metav1.IsControlledBy(deployment, foo) {
@@ -1020,11 +1036,19 @@ alversions/example.com/v1alpha1&#34;
 </code></pre></div></li>
 <li>Test event.
 <ol>
-<li>Apply <code>Foo</code>.</li>
+<li>Run the controller.
+<div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>go run main.go
+</code></pre></div></li>
+<li>Apply <code>Foo</code>.
+<div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback> kubectl apply -f config/sample/foo.yaml
+</code></pre></div></li>
 <li>Check <code>event</code>.
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>kubectl get event --field-selector involvedObject.kind=Foo
 LAST SEEN   TYPE     REASON   OBJECT           MESSAGE
 22s         Normal   Synced   foo/foo-sample   Foo synced successfully
+</code></pre></div></li>
+<li>Delete <code>Foo</code>.
+<div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>kubectl delete -f config/sample/foo.yaml
 </code></pre></div></li>
 </ol>
 </li>
