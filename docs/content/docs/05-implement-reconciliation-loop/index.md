@@ -283,6 +283,7 @@ Steps:
                 // Forget here else we'd go into a loop of attempting to
                 // process a work item that is invalid.
                 c.workqueue.Forget(obj)
+                log.Printf("expected string in workqueue but got %#v", obj)
                 return nil
             }
 
@@ -303,6 +304,7 @@ Steps:
             // Forget the queue item as it's successfully processed and
             // the item will not be requeued.
             c.workqueue.Forget(obj)
+            log.Printf("Successfully synced '%s'", key)
             return nil
         }(obj)
 
