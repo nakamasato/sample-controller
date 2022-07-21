@@ -1,12 +1,12 @@
 ---
 title: '2. Generate codes'
-date: 2019-02-11T19:30:08+10:00
+date: 2022-07-22
 draft: false
 weight: 4
 summary: Generate Go codes with code-generator.
 ---
 
-## [2. Generate codes](https://github.com/nakamasato/sample-controller/commit/efda3945b9ac91ce71caa33df5407581a1143c76)
+## [2. Generate codes](https://github.com/nakamasato/sample-controller/commit/3d2f96f159a36ee0680d85c36ece21a5cbad27f5)
 
 1. Set `codeGeneratorDir` env var for `code-generator`.
 

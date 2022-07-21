@@ -1,6 +1,6 @@
 ---
 title: 'Sample Controller'
-date: 2018-11-28T15:14:39+10:00
+date: 2021-12-22
 ---
 
 [Sample Controller](https://github.com/kubernetes/sample-controller/) is an example Kubernetes controller in the Kubernetes project, with which you can learn a lot about how Kubernetes controller is implemented and how it works.
