@@ -6,7 +6,7 @@ weight: 6
 summary: Check the behavior at this point.
 ---
 
-## [4. Checkpoint: Check custom resource and codes](https://github.com/nakamasato/sample-controller/commit/a581f16cf2961e454d82a747ab59585c93d33ebe)
+## [4. Checkpoint: Check custom resource and codes](https://github.com/nakamasato/sample-controller/commit/6be933b6b6d67bc08d2e1849f073773ea5ebce5e)
 
 What to check:
 - [x] Create CRD

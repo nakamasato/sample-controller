@@ -6,7 +6,7 @@ weight: 7
 summary: Implement controller.
 ---
 
-## [5.1. Create Controller](https://github.com/nakamasato/sample-controller/commit/2efcfa7938a15e97204116bcb68b38d833d5078c)
+## [5.1. Create Controller](https://github.com/nakamasato/sample-controller/commit/4a8fa97d50f27e35d2342f614b45c1c391a9182b)
 
 1. Create controller.
 
@@ -341,7 +341,7 @@ Steps:
     2022/07/18 07:46:49 failed to get foo resource from lister foo.example.com "foo-sample" not found
     ```
 
-## [5.3. Enable to Create/Delete Deployment for Foo resource](https://github.com/nakamasato/sample-controller/commit/2a65471b75959d58fcc263839b332c5356c2e876)
+## [5.3. Enable to Create/Delete Deployment for Foo resource](https://github.com/nakamasato/sample-controller/commit/3201bf28a100bd9acbb561b0851c49feb83ab783)
 
 At the end of this step, we'll be able to create `Deployment` for `Foo` resource.
 
@@ -603,7 +603,7 @@ At the end of this step, we'll be able to create `Deployment` for `Foo` resource
 
         > Kubernetes checks for and deletes objects that no longer have owner references, like the pods left behind when you delete a ReplicaSet. When you delete an object, you can control whether Kubernetes deletes the object's dependents automatically, in a process called cascading deletion.
 
-## [5.4. Check and update Deployment if necessary](https://github.com/nakamasato/sample-controller/commit/b398b05fae16958e58f36bb477a8072adf72f340)
+## [5.4. Check and update Deployment if necessary](https://github.com/nakamasato/sample-controller/commit/839912b658d47229a035a5de6eca90bb00f536ea)
 
 What needs to be done:
 - In `syncHandler`
