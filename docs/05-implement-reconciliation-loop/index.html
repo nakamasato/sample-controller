@@ -342,6 +342,7 @@
 </span><span class=c1></span>            <span class=c1>// Forget here else we&#39;d go into a loop of attempting to
 </span><span class=c1></span>            <span class=c1>// process a work item that is invalid.
 </span><span class=c1></span>            <span class=nx>c</span><span class=p>.</span><span class=nx>workqueue</span><span class=p>.</span><span class=nf>Forget</span><span class=p>(</span><span class=nx>obj</span><span class=p>)</span>
+            <span class=nx>log</span><span class=p>.</span><span class=nf>Printf</span><span class=p>(</span><span class=s>&#34;expected string in workqueue but got %#v&#34;</span><span class=p>,</span> <span class=nx>obj</span><span class=p>)</span>
             <span class=k>return</span> <span class=kc>nil</span>
         <span class=p>}</span>
 
@@ -362,6 +363,7 @@
         <span class=c1>// Forget the queue item as it&#39;s successfully processed and
 </span><span class=c1></span>        <span class=c1>// the item will not be requeued.
 </span><span class=c1></span>        <span class=nx>c</span><span class=p>.</span><span class=nx>workqueue</span><span class=p>.</span><span class=nf>Forget</span><span class=p>(</span><span class=nx>obj</span><span class=p>)</span>
+        <span class=nx>log</span><span class=p>.</span><span class=nf>Printf</span><span class=p>(</span><span class=s>&#34;Successfully synced &#39;%s&#39;&#34;</span><span class=p>,</span> <span class=nx>key</span><span class=p>)</span>
         <span class=k>return</span> <span class=kc>nil</span>
     <span class=p>}(</span><span class=nx>obj</span><span class=p>)</span>
 
