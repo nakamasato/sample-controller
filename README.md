@@ -2,15 +2,15 @@
 
 ## Spec
 
-Sample Controller manages a custom resource `Foo` and to keep a `Deployment` always running for a `Foo` instance.
+Sample Controller manages a custom resource `Foo` to keep a `Deployment` always running for a `Foo` instance.
 
-- Group: example.com
+- Group: `example.com`
 - CR: `Foo`
 - Version: `v1alpha1`
 
 ## Docs
 
-https://nakamasato.github.io/sample-controller (by [Hugo](https://gohugo.io/))
+https://nakamasato.github.io/sample-controller
 
 ## Quickstart
 
@@ -26,7 +26,7 @@ https://nakamasato.github.io/sample-controller (by [Hugo](https://gohugo.io/))
     ```
 1. Clean up.
     1. Delete CR. `kubectl delete -f config/sample/foo.yaml`
-    1. Stop controller
+    1. Stop controller.
     1. Delete CRD. `kubectl delete -f config/crd/foos.yaml`
 
 ## Tools
