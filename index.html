@@ -70,16 +70,10 @@
 <div class=content>
 <h2 id=about-sample-controller>About Sample Controller</h2>
 <p><a href=https://github.com/kubernetes/sample-controller/>Sample Controller</a> is an example Kubernetes controller in the Kubernetes project, with which you can learn about how Kubernetes controller is implemented and how it works.</p>
-<h2 id=objective-of-the-repo>Objective of the repo</h2>
+<p><img src=sample-controller.drawio.svg alt></p>
+<h2 id=about-this-doc>About this Doc</h2>
 <p>Although the official repository is very helpful to understand a Kubernetes controller, it is still quite hard to read the source codes and implement it by yourself, especially for a newbie. So, I broke down the complete codes into steps in this repository (<a href=https://github.com/nakamasato/sample-controller>nakamasato/sample-controller</a>) so anybody can create the example controller step by step from scratch.</p>
 <p>I hope this documentation will be helpful to open the door to the world of Kubernetes operator.</p>
-<h2 id=overview-of-sample-controller>Overview of Sample Controller</h2>
-<p><img src=sample-controller.drawio.svg alt></p>
-<ol>
-<li>Sample controller has only one custom resource <code>Foo</code>.</li>
-<li>When a <code>Foo</code> object is created/updated, Sample controller creates/updates <code>Deployment</code> (with an <code>nginx</code> container) to keep it consistent with the <code>Foo</code> object, which can specify the <code>name</code> and <code>replicas</code> of <code>Deployment</code>.</li>
-<li>Sample controller also updates the status of <code>Foo</code> object based on the number of available Pods created by the controlled <code>Deployment</code>.</li>
-</ol>
 </div>
 <a class="button button-primary mb-2" href=/sample-controller/docs>
 Read The Docs
