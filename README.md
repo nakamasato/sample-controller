@@ -1,5 +1,6 @@
 # Sample Controller
 
+![](docs/content/sample-controller.drawio.svg)
 ## Spec
 
 Sample Controller manages a custom resource `Foo` to keep a `Deployment` always running for a `Foo` instance.
