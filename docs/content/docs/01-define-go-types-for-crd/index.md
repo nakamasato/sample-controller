@@ -110,5 +110,10 @@ summary: Define Go types for Custom Resource Definition `Foo`.
         return nil
     }
     ```
+1. Run `go mod tidy`.
+
+    > go mod tidy ensures that the go.mod file matches the source code in the module. It adds any missing module requirements necessary to build the current module’s packages and dependencies, and it removes requirements on modules that don’t provide any relevant packages. It also adds any missing entries to go.sum and removes unnecessary entries.
+
+    [go mod tidy](https://go.dev/ref/mod#go-mod-tidy)
 
 ※ At this point, `pkg/apis/example.com/v1alpha1/register.go` would have an error `cannot use &(FooList literal) (value of type *FooList) as "k8s.io/apimachinery/pkg/runtime".Object value in argument to scheme.AddKnownTypes: missing method DeepCopyObject` as `DeepCopyObject` will be generated in the next step.

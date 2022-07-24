@@ -66,11 +66,12 @@ summary: Generate Go codes with code-generator.
 
     </deitals>
 
-    -> `pkg/apis/example.com/v1alpha1/zz_generated.deepcopy.go`
-
-    ```
-    go mod tidy
-    ```
+    The following files are generated:
+    - `pkg/apis/example.com/v1alpha1/zz_generated.deepcopy.go`
+    - `pkg/generated/`
+        - `clientset`
+        - `informers`
+        - `listers`
 
     <details><summary>files</summary>
 

@@ -25,14 +25,13 @@ Steps:
     import (
         "context"
         "flag"
-        "log"
         "path/filepath"
 
         "k8s.io/client-go/tools/clientcmd"
         "k8s.io/client-go/util/homedir"
         "k8s.io/klog/v2"
 
-        client "github.com/nakamasato/sample-controller/pkg/generated/clientset/versioned"
+        clientset "github.com/nakamasato/sample-controller/pkg/generated/clientset/versioned"
         metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
     )
 
@@ -52,17 +51,17 @@ Steps:
             klog.Fatalf("Error building kubeconfig: %s", err.Error())
         }
 
-        clientset, err := client.NewForConfig(config)
+        exampleClientset, err := clientset.NewForConfig(config)
         if err != nil {
             klog.Fatalf("Error building kubernetes clientset: %s", err.Error())
         }
-        klog.Infof(clientset)
+        klog.Info(exampleClientset)
 
-        foos, err := clientset.ExampleV1alpha1().Foos("").List(context.Background(), metav1.ListOptions{})
+        foos, err := exampleClientset.ExampleV1alpha1().Foos("").List(context.Background(), metav1.ListOptions{})
         if err != nil {
             klog.Fatalf("listing foos %s %s", err.Error())
         }
-        klog.Infof("llength of foos is %d", err.Error())
+        klog.Infof("length of foos is %d", len(foos.Items))
     }
     ```
 

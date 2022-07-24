@@ -8,195 +8,181 @@ summary: Implement controller.
 
 ## [5.1. Create Controller](https://github.com/nakamasato/sample-controller/commit/bf02111b25e06d58ad8177a380336a19c3780f0c)
 
-1. Create controller.
+### 5.1.1. Create controller.
 
-    What's inside the controller:
-    1. Define `Controller` struct with `sampleclientset`, `foosLister`, `foosSynced`, and `workqueue`.
-    1. Define `NewController` function
-        1. Create `Controller` with the arguments `sampleclientset` and `fooInformer`, which will be passed in `main.go`.
-        1. Add event handlers for `addFunc` and `DeleteFunc` to the informer.
-        1. Return the controller.
-    1. Define `Run`, which will be called in `main.go`.
-        1. Wait until the cache is synced.
-        1. Run `c.worker` repeatedly every second until the stop channel is closed.
-    1. Define `worker`: just call `processNextItem`.
-    1. Define `processNextItem`: always return true for now.
+<details><summary>controller.go</summary>
 
-    <details><summary>controller.go</summary>
+```go
+package main
 
-    ```go
-    package main
+import (
+    "time"
 
-    import (
-    	"time"
+    clientset "github.com/nakamasato/sample-controller/pkg/generated/clientset/versioned"
+    informers "github.com/nakamasato/sample-controller/pkg/generated/informers/externalversions/example.com/v1alpha1"
+    listers "github.com/nakamasato/sample-controller/pkg/generated/listers/example.com/v1alpha1"
 
-    	clientset "github.com/nakamasato/sample-controller/pkg/generated/clientset/versioned"
-    	informers "github.com/nakamasato/sample-controller/pkg/generated/informers/externalversions/example.com/v1alpha1"
-    	listers "github.com/nakamasato/sample-controller/pkg/generated/listers/example.com/v1alpha1"
+    "k8s.io/apimachinery/pkg/util/wait"
+    "k8s.io/client-go/tools/cache"
+    "k8s.io/client-go/util/workqueue"
+    "k8s.io/klog/v2"
+)
 
-    	"k8s.io/apimachinery/pkg/util/wait"
-    	"k8s.io/client-go/tools/cache"
-    	"k8s.io/client-go/util/workqueue"
-        "k8s.io/klog/v2"
+type Controller struct {
+    // sampleclientset is a clientset for our own API group
+    sampleclientset clientset.Interface
+
+    foosLister listers.FooLister    // lister for foo
+    foosSynced cache.InformerSynced // cache is synced for foo
+
+    // queue
+    workqueue workqueue.RateLimitingInterface
+}
+
+func NewController(sampleclientset clientset.Interface, fooInformer informers.FooInformer) *Controller {
+    controller := &Controller{
+        sampleclientset: sampleclientset,
+        foosSynced:      fooInformer.Informer().HasSynced,
+        foosLister:      fooInformer.Lister(),
+        workqueue:       workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "foo"),
+    }
+
+    fooInformer.Informer().AddEventHandler(
+        cache.ResourceEventHandlerFuncs{
+            AddFunc:    controller.handleAdd,
+            DeleteFunc: controller.handleDelete,
+        },
     )
+    return controller
+}
 
-    type Controller struct {
-    	// sampleclientset is a clientset for our own API group
-    	sampleclientset clientset.Interface
-
-    	foosLister listers.FooLister    // lister for foo
-    	foosSynced cache.InformerSynced // cache is synced for foo
-
-    	// queue
-    	workqueue workqueue.RateLimitingInterface
+func (c *Controller) Run(stopCh chan struct{}) error {
+    defer c.workqueue.ShutDown()
+    if ok := cache.WaitForCacheSync(stopCh, c.foosSynced); !ok {
+        klog.Info("cache is not synced")
     }
 
-    func NewController(sampleclientset clientset.Interface, fooInformer informers.FooInformer) *Controller {
-    	controller := &Controller{
-    		sampleclientset: sampleclientset,
-    		foosSynced:      fooInformer.Informer().HasSynced,
-    		foosLister:      fooInformer.Lister(),
-    		workqueue:       workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "foo"),
-    	}
+    go wait.Until(c.worker, time.Second, stopCh)
 
-    	fooInformer.Informer().AddEventHandler(
-    		cache.ResourceEventHandlerFuncs{
-    			AddFunc:    controller.handleAdd,
-    			DeleteFunc: controller.handleDelete,
-    		},
-    	)
-    	return controller
-    }
+    <-stopCh
+    return nil
+}
 
-    func (c *Controller) Run(ch chan struct{}) error {
-    	if ok := cache.WaitForCacheSync(ch, c.foosSynced); !ok {
-    		klog.Info("cache is not synced")
-    	}
+func (c *Controller) worker() {
+    c.processNextItem()
+}
 
-    	go wait.Until(c.worker, time.Second, ch)
+func (c *Controller) processNextItem() bool {
+    return true
+}
 
-    	<-ch
-    	return nil
-    }
+func (c *Controller) handleAdd(obj interface{}) {
+    klog.Info("handleAdd was called")
+    c.workqueue.Add(obj)
+}
 
-    func (c *Controller) worker() {
-    	c.processNextItem()
-    }
+func (c *Controller) handleDelete(obj interface{}) {
+    klog.Info("handleDelete was called")
+    c.workqueue.Add(obj)
+}
+```
 
-    func (c *Controller) processNextItem() bool {
-    	return true
-    }
+</details>
 
-    func (c *Controller) handleAdd(obj interface{}) {
-    	klog.Info("handleAdd was called")
-    	c.workqueue.Add(obj)
-    }
+What's inside the controller:
+1. Define `Controller` struct with `sampleclientset`, `foosLister`, `foosSynced`, and `workqueue`.
+1. Define `NewController` function
+    1. Create `Controller` with the arguments `sampleclientset` and `fooInformer`, which will be passed in `main.go`.
+    1. Add event handlers for `addFunc` and `DeleteFunc` to the informer.
+    1. Return the controller.
+1. Define `Run`, which will be called in `main.go`.
+    1. Wait until the cache is synced.
+    1. Run `c.worker` repeatedly every second until the stop channel is closed.
+1. Define `worker`: just call `processNextItem`.
+1. Define `processNextItem`: always return true for now.
 
-    func (c *Controller) handleDelete(obj interface{}) {
-    	klog.Info("handleDelete was called")
-    	c.workqueue.Add(obj)
-    }
-    ```
+### 5.1.2. Update `main.go` to initialize a controller and run it.
 
-    </details>
-
-1. Update `main.go` to initialize a controller and run it.
-
-    ```diff
-     import (
-    -       "context"
-            "flag"
-            "path/filepath"
-    +       "time"
-
-            "k8s.io/client-go/tools/clientcmd"
-            "k8s.io/client-go/util/homedir"
-            "k8s.io/klog/v2"
-
-    -       client "github.com/nakamasato/sample-controller/pkg/generated/clientset/versioned"
-    -       metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-    +       clientset "github.com/nakamasato/sample-controller/pkg/generated/clientset/versioned"
-    +       informers "github.com/nakamasato/sample-controller/pkg/generated/informers/externalversions"
-     )
-
-     func main() {
-    @@ -29,15 +29,16 @@ func main() {
-                    klog.Fatalf("Building config from flags, %s", err.Error())
-            }
-
-    -       clientset, err := client.NewForConfig(config)
-    +       exampleClient, err := clientset.NewForConfig(config)
-            if err != nil {
-                    klog.Fatalf("getting client set %s\n", err.Error())
-            }
-    -       fmt.Println(clientset)
-
-    -       foos, err := clientset.ExampleV1alpha1().Foos("").List(context.Background(), metav1.ListOptions{})
-    -       if err != nil {
-    -               klog.Fatalf("listing foos %s\n", err.Error())
-    +       exampleInformerFactory := informers.NewSharedInformerFactory(exampleClient, time.Second*30)
-    +       ch := make(chan struct{})
-    +       controller := controller.NewController(exampleClient, informerFactory.Example().V1alpha1().Foos())
-    +       exampleInformerFactory.Start(ch)
-    +       if err = controller.Run(ch); err != nil {
-    +               klog.Fatalf("error occurred when running controller %s\n", err.Error())
-            }
-    -       klog.Infof("length of foos is %d\n", len(foos.Items))
-     }
-    ```
-
-    At the line of `exampleInformerFactory := informers.NewSharedInformerFactory(exampleClient, time.Second*30)`, the second argument specifies ***ResyncPeriod***, which defines the interval of ***resync*** (*The resync operation consists of delivering to the handler an update notification for every object in the informer's local cache*). For more detail, please read [NewSharedIndexInformer](https://pkg.go.dev/k8s.io/client-go@v0.23.1/tools/cache#NewSharedIndexInformer)
-
-    <details><summary>main.go</summary>
-
-    ```go
-    package main
-
-    import (
-    	"flag"
-    	"path/filepath"
-    	"time"
-
-    	"k8s.io/client-go/tools/clientcmd"
-    	"k8s.io/client-go/util/homedir"
+```diff
+ import (
+-       "context"
+        "flag"
+        "path/filepath"
++       "time"
+        "k8s.io/client-go/tools/clientcmd"
+        "k8s.io/client-go/util/homedir"
         "k8s.io/klog/v2"
+-       client "github.com/nakamasato/sample-controller/pkg/generated/clientset/versioned"
+-       metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
++       clientset "github.com/nakamasato/sample-controller/pkg/generated/clientset/versioned"
++       informers "github.com/nakamasato/sample-controller/pkg/generated/informers/externalversions"
+ )
+ func main() {
+@@ -29,15 +29,16 @@ func main() {
+                klog.Fatalf("Building config from flags, %s", err.Error())
+        }
+-       clientset, err := client.NewForConfig(config)
++       exampleClient, err := clientset.NewForConfig(config)
+        if err != nil {
+                klog.Fatalf("getting client set %s\n", err.Error())
+        }
+-       fmt.Println(clientset)
+-       foos, err := clientset.ExampleV1alpha1().Foos("").List(context.Background(), metav1.ListOptions{})
+-       if err != nil {
+-               klog.Fatalf("listing foos %s\n", err.Error())
++       exampleInformerFactory := informers.NewSharedInformerFactory(exampleClient, time.Second*30)
++       ch := make(chan struct{})
++       controller := controller.NewController(exampleClient, informerFactory.Example().V1alpha1().Foos())
++       exampleInformerFactory.Start(ch)
++       if err = controller.Run(ch); err != nil {
++               klog.Fatalf("error occurred when running controller %s\n", err.Error())
+        }
+-       klog.Infof("length of foos is %d\n", len(foos.Items))
+ }
+```
+At the line of `exampleInformerFactory := informers.NewSharedInformerFactory(exampleClient, time.Second*30)`, the second argument specifies ***ResyncPeriod***, which defines the interval of ***resync*** (*The resync operation consists of delivering to the handler an update notification for every object in the informer's local cache*). For more detail, please read [NewSharedIndexInformer](https://pkg.go.dev/k8s.io/client-go@v0.23.1/tools/cache#NewSharedIndexInformer)
+<details><summary>main.go</summary>
+```go
+package main
+import (
+	"flag"
+	"path/filepath"
+	"time"
+	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/util/homedir"
+    "k8s.io/klog/v2"
+	clientset "github.com/nakamasato/sample-controller/pkg/generated/clientset/versioned"
+	informers "github.com/nakamasato/sample-controller/pkg/generated/informers/externalversions"
+)
+func main() {
+    klog.InitFlags(nil)
+	var kubeconfig *string
+	if home := homedir.HomeDir(); home != "" {
+		kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional)")
+	} else {
+		kubeconfig = flag.String("kubeconfig", "", "absolute path to kubeconfig file")
+	}
+	flag.Parse()
+	config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
+	if err != nil {
+		klog.Fatalf("Building config from flags, %s", err.Error())
+	}
+	exampleClient, err := clientset.NewForConfig(config)
+	if err != nil {
+		klog.Fatalf("getting client set %s\n", err.Error())
+	}
+	exampleInformerFactory := informers.NewSharedInformerFactory(exampleClient, time.Second*30)
+	ch := make(chan struct{})
+	controller := controller.NewController(exampleClient, exampleInformerFactory.Example().V1alpha1().Foos())
+	exampleInformerFactory.Start(ch)
+	if err = controller.Run(ch); err != nil {
+		klog.Fatalf("error occurred when running controller %s\n", err.Error())
+	}
+}
+```
+</details>
 
-    	clientset "github.com/nakamasato/sample-controller/pkg/generated/clientset/versioned"
-    	informers "github.com/nakamasato/sample-controller/pkg/generated/informers/externalversions"
-    )
-
-    func main() {
-        klog.InitFlags(nil)
-    	var kubeconfig *string
-
-    	if home := homedir.HomeDir(); home != "" {
-    		kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional)")
-    	} else {
-    		kubeconfig = flag.String("kubeconfig", "", "absolute path to kubeconfig file")
-    	}
-    	flag.Parse()
-
-    	config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
-    	if err != nil {
-    		klog.Fatalf("Building config from flags, %s", err.Error())
-    	}
-
-    	exampleClient, err := clientset.NewForConfig(config)
-    	if err != nil {
-    		klog.Fatalf("getting client set %s\n", err.Error())
-    	}
-
-    	exampleInformerFactory := informers.NewSharedInformerFactory(exampleClient, time.Second*30)
-    	ch := make(chan struct{})
-    	controller := controller.NewController(exampleClient, exampleInformerFactory.Example().V1alpha1().Foos())
-    	exampleInformerFactory.Start(ch)
-    	if err = controller.Run(ch); err != nil {
-    		klog.Fatalf("error occurred when running controller %s\n", err.Error())
-    	}
-    }
-    ```
-
-    </details>
+### 5.1.3 Run and check
 
 1. Run the controller.
 
@@ -223,13 +209,17 @@ summary: Implement controller.
 
 ## [5.2. Fetch foo object](https://github.com/nakamasato/sample-controller/commit/0d9c689f4ecb707e6c160632ad7a397d89f0c5ab)
 
+
+### 5.2.1. Overview
+
 Implement the following logic:
 1. Get a workqueue item.
 1. Get the key for the item from the cache.
 1. Split the key into namespace and name.
 1. Get the `Foo` resource with namespace and name from the lister.
 
-Steps:
+### 5.2.2. Implement
+
 1. Define `enqueueFoo` to convert Foo resource into namespace/name string before putting into the workqueue.
 
     ```go
@@ -311,6 +301,8 @@ Steps:
     }
     ```
 
+### 5.2.3. Run and check
+
 1. Run the controller.
 
     ```
@@ -338,7 +330,17 @@ Steps:
 
 ## [5.3. Enable to Create/Delete Deployment for Foo resource](https://github.com/nakamasato/sample-controller/commit/328581a50dd3a646289bc086538ce6892c90080b)
 
-At the end of this step, we'll be able to create `Deployment` for `Foo` resource.
+### 5.3.1. Overview
+
+In this section, we'll add a logic to create a `Deployment` for `Foo` resource.
+
+The logic to implement is:
+1. Add clientset, informer and lister for Deployment to `Controller`.
+1. Initialize clientset and informer in main.go and pass them to a Controller when initializing it.
+1. In `syncHandler` func, add a logic to create a Deployment if there doesn't exist a Deployment with name `foo.spec.deploymentName` in the same namespace as Foo object.
+1. Set `OwnerReferences` for a new Deployment in `newDeployment` so that the Deployment will be cleaned up when the owner, `Foo` object, is deleted.
+
+### 5.3.2. Implement
 
 1. Import the necessary packages.
 
@@ -562,41 +564,41 @@ At the end of this step, we'll be able to create `Deployment` for `Foo` resource
     -}
     ```
 
+### 5.3.3. Run and check
 
-1. Test `sample-controller`.
-    1. Run the controller.
-        ```
-        go run .
-        ```
-    1. Create `Foo` resource.
-        ```
-        kubectl apply -f config/sample/foo.yaml
-        ```
+1. Run the controller.
+    ```
+    go run .
+    ```
+1. Create `Foo` resource.
+    ```
+    kubectl apply -f config/sample/foo.yaml
+    ```
 
-        Check `Deployment`:
-        ```
-        kubectl get deploy
-        NAME         READY   UP-TO-DATE   AVAILABLE   AGE
-        foo-sample   0/1     1            0           3s
-        ```
-        Check `sample-controller`'s logs:
-        ```
-        2022/07/18 09:33:31 handleAdd was called
-        2022/07/18 09:33:31 deployment foo-sample is valid
-        ```
-    1. Delete `Foo` resource.
-        ```
-        kubectl delete -f config/sample/foo.yaml
-        ```
-        Check `Deployment`:
-        ```
-        kubectl get deploy
-        No resources found in default namespace.
-        ```
+    Check `Deployment`:
+    ```
+    kubectl get deploy
+    NAME         READY   UP-TO-DATE   AVAILABLE   AGE
+    foo-sample   0/1     1            0           3s
+    ```
+    Check `sample-controller`'s logs:
+    ```
+    2022/07/18 09:33:31 handleAdd was called
+    2022/07/18 09:33:31 deployment foo-sample is valid
+    ```
+1. Delete `Foo` resource.
+    ```
+    kubectl delete -f config/sample/foo.yaml
+    ```
+    Check `Deployment`:
+    ```
+    kubectl get deploy
+    No resources found in default namespace.
+    ```
 
-        `Deployment` is deleted when the corresponding `Foo` is deleted thanks to `OwnerReference`'s [cascading deletion](https://kubernetes.io/docs/concepts/architecture/garbage-collection/#cascading-deletion) feature:
+    `Deployment` is deleted when the corresponding `Foo` is deleted thanks to `OwnerReference`'s [cascading deletion](https://kubernetes.io/docs/concepts/architecture/garbage-collection/#cascading-deletion) feature:
 
-        > Kubernetes checks for and deletes objects that no longer have owner references, like the pods left behind when you delete a ReplicaSet. When you delete an object, you can control whether Kubernetes deletes the object's dependents automatically, in a process called cascading deletion.
+    > Kubernetes checks for and deletes objects that no longer have owner references, like the pods left behind when you delete a ReplicaSet. When you delete an object, you can control whether Kubernetes deletes the object's dependents automatically, in a process called cascading deletion.
 
 ## [5.4. Check and update Deployment if necessary](https://github.com/nakamasato/sample-controller/commit/8b405a96ab54c85da00bc1b902d76fa89e3584fe)
 

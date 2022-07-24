@@ -8,7 +8,7 @@ summary: Create CustomResourceDefinition yaml file manually.
 
 ## [3. Create CRD yaml file](https://github.com/nakamasato/sample-controller/commit/56e98acc8a5098d5e7a7958a190749bf28b108b6)
 
-`config/crd/example.com_foos.yaml`:
+`config/crd/foos.yaml`:
 ```yaml
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
