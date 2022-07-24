@@ -1,17 +1,16 @@
 package main
 
 import (
-	"context"
 	"flag"
-	"fmt"
 	"log"
 	"path/filepath"
+	"time"
 
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
 
-	client "github.com/nakamasato/sample-controller/pkg/generated/clientset/versioned"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	clientset "github.com/nakamasato/sample-controller/pkg/generated/clientset/versioned"
+	informers "github.com/nakamasato/sample-controller/pkg/generated/informers/externalversions"
 )
 
 func main() {
@@ -29,15 +28,16 @@ func main() {
 		log.Printf("Building config from flags, %s", err.Error())
 	}
 
-	clientset, err := client.NewForConfig(config)
+	exampleClient, err := clientset.NewForConfig(config)
 	if err != nil {
 		log.Printf("getting client set %s\n", err.Error())
 	}
-	fmt.Println(clientset)
 
-	foos, err := clientset.ExampleV1alpha1().Foos("").List(context.Background(), metav1.ListOptions{})
-	if err != nil {
-		log.Printf("listing foos %s\n", err.Error())
+	exampleInformerFactory := informers.NewSharedInformerFactory(exampleClient, time.Second*30)
+	ch := make(chan struct{})
+	controller := NewController(exampleClient, exampleInformerFactory.Example().V1alpha1().Foos())
+	exampleInformerFactory.Start(ch)
+	if err = controller.Run(ch); err != nil {
+		log.Printf("error occurred when running controller %s\n", err.Error())
 	}
-	fmt.Printf("length of foos is %d\n", len(foos.Items))
 }
