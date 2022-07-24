@@ -187,34 +187,74 @@
 </span><span class=gi></span>        &#34;k8s.io/client-go/tools/clientcmd&#34;
         &#34;k8s.io/client-go/util/homedir&#34;
         &#34;k8s.io/klog/v2&#34;
-<span class=gd>-       client &#34;github.com/nakamasato/sample-controller/pkg/generated/clientset/versioned&#34;
-</span><span class=gd>-       metav1 &#34;k8s.io/apimachinery/pkg/apis/meta/v1&#34;
-</span><span class=gd></span><span class=gi>+       clientset &#34;github.com/nakamasato/sample-controller/pkg/generated/clientset/versioned&#34;
-</span><span class=gi>+       informers &#34;github.com/nakamasato/sample-controller/pkg/generated/informers/externalversions&#34;
+
+<span class=gd>-       metav1 &#34;k8s.io/apimachinery/pkg/apis/meta/v1&#34;
+</span><span class=gd></span><span class=gi>+       informers &#34;github.com/nakamasato/sample-controller/pkg/generated/informers/externalversions&#34;
 </span><span class=gi></span> )
  func main() {
 <span class=gu>@@ -29,15 +29,16 @@ func main() {
-</span><span class=gu></span>                klog.Fatalf(&#34;Building config from flags, %s&#34;, err.Error())
-        }
-<span class=gd>-       clientset, err := client.NewForConfig(config)
-</span><span class=gd></span><span class=gi>+       exampleClient, err := clientset.NewForConfig(config)
-</span><span class=gi></span>        if err != nil {
+</span><span class=gu></span>        if err != nil {
                 klog.Fatalf(&#34;getting client set %s\n&#34;, err.Error())
         }
-<span class=gd>-       fmt.Println(clientset)
-</span><span class=gd>-       foos, err := clientset.ExampleV1alpha1().Foos(&#34;&#34;).List(context.Background(), metav1.ListOptions{})
+<span class=gd>-       fmt.Println(exampleClientset)
+</span><span class=gd>-       foos, err := exampleClientset.ExampleV1alpha1().Foos(&#34;&#34;).List(context.Background(), metav1.ListOptions{})
 </span><span class=gd>-       if err != nil {
 </span><span class=gd>-               klog.Fatalf(&#34;listing foos %s\n&#34;, err.Error())
-</span><span class=gd></span><span class=gi>+       exampleInformerFactory := informers.NewSharedInformerFactory(exampleClient, time.Second*30)
-</span><span class=gi>+       ch := make(chan struct{})
-</span><span class=gi>+       controller := controller.NewController(exampleClient, informerFactory.Example().V1alpha1().Foos())
-</span><span class=gi>+       exampleInformerFactory.Start(ch)
-</span><span class=gi>+       if err = controller.Run(ch); err != nil {
+</span><span class=gd></span><span class=gi>+       exampleInformerFactory := informers.NewSharedInformerFactory(exampleClientset, time.Second*30)
+</span><span class=gi>+       stopCh := make(chan struct{})
+</span><span class=gi>+       controller := NewController(exampleClientset, exampleInformerFactory.Example().V1alpha1().Foos())
+</span><span class=gi>+       exampleInformerFactory.Start(stopCh)
+</span><span class=gi>+       if err = controller.Run(stopCh); err != nil {
 </span><span class=gi>+               klog.Fatalf(&#34;error occurred when running controller %s\n&#34;, err.Error())
 </span><span class=gi></span>        }
 <span class=gd>-       klog.Infof(&#34;length of foos is %d\n&#34;, len(foos.Items))
 </span><span class=gd></span> }
-</code></pre></div><p>At the line of <code>exampleInformerFactory := informers.NewSharedInformerFactory(exampleClient, time.Second*30)</code>, the second argument specifies <em><strong>ResyncPeriod</strong></em>, which defines the interval of <em><strong>resync</strong></em> (<em>The resync operation consists of delivering to the handler an update notification for every object in the informer&rsquo;s local cache</em>). For more detail, please read <a href=https://pkg.go.dev/k8s.io/client-go@v0.23.1/tools/cache#NewSharedIndexInformer>NewSharedIndexInformer</a></p>
+</code></pre></div><p>At the line of <code>exampleInformerFactory := informers.NewSharedInformerFactory(exampleClientset, time.Second*30)</code>, the second argument specifies <em><strong>ResyncPeriod</strong></em>, which defines the interval of <em><strong>resync</strong></em> (<em>The resync operation consists of delivering to the handler an update notification for every object in the informer&rsquo;s local cache</em>). For more detail, please read <a href=https://pkg.go.dev/k8s.io/client-go@v0.23.1/tools/cache#NewSharedIndexInformer>NewSharedIndexInformer</a></p>
+<div class=highlight><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kn>package</span> <span class=nx>main</span>
+
+<span class=kn>import</span> <span class=p>(</span>
+    <span class=s>&#34;flag&#34;</span>
+    <span class=s>&#34;path/filepath&#34;</span>
+    <span class=s>&#34;time&#34;</span>
+
+    <span class=s>&#34;k8s.io/client-go/tools/clientcmd&#34;</span>
+    <span class=s>&#34;k8s.io/client-go/util/homedir&#34;</span>
+    <span class=s>&#34;k8s.io/klog/v2&#34;</span>
+
+    <span class=nx>clientset</span> <span class=s>&#34;github.com/nakamasato/sample-controller/pkg/generated/clientset/versioned&#34;</span>
+    <span class=nx>informers</span> <span class=s>&#34;github.com/nakamasato/sample-controller/pkg/generated/informers/externalversions&#34;</span>
+<span class=p>)</span>
+
+<span class=kd>func</span> <span class=nf>main</span><span class=p>()</span> <span class=p>{</span>
+    <span class=nx>klog</span><span class=p>.</span><span class=nf>InitFlags</span><span class=p>(</span><span class=kc>nil</span><span class=p>)</span>
+    <span class=kd>var</span> <span class=nx>kubeconfig</span> <span class=o>*</span><span class=kt>string</span>
+
+    <span class=k>if</span> <span class=nx>home</span> <span class=o>:=</span> <span class=nx>homedir</span><span class=p>.</span><span class=nf>HomeDir</span><span class=p>();</span> <span class=nx>home</span> <span class=o>!=</span> <span class=s>&#34;&#34;</span> <span class=p>{</span>
+        <span class=nx>kubeconfig</span> <span class=p>=</span> <span class=nx>flag</span><span class=p>.</span><span class=nf>String</span><span class=p>(</span><span class=s>&#34;kubeconfig&#34;</span><span class=p>,</span> <span class=nx>filepath</span><span class=p>.</span><span class=nf>Join</span><span class=p>(</span><span class=nx>home</span><span class=p>,</span> <span class=s>&#34;.kube&#34;</span><span class=p>,</span> <span class=s>&#34;config&#34;</span><span class=p>),</span> <span class=s>&#34;(optional)&#34;</span><span class=p>)</span>
+    <span class=p>}</span> <span class=k>else</span> <span class=p>{</span>
+        <span class=nx>kubeconfig</span> <span class=p>=</span> <span class=nx>flag</span><span class=p>.</span><span class=nf>String</span><span class=p>(</span><span class=s>&#34;kubeconfig&#34;</span><span class=p>,</span> <span class=s>&#34;&#34;</span><span class=p>,</span> <span class=s>&#34;absolute path to kubeconfig file&#34;</span><span class=p>)</span>
+    <span class=p>}</span>
+    <span class=nx>flag</span><span class=p>.</span><span class=nf>Parse</span><span class=p>()</span>
+
+    <span class=nx>config</span><span class=p>,</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>clientcmd</span><span class=p>.</span><span class=nf>BuildConfigFromFlags</span><span class=p>(</span><span class=s>&#34;&#34;</span><span class=p>,</span> <span class=o>*</span><span class=nx>kubeconfig</span><span class=p>)</span>
+    <span class=k>if</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
+        <span class=nx>klog</span><span class=p>.</span><span class=nf>Fatalf</span><span class=p>(</span><span class=s>&#34;Error building kubeconfig: %s&#34;</span><span class=p>,</span> <span class=nx>err</span><span class=p>.</span><span class=nf>Error</span><span class=p>())</span>
+    <span class=p>}</span>
+
+    <span class=nx>exampleClientset</span><span class=p>,</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>clientset</span><span class=p>.</span><span class=nf>NewForConfig</span><span class=p>(</span><span class=nx>config</span><span class=p>)</span>
+    <span class=k>if</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
+        <span class=nx>klog</span><span class=p>.</span><span class=nf>Fatalf</span><span class=p>(</span><span class=s>&#34;Error building kubernetes clientset: %s&#34;</span><span class=p>,</span> <span class=nx>err</span><span class=p>.</span><span class=nf>Error</span><span class=p>())</span>
+    <span class=p>}</span>
+
+    <span class=nx>exampleInformerFactory</span> <span class=o>:=</span> <span class=nx>informers</span><span class=p>.</span><span class=nf>NewSharedInformerFactory</span><span class=p>(</span><span class=nx>exampleClientset</span><span class=p>,</span> <span class=nx>time</span><span class=p>.</span><span class=nx>Second</span><span class=o>*</span><span class=mi>30</span><span class=p>)</span>
+    <span class=nx>stopCh</span> <span class=o>:=</span> <span class=nb>make</span><span class=p>(</span><span class=kd>chan</span> <span class=kd>struct</span><span class=p>{})</span>
+    <span class=nx>controller</span> <span class=o>:=</span> <span class=nf>NewController</span><span class=p>(</span><span class=nx>exampleClientset</span><span class=p>,</span> <span class=nx>exampleInformerFactory</span><span class=p>.</span><span class=nf>Example</span><span class=p>().</span><span class=nf>V1alpha1</span><span class=p>().</span><span class=nf>Foos</span><span class=p>())</span>
+    <span class=nx>exampleInformerFactory</span><span class=p>.</span><span class=nf>Start</span><span class=p>(</span><span class=nx>stopCh</span><span class=p>)</span>
+    <span class=k>if</span> <span class=nx>err</span> <span class=p>=</span> <span class=nx>controller</span><span class=p>.</span><span class=nf>Run</span><span class=p>(</span><span class=nx>stopCh</span><span class=p>);</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
+        <span class=nx>klog</span><span class=p>.</span><span class=nf>Fatalf</span><span class=p>(</span><span class=s>&#34;error occurred when running controller %s\n&#34;</span><span class=p>,</span> <span class=nx>err</span><span class=p>.</span><span class=nf>Error</span><span class=p>())</span>
+    <span class=p>}</span>
+<span class=p>}</span>
+</code></pre></div>
 <h3 id=513-run-and-check>5.1.3 Run and check</h3>
 <ol>
 <li>
@@ -336,6 +376,7 @@
 <p>Check the controller logs.</p>
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>2022/07/18 07:46:42 handleAdd was called
 2022/07/18 07:46:42 Got foo {DeploymentName:foo-sample Replicas:0x1400030194c}
+2022/07/18 07:46:42 Successfully synced &#39;default/foo-sample&#39;
 2022/07/18 07:46:49 handleDelete was called
 2022/07/18 07:46:49 failed to get foo resource from lister foo.example.com &#34;foo-sample&#34; not found
 </code></pre></div></li>
@@ -416,68 +457,68 @@
 </span><span class=gi>+               klog.Errorf(&#34;getting kubernetes client set %s\n&#34;, err.Error())
 </span><span class=gi>+       }
 </span><span class=gi>+
-</span><span class=gi></span>        exampleClient, err := clientset.NewForConfig(config)
+</span><span class=gi></span>        exampleClientset, err := clientset.NewForConfig(config)
         if err != nil {
                 klog.Errorf(&#34;getting client set %s\n&#34;, err.Error())
         }
 
 <span class=gi>+       kubeInformerFactory := kubeinformers.NewSharedInformerFactory(kubeClient, time.Second*30)
-</span><span class=gi></span>        exampleInformerFactory := informers.NewSharedInformerFactory(exampleClient, time.Second*30)
-        ch := make(chan struct{})
-<span class=gd>-       controller := controller.NewController(exampleClient, exampleInformerFactory.Example().V1alpha1().Foos())
+</span><span class=gi></span>        exampleInformerFactory := informers.NewSharedInformerFactory(exampleClientset, time.Second*30)
+        stopCh := make(chan struct{})
+<span class=gd>-       controller := controller.NewController(exampleClientset, exampleInformerFactory.Example().V1alpha1().Foos())
 </span><span class=gd></span><span class=gi>+       controller := controller.NewController(
 </span><span class=gi>+               kubeClient,
-</span><span class=gi>+               exampleClient,
+</span><span class=gi>+               exampleClientset,
 </span><span class=gi>+               kubeInformerFactory.Apps().V1().Deployments(),
 </span><span class=gi>+               exampleInformerFactory.Example().V1alpha1().Foos(),
 </span><span class=gi>+       )
-</span><span class=gi>+       kubeInformerFactory.Start(ch)
+</span><span class=gi>+       kubeInformerFactory.Start(stopCh)
 </span><span class=gi></span>    ...
 }
 </code></pre></div></li>
 <li>
 <p>Create <code>syncHandler</code> and <code>newDeployment</code> in <code>controller.go</code>.</p>
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kd>func</span> <span class=p>(</span><span class=nx>c</span> <span class=o>*</span><span class=nx>Controller</span><span class=p>)</span> <span class=nf>syncHandler</span><span class=p>(</span><span class=nx>key</span> <span class=kt>string</span><span class=p>)</span> <span class=kt>error</span> <span class=p>{</span>
-	<span class=nx>ns</span><span class=p>,</span> <span class=nx>name</span><span class=p>,</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>cache</span><span class=p>.</span><span class=nf>SplitMetaNamespaceKey</span><span class=p>(</span><span class=nx>key</span><span class=p>)</span>
-	<span class=k>if</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
+    <span class=nx>ns</span><span class=p>,</span> <span class=nx>name</span><span class=p>,</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>cache</span><span class=p>.</span><span class=nf>SplitMetaNamespaceKey</span><span class=p>(</span><span class=nx>key</span><span class=p>)</span>
+    <span class=k>if</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
         <span class=nx>klog</span><span class=p>.</span><span class=nf>Errorf</span><span class=p>(</span><span class=s>&#34;failed to split key into namespace and name %s\n&#34;</span><span class=p>,</span> <span class=nx>err</span><span class=p>.</span><span class=nf>Error</span><span class=p>())</span>
         <span class=k>return</span> <span class=nx>err</span>
-	<span class=p>}</span>
+    <span class=p>}</span>
 
-	<span class=nx>foo</span><span class=p>,</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>c</span><span class=p>.</span><span class=nx>foosLister</span><span class=p>.</span><span class=nf>Foos</span><span class=p>(</span><span class=nx>ns</span><span class=p>).</span><span class=nf>Get</span><span class=p>(</span><span class=nx>name</span><span class=p>)</span>
-	<span class=k>if</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
+    <span class=nx>foo</span><span class=p>,</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>c</span><span class=p>.</span><span class=nx>foosLister</span><span class=p>.</span><span class=nf>Foos</span><span class=p>(</span><span class=nx>ns</span><span class=p>).</span><span class=nf>Get</span><span class=p>(</span><span class=nx>name</span><span class=p>)</span>
+    <span class=k>if</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
         <span class=nx>klog</span><span class=p>.</span><span class=nf>Errorf</span><span class=p>(</span><span class=s>&#34;failed to get foo resource from lister %s\n&#34;</span><span class=p>,</span> <span class=nx>err</span><span class=p>.</span><span class=nf>Error</span><span class=p>())</span>
         <span class=k>if</span> <span class=nx>errors</span><span class=p>.</span><span class=nf>IsNotFound</span><span class=p>(</span><span class=nx>err</span><span class=p>)</span> <span class=p>{</span>
             <span class=k>return</span> <span class=kc>nil</span>
         <span class=p>}</span>
         <span class=k>return</span> <span class=nx>err</span>
-	<span class=p>}</span>
+    <span class=p>}</span>
 
-	<span class=nx>deploymentName</span> <span class=o>:=</span> <span class=nx>foo</span><span class=p>.</span><span class=nx>Spec</span><span class=p>.</span><span class=nx>DeploymentName</span>
-	<span class=k>if</span> <span class=nx>deploymentName</span> <span class=o>==</span> <span class=s>&#34;&#34;</span> <span class=p>{</span>
+    <span class=nx>deploymentName</span> <span class=o>:=</span> <span class=nx>foo</span><span class=p>.</span><span class=nx>Spec</span><span class=p>.</span><span class=nx>DeploymentName</span>
+    <span class=k>if</span> <span class=nx>deploymentName</span> <span class=o>==</span> <span class=s>&#34;&#34;</span> <span class=p>{</span>
         <span class=nx>klog</span><span class=p>.</span><span class=nf>Errorf</span><span class=p>(</span><span class=s>&#34;deploymentName must be specified %s\n&#34;</span><span class=p>,</span> <span class=nx>key</span><span class=p>)</span>
         <span class=k>return</span> <span class=kc>nil</span>
-	<span class=p>}</span>
-	<span class=nx>deployment</span><span class=p>,</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>c</span><span class=p>.</span><span class=nx>deploymentsLister</span><span class=p>.</span><span class=nf>Deployments</span><span class=p>(</span><span class=nx>foo</span><span class=p>.</span><span class=nx>Namespace</span><span class=p>).</span><span class=nf>Get</span><span class=p>(</span><span class=nx>deploymentName</span><span class=p>)</span>
-	<span class=k>if</span> <span class=nx>errors</span><span class=p>.</span><span class=nf>IsNotFound</span><span class=p>(</span><span class=nx>err</span><span class=p>)</span> <span class=p>{</span>
+    <span class=p>}</span>
+    <span class=nx>deployment</span><span class=p>,</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>c</span><span class=p>.</span><span class=nx>deploymentsLister</span><span class=p>.</span><span class=nf>Deployments</span><span class=p>(</span><span class=nx>foo</span><span class=p>.</span><span class=nx>Namespace</span><span class=p>).</span><span class=nf>Get</span><span class=p>(</span><span class=nx>deploymentName</span><span class=p>)</span>
+    <span class=k>if</span> <span class=nx>errors</span><span class=p>.</span><span class=nf>IsNotFound</span><span class=p>(</span><span class=nx>err</span><span class=p>)</span> <span class=p>{</span>
         <span class=nx>deployment</span><span class=p>,</span> <span class=nx>err</span> <span class=p>=</span> <span class=nx>c</span><span class=p>.</span><span class=nx>kubeclientset</span><span class=p>.</span><span class=nf>AppsV1</span><span class=p>().</span><span class=nf>Deployments</span><span class=p>(</span><span class=nx>foo</span><span class=p>.</span><span class=nx>Namespace</span><span class=p>).</span><span class=nf>Create</span><span class=p>(</span><span class=nx>context</span><span class=p>.</span><span class=nf>TODO</span><span class=p>(),</span> <span class=nf>newDeployment</span><span class=p>(</span><span class=nx>foo</span><span class=p>),</span> <span class=nx>metav1</span><span class=p>.</span><span class=nx>CreateOptions</span><span class=p>{})</span>
-	<span class=p>}</span>
+    <span class=p>}</span>
 
-	<span class=k>if</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
+    <span class=k>if</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
         <span class=k>return</span> <span class=nx>err</span>
-	<span class=p>}</span>
+    <span class=p>}</span>
 
-	<span class=nx>klog</span><span class=p>.</span><span class=nf>Infof</span><span class=p>(</span><span class=s>&#34;deployment %s is valid&#34;</span><span class=p>,</span> <span class=nx>deployment</span><span class=p>.</span><span class=nx>Name</span><span class=p>)</span>
+    <span class=nx>klog</span><span class=p>.</span><span class=nf>Infof</span><span class=p>(</span><span class=s>&#34;deployment %s is valid&#34;</span><span class=p>,</span> <span class=nx>deployment</span><span class=p>.</span><span class=nx>Name</span><span class=p>)</span>
 
-	<span class=k>return</span> <span class=kc>nil</span>
+    <span class=k>return</span> <span class=kc>nil</span>
 <span class=p>}</span>
 
 <span class=kd>func</span> <span class=nf>newDeployment</span><span class=p>(</span><span class=nx>foo</span> <span class=o>*</span><span class=nx>samplev1alpha1</span><span class=p>.</span><span class=nx>Foo</span><span class=p>)</span> <span class=o>*</span><span class=nx>appsv1</span><span class=p>.</span><span class=nx>Deployment</span> <span class=p>{</span>
-	<span class=nx>labels</span> <span class=o>:=</span> <span class=kd>map</span><span class=p>[</span><span class=kt>string</span><span class=p>]</span><span class=kt>string</span><span class=p>{</span>
+    <span class=nx>labels</span> <span class=o>:=</span> <span class=kd>map</span><span class=p>[</span><span class=kt>string</span><span class=p>]</span><span class=kt>string</span><span class=p>{</span>
         <span class=s>&#34;app&#34;</span><span class=p>:</span>        <span class=s>&#34;nginx&#34;</span><span class=p>,</span>
         <span class=s>&#34;controller&#34;</span><span class=p>:</span> <span class=nx>foo</span><span class=p>.</span><span class=nx>Name</span><span class=p>,</span>
-	<span class=p>}</span>
-	<span class=k>return</span> <span class=o>&amp;</span><span class=nx>appsv1</span><span class=p>.</span><span class=nx>Deployment</span><span class=p>{</span>
+    <span class=p>}</span>
+    <span class=k>return</span> <span class=o>&amp;</span><span class=nx>appsv1</span><span class=p>.</span><span class=nx>Deployment</span><span class=p>{</span>
         <span class=nx>ObjectMeta</span><span class=p>:</span> <span class=nx>metav1</span><span class=p>.</span><span class=nx>ObjectMeta</span><span class=p>{</span>
             <span class=nx>Name</span><span class=p>:</span>            <span class=nx>foo</span><span class=p>.</span><span class=nx>Spec</span><span class=p>.</span><span class=nx>DeploymentName</span><span class=p>,</span>
             <span class=nx>Namespace</span><span class=p>:</span>       <span class=nx>foo</span><span class=p>.</span><span class=nx>Namespace</span><span class=p>,</span>
@@ -502,7 +543,7 @@
                 <span class=p>},</span>
             <span class=p>},</span>
         <span class=p>},</span>
-	<span class=p>}</span>
+    <span class=p>}</span>
 <span class=p>}</span>
 </code></pre></div><p>Add necessary imports</p>
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kn>import</span> <span class=p>(</span>
