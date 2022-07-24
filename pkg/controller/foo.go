@@ -8,6 +8,7 @@ import (
 
 	samplev1alpha1 "github.com/nakamasato/sample-controller/pkg/apis/example.com/v1alpha1"
 	clientset "github.com/nakamasato/sample-controller/pkg/generated/clientset/versioned"
+	"github.com/nakamasato/sample-controller/pkg/generated/clientset/versioned/scheme"
 	informers "github.com/nakamasato/sample-controller/pkg/generated/informers/externalversions/example.com/v1alpha1"
 	listers "github.com/nakamasato/sample-controller/pkg/generated/listers/example.com/v1alpha1"
 
@@ -18,15 +19,29 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	appsinformers "k8s.io/client-go/informers/apps/v1"
 	"k8s.io/client-go/kubernetes"
+	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	appslisters "k8s.io/client-go/listers/apps/v1"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
 )
 
+const controllerAgentName = "sample-controller"
+
 const (
+	// SuccessSynced is used as part of the Event 'reason' when a Foo is synced
+	SuccessSynced = "Synced"
+	// ErrResourceExists is used as part of the Event 'reason' when a Foo fails
+	// to sync due to a Deployment of the same name already existing.
+	ErrResourceExists = "ErrResourceExists"
+
 	// MessageResourceExists is the message used for Events when a resource
 	// fails to sync due to a Deployment already existing
 	MessageResourceExists = "Resource %q already exists and is not managed by Foo"
+
+	// MessageResourceSynced is the message used for an Event fired when a Foo
+	// is synced successfully
+	MessageResourceSynced = "Foo synced successfully"
 )
 
 type Controller struct {
@@ -43,6 +58,10 @@ type Controller struct {
 
 	// queue
 	workqueue workqueue.RateLimitingInterface
+
+	// recorder is an event recorder for recording Event resources to the
+	// Kubernetes API.
+	recorder record.EventRecorder
 }
 
 func NewController(
@@ -50,6 +69,11 @@ func NewController(
 	sampleclientset clientset.Interface,
 	deploymentInformer appsinformers.DeploymentInformer,
 	fooInformer informers.FooInformer) *Controller {
+
+	eventBroadcaster := record.NewBroadcaster()
+	eventBroadcaster.StartStructuredLogging(0)
+	eventBroadcaster.StartRecordingToSink(&typedcorev1.EventSinkImpl{Interface: kubeclientset.CoreV1().Events("")})
+	recorder := eventBroadcaster.NewRecorder(scheme.Scheme, corev1.EventSource{Component: controllerAgentName})
 	controller := &Controller{
 		kubeclientset:     kubeclientset,
 		sampleclientset:   sampleclientset,
@@ -58,6 +82,7 @@ func NewController(
 		foosLister:        fooInformer.Lister(),
 		foosSynced:        fooInformer.Informer().HasSynced,
 		workqueue:         workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "foo"),
+		recorder:          recorder,
 	}
 
 	fooInformer.Informer().AddEventHandler(
@@ -197,6 +222,7 @@ func (c *Controller) syncHandler(key string) error {
 	// a warning to the event recorder and return error msg.
 	if !metav1.IsControlledBy(deployment, foo) {
 		msg := fmt.Sprintf(MessageResourceExists, deployment.Name)
+		c.recorder.Event(foo, corev1.EventTypeWarning, ErrResourceExists, msg)
 		log.Println(msg)
 		return fmt.Errorf("%s", msg)
 	}
@@ -223,6 +249,7 @@ func (c *Controller) syncHandler(key string) error {
 		return err
 	}
 
+	c.recorder.Event(foo, corev1.EventTypeNormal, SuccessSynced, MessageResourceSynced)
 	return nil
 }
 
