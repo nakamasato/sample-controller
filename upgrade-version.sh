@@ -141,7 +141,7 @@ if [ ! -d "$codeGeneratorDir" ] ; then
     git clone https://github.com/kubernetes/code-generator.git $codeGeneratorDir
 fi
 
-"${codeGeneratorDir}"/generate-groups.sh all ${MODULE_NAME}/pkg/client ${MODULE_NAME}/pkg/apis example.com:v1alpha1 --go-header-file "${codeGeneratorDir}"/hack/boilerplate.go.txt --trim-path-prefix $MODULE_NAME
+"${codeGeneratorDir}"/generate-groups.sh all ${MODULE_NAME}/pkg/generated ${MODULE_NAME}/pkg/apis example.com:v1alpha1 --go-header-file "${codeGeneratorDir}"/hack/boilerplate.go.txt --trim-path-prefix $MODULE_NAME
 TITLE_AND_MESSAGE="2. Generate codes"
 git add pkg && git commit -m "$TITLE_AND_MESSAGE"
 commit_hash=$(git rev-parse HEAD)
@@ -212,7 +212,7 @@ import (
     "k8s.io/client-go/tools/clientcmd"
     "k8s.io/client-go/util/homedir"
 
-    client "$MODULE_NAME/pkg/client/clientset/versioned"
+    client "$MODULE_NAME/pkg/generated/clientset/versioned"
     metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -285,9 +285,9 @@ import (
 	"log"
 	"time"
 
-	clientset "$MODULE_NAME/pkg/client/clientset/versioned"
-	informers "$MODULE_NAME/pkg/client/informers/externalversions/example.com/v1alpha1"
-	listers "$MODULE_NAME/pkg/client/listers/example.com/v1alpha1"
+	clientset "$MODULE_NAME/pkg/generated/clientset/versioned"
+	informers "$MODULE_NAME/pkg/generated/informers/externalversions/example.com/v1alpha1"
+	listers "$MODULE_NAME/pkg/generated/listers/example.com/v1alpha1"
 
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/cache"
@@ -365,9 +365,9 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
 
-	clientset "github.com/nakamasato/sample-controller/pkg/client/clientset/versioned"
-	informers "github.com/nakamasato/sample-controller/pkg/client/informers/externalversions"
-	"github.com/nakamasato/sample-controller/pkg/controller"
+	clientset "$MODULE_NAME/pkg/generated/clientset/versioned"
+	informers "$MODULE_NAME/pkg/generated/informers/externalversions"
+	"$MODULE_NAME/pkg/controller"
 )
 
 func main() {
@@ -661,7 +661,7 @@ cat <<EOF > tmpfile
 EOF
 gsed -i '/"k8s.io\/apimachinery\/pkg\/util\/wait"/r tmpfile' $FOO_CONTROLLER_FILE # add after
 cat <<EOF > tmpfile
-    samplev1alpha1 "github.com/nakamasato/sample-controller/pkg/apis/example.com/v1alpha1"
+    samplev1alpha1 "$MODULE_NAME/pkg/apis/example.com/v1alpha1"
 EOF
 gsed -i '/clientset "github.com/r tmpfile' $FOO_CONTROLLER_FILE # add after
 
@@ -864,7 +864,7 @@ gsed -i '/.*workqueue:.*workqueue.NewNamedRateLimitingQueue(workqueue.DefaultCon
 # import necessary packages
 gsed -i '/.*appsinformers "k8s.io\/client-go\/informers\/apps\/v1"/a typedcorev1 "k8s.io\/client-go\/kubernetes\/typed\/core\/v1"' $FOO_CONTROLLER_FILE # add typedcorev1 after *appsinformers "k8s.io\/client-go\/informers\/apps\/v1"
 gsed -i '/.*appsinformers "k8s.io\/client-go\/informers\/apps\/v1"/a "k8s.io\/client-go\/tools\/record"' $FOO_CONTROLLER_FILE # add client-go/tools/record after *appsinformers "k8s.io\/client-go\/informers\/apps\/v1"
-gsed -i '/.*informers "github.com/a "github.com\/nakamasato\/sample-controller\/pkg\/client\/clientset\/versioned\/scheme"' $FOO_CONTROLLER_FILE # add "github.com/nakamasato/sample-controller/pkg/client/clientset/versioned/scheme" after informers "github.com/nakamasato/sample-controller/pkg/client/informers/externalversions/example.com/v1alpha1"
+gsed -i '/.*informers "github.com/a "github.com\/nakamasato\/sample-controller\/pkg\/generated\/clientset\/versioned\/scheme"' $FOO_CONTROLLER_FILE # add "$MODULE_NAME/pkg/generated/clientset/versioned/scheme" after informers "$MODULE_NAME/pkg/generated/informers/externalversions/example.com/v1alpha1"
 go mod tidy
 
 # add constants
