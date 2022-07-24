@@ -1,12 +1,12 @@
 ---
 title: '5. Implement reconciliation'
-date: 2022-07-25T05:40:07+0900
+date: 2022-07-25T05:45:53+0900
 draft: false
 weight: 7
 summary: Implement controller.
 ---
 
-## [5.1. Create Controller](https://github.com/nakamasato/sample-controller/commit/a81fbbf56de2536ea7066381ad7f971ea149a83d)
+## [5.1. Create Controller](https://github.com/nakamasato/sample-controller/commit/1154c08333c817d5bf1e41b18ba820a2517149c5)
 
 1. Create controller.
 
@@ -22,10 +22,10 @@ summary: Implement controller.
     1. Define `worker`: just call `processNextItem`.
     1. Define `processNextItem`: always return true for now.
 
-    <details><summary>pkg/controller/foo.go</summary>
+    <details><summary>controller.go</summary>
 
     ```go
-    package controller
+    package main
 
     import (
     	"log"
@@ -100,9 +100,6 @@ summary: Implement controller.
 
     </details>
 
-    Although `controller.go` is under the root directory in [sample-controller](https://github.com/kubernetes/sample-controller/blob/master/controller.go), here creates controller under `pkg/controller` directory in this repo. You can also move it to `main` package if you want.
-
-
 1. Update `main.go` to initialize a controller and run it.
 
     ```diff
@@ -121,7 +118,6 @@ summary: Implement controller.
     -       metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
     +       clientset "github.com/nakamasato/sample-controller/pkg/generated/clientset/versioned"
     +       informers "github.com/nakamasato/sample-controller/pkg/generated/informers/externalversions"
-    +       "github.com/nakamasato/sample-controller/pkg/controller"
      )
 
      func main() {
@@ -168,7 +164,6 @@ summary: Implement controller.
 
     	clientset "github.com/nakamasato/sample-controller/pkg/generated/clientset/versioned"
     	informers "github.com/nakamasato/sample-controller/pkg/generated/informers/externalversions"
-    	"github.com/nakamasato/sample-controller/pkg/controller"
     )
 
     func main() {
@@ -341,7 +336,7 @@ Steps:
     2022/07/18 07:46:49 failed to get foo resource from lister foo.example.com "foo-sample" not found
     ```
 
-## [5.3. Enable to Create/Delete Deployment for Foo resource](https://github.com/nakamasato/sample-controller/commit/31a8b1cbd2be153db3ffc5b4a089c4a5b1826fa9)
+## [5.3. Enable to Create/Delete Deployment for Foo resource](https://github.com/nakamasato/sample-controller/commit/2889c8a7bea59092435b23b3858b3eba2feb5079)
 
 At the end of this step, we'll be able to create `Deployment` for `Foo` resource.
 
@@ -434,7 +429,7 @@ At the end of this step, we'll be able to create `Deployment` for `Foo` resource
     }
     ```
 
-1. Create `syncHandler` and `newDeployment` in `pkg/controller/foo.go`.
+1. Create `syncHandler` and `newDeployment` in `controller.go`.
 
     ```go
     func (c *Controller) syncHandler(key string) error {
@@ -603,7 +598,7 @@ At the end of this step, we'll be able to create `Deployment` for `Foo` resource
 
         > Kubernetes checks for and deletes objects that no longer have owner references, like the pods left behind when you delete a ReplicaSet. When you delete an object, you can control whether Kubernetes deletes the object's dependents automatically, in a process called cascading deletion.
 
-## [5.4. Check and update Deployment if necessary](https://github.com/nakamasato/sample-controller/commit/7acff75b29a0888eae336a4e7ae6d865807441b5)
+## [5.4. Check and update Deployment if necessary](https://github.com/nakamasato/sample-controller/commit/7cb8fdbe3eab180d4eb0d8a89384d2dca2f9e4ac)
 
 What needs to be done:
 - In `syncHandler`
@@ -726,7 +721,7 @@ Steps:
         kubectl delete deploy foo-sample
         ```
 
-## [5.5. Update Foo status](https://github.com/nakamasato/sample-controller/commit/9448ee3ed22e8aeda9634722d45b55c4c765787d)
+## [5.5. Update Foo status](https://github.com/nakamasato/sample-controller/commit/a1e70b8149436e9efd65cad522221ee9c04156a4)
 
 1. Create `updateFooStatus` function.
 
@@ -834,7 +829,7 @@ Steps:
     ```
     kubectl delete -f config/sample/foo.yaml
     ```
-## [5.6. Capture the update of Deployment](https://github.com/nakamasato/sample-controller/commit/998508a6866c377112fe32cd0d8ea0313e9af4f5)
+## [5.6. Capture the update of Deployment](https://github.com/nakamasato/sample-controller/commit/d6616979a43bd97d8d97b6acece0a8bd1fe98a45)
 
 In the previous section, `status.availableReplicas` is not updated immediately. This is because we just monitor our custom resource `Foo`. In this section, we'll enable to capture changes of Deployment controlled by our custom resource `Foo`.
 
@@ -933,7 +928,7 @@ In the previous section, `status.availableReplicas` is not updated immediately. 
         kubectl delete -f config/sample/foo.yaml
         ```
 
-## [5.7. Create events for Foo resource](https://github.com/nakamasato/sample-controller/commit/d6dec49cf276461731e7dc22da9dde215f314007)
+## [5.7. Create events for Foo resource](https://github.com/nakamasato/sample-controller/commit/d7035e180afc00ca7723f48fda0d913544457144)
 
 1. Add necessary packages.
     ```diff
