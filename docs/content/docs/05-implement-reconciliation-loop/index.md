@@ -28,7 +28,6 @@ summary: Implement controller.
     package main
 
     import (
-    	"log"
     	"time"
 
     	clientset "github.com/nakamasato/sample-controller/pkg/generated/clientset/versioned"
@@ -38,6 +37,7 @@ summary: Implement controller.
     	"k8s.io/apimachinery/pkg/util/wait"
     	"k8s.io/client-go/tools/cache"
     	"k8s.io/client-go/util/workqueue"
+        "k8s.io/klog/v2"
     )
 
     type Controller struct {
@@ -70,7 +70,7 @@ summary: Implement controller.
 
     func (c *Controller) Run(ch chan struct{}) error {
     	if ok := cache.WaitForCacheSync(ch, c.foosSynced); !ok {
-    		log.Printf("cache is not synced")
+    		klog.Info("cache is not synced")
     	}
 
     	go wait.Until(c.worker, time.Second, ch)
@@ -88,12 +88,12 @@ summary: Implement controller.
     }
 
     func (c *Controller) handleAdd(obj interface{}) {
-    	log.Println("handleAdd was called")
+    	klog.Info("handleAdd was called")
     	c.workqueue.Add(obj)
     }
 
     func (c *Controller) handleDelete(obj interface{}) {
-    	log.Println("handleDelete was called")
+    	klog.Info("handleDelete was called")
     	c.workqueue.Add(obj)
     }
     ```
@@ -106,13 +106,12 @@ summary: Implement controller.
      import (
     -       "context"
             "flag"
-    -       "fmt"
-            "log"
             "path/filepath"
     +       "time"
 
             "k8s.io/client-go/tools/clientcmd"
             "k8s.io/client-go/util/homedir"
+            "k8s.io/klog/v2"
 
     -       client "github.com/nakamasato/sample-controller/pkg/generated/clientset/versioned"
     -       metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -122,27 +121,27 @@ summary: Implement controller.
 
      func main() {
     @@ -29,15 +29,16 @@ func main() {
-                    log.Printf("Building config from flags, %s", err.Error())
+                    klog.Fatalf("Building config from flags, %s", err.Error())
             }
 
     -       clientset, err := client.NewForConfig(config)
     +       exampleClient, err := clientset.NewForConfig(config)
             if err != nil {
-                    log.Printf("getting client set %s\n", err.Error())
+                    klog.Fatalf("getting client set %s\n", err.Error())
             }
     -       fmt.Println(clientset)
 
     -       foos, err := clientset.ExampleV1alpha1().Foos("").List(context.Background(), metav1.ListOptions{})
     -       if err != nil {
-    -               log.Printf("listing foos %s\n", err.Error())
+    -               klog.Fatalf("listing foos %s\n", err.Error())
     +       exampleInformerFactory := informers.NewSharedInformerFactory(exampleClient, time.Second*30)
     +       ch := make(chan struct{})
     +       controller := controller.NewController(exampleClient, informerFactory.Example().V1alpha1().Foos())
     +       exampleInformerFactory.Start(ch)
     +       if err = controller.Run(ch); err != nil {
-    +               log.Printf("error occurred when running controller %s\n", err.Error())
+    +               klog.Fatalf("error occurred when running controller %s\n", err.Error())
             }
-    -       fmt.Printf("length of foos is %d\n", len(foos.Items))
+    -       klog.Infof("length of foos is %d\n", len(foos.Items))
      }
     ```
 
@@ -155,18 +154,19 @@ summary: Implement controller.
 
     import (
     	"flag"
-    	"log"
     	"path/filepath"
     	"time"
 
     	"k8s.io/client-go/tools/clientcmd"
     	"k8s.io/client-go/util/homedir"
+        "k8s.io/klog/v2"
 
     	clientset "github.com/nakamasato/sample-controller/pkg/generated/clientset/versioned"
     	informers "github.com/nakamasato/sample-controller/pkg/generated/informers/externalversions"
     )
 
     func main() {
+        klog.InitFlags(nil)
     	var kubeconfig *string
 
     	if home := homedir.HomeDir(); home != "" {
@@ -178,12 +178,12 @@ summary: Implement controller.
 
     	config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
     	if err != nil {
-    		log.Printf("Building config from flags, %s", err.Error())
+    		klog.Fatalf("Building config from flags, %s", err.Error())
     	}
 
     	exampleClient, err := clientset.NewForConfig(config)
     	if err != nil {
-    		log.Printf("getting client set %s\n", err.Error())
+    		klog.Fatalf("getting client set %s\n", err.Error())
     	}
 
     	exampleInformerFactory := informers.NewSharedInformerFactory(exampleClient, time.Second*30)
@@ -191,7 +191,7 @@ summary: Implement controller.
     	controller := controller.NewController(exampleClient, exampleInformerFactory.Example().V1alpha1().Foos())
     	exampleInformerFactory.Start(ch)
     	if err = controller.Run(ch); err != nil {
-    		log.Printf("error occurred when running controller %s\n", err.Error())
+    		klog.Fatalf("error occurred when running controller %s\n", err.Error())
     	}
     }
     ```
@@ -234,12 +234,12 @@ Steps:
 
     ```go
     func (c *Controller) handleAdd(obj interface{}) {
-        log.Println("handleAdd was called")
+        klog.Info("handleAdd was called")
         c.enqueueFoo(obj)
     }
 
     func (c *Controller) handleDelete(obj interface{}) {
-        log.Println("handleDelete was called")
+        klog.Info("handleDelete was called")
         c.enqueueFoo(obj)
     }
 
@@ -250,7 +250,7 @@ Steps:
         var key string
         var err error
         if key, err = cache.MetaNamespaceKeyFunc(obj); err != nil {
-            log.Printf("failed to get key from the cache %s\n", err.Error())
+            klog.Errorf("failed to get key from the cache %s\n", err.Error())
             return
         }
         c.workqueue.Add(key)
@@ -278,28 +278,28 @@ Steps:
                 // Forget here else we'd go into a loop of attempting to
                 // process a work item that is invalid.
                 c.workqueue.Forget(obj)
-                log.Printf("expected string in workqueue but got %#v", obj)
+                klog.Errorf("expected string in workqueue but got %#v", obj)
                 return nil
             }
 
             ns, name, err := cache.SplitMetaNamespaceKey(key)
             if err != nil {
-                log.Printf("failed to split key into namespace and name %s\n", err.Error())
+                klog.Errorf("failed to split key into namespace and name %s\n", err.Error())
                 return err
             }
 
             // temporary main logic
             foo, err := c.foosLister.Foos(ns).Get(name)
             if err != nil {
-                log.Printf("failed to get foo resource from lister %s\n", err.Error())
+                klog.Errorf("failed to get foo resource from lister %s\n", err.Error())
                 return err
             }
-            log.Printf("Got foo %+v\n", foo.Spec)
+            klog.Infof("Got foo %+v\n", foo.Spec)
 
             // Forget the queue item as it's successfully processed and
             // the item will not be requeued.
             c.workqueue.Forget(obj)
-            log.Printf("Successfully synced '%s'", key)
+            klog.Infof("Successfully synced '%s'", key)
             return nil
         }(obj)
 
@@ -406,12 +406,12 @@ At the end of this step, we'll be able to create `Deployment` for `Foo` resource
         ...
     +       kubeClient, err := kubernetes.NewForConfig(config)
     +       if err != nil {
-    +               log.Printf("getting kubernetes client set %s\n", err.Error())
+    +               klog.Errorf("getting kubernetes client set %s\n", err.Error())
     +       }
     +
             exampleClient, err := clientset.NewForConfig(config)
             if err != nil {
-                    log.Printf("getting client set %s\n", err.Error())
+                    klog.Errorf("getting client set %s\n", err.Error())
             }
 
     +       kubeInformerFactory := kubeinformers.NewSharedInformerFactory(kubeClient, time.Second*30)
@@ -435,13 +435,13 @@ At the end of this step, we'll be able to create `Deployment` for `Foo` resource
     func (c *Controller) syncHandler(key string) error {
     	ns, name, err := cache.SplitMetaNamespaceKey(key)
     	if err != nil {
-    		log.Printf("failed to split key into namespace and name %s\n", err.Error())
+    		klog.Errorf("failed to split key into namespace and name %s\n", err.Error())
     		return err
     	}
 
     	foo, err := c.foosLister.Foos(ns).Get(name)
     	if err != nil {
-    		log.Printf("failed to get foo resource from lister %s\n", err.Error())
+    		klog.Errorf("failed to get foo resource from lister %s\n", err.Error())
     		if errors.IsNotFound(err) {
     			return nil
     		}
@@ -450,7 +450,7 @@ At the end of this step, we'll be able to create `Deployment` for `Foo` resource
 
     	deploymentName := foo.Spec.DeploymentName
     	if deploymentName == "" {
-    		log.Printf("deploymentName must be specified %s\n", key)
+    		klog.Errorf("deploymentName must be specified %s\n", key)
     		return nil
     	}
     	deployment, err := c.deploymentsLister.Deployments(foo.Namespace).Get(deploymentName)
@@ -462,7 +462,7 @@ At the end of this step, we'll be able to create `Deployment` for `Foo` resource
     		return err
     	}
 
-    	log.Printf("deployment %s is valid", deployment.Name)
+    	klog.Infof("deployment %s is valid", deployment.Name)
 
     	return nil
     }
@@ -524,7 +524,7 @@ At the end of this step, we'll be able to create `Deployment` for `Foo` resource
 
     -               ns, name, err := cache.SplitMetaNamespaceKey(key)
     -               if err != nil {
-    -                       log.Printf("failed to split key into namespace and name %s\n", err.Error())
+    -                       klog.Errorf("failed to split key into namespace and name %s\n", err.Error())
     -                       return err
     +               if err := c.syncHandler(key); err != nil {
     +                       // Put the item back on the workqueue to handle any transient errors.
@@ -535,7 +535,7 @@ At the end of this step, we'll be able to create `Deployment` for `Foo` resource
     -               // temporary main logic
     -               foo, err := c.foosLister.Foos(ns).Get(name)
     -               if err != nil {
-    -                       log.Printf("failed to get foo resource from lister %s\n", err.Error())
+    -                       klog.Errorf("failed to get foo resource from lister %s\n", err.Error())
     -                       return err
     -               }
     -               log.Printf("Got foo %+v\n", foo.Spec)
@@ -557,7 +557,7 @@ At the end of this step, we'll be able to create `Deployment` for `Foo` resource
     ```
     ```diff
     -func (c *Controller) handleDelete(obj interface{}) {
-    -       log.Println("handleDelete was called")
+    -       klog.Info("handleDelete was called")
     -       c.enqueueFoo(obj)
     -}
     ```
@@ -627,7 +627,7 @@ Steps:
             // a warning to the event recorder and return error msg.
             if !metav1.IsControlledBy(deployment, foo) {
                 msg := fmt.Sprintf(MessageResourceExists, deployment.Name)
-                log.Println(msg)
+                klog.Info(msg)
                 return fmt.Errorf("%s", msg)
             }
         ```
@@ -638,7 +638,7 @@ Steps:
             // number does not equal the current desired replicas on the Deployment, we
             // should update the Deployment resource.
             if foo.Spec.Replicas != nil && *foo.Spec.Replicas != *deployment.Spec.Replicas {
-                log.Printf("Foo %s replicas: %d, deployment replicas: %d\n", name, *foo.Spec.Replicas, *deployment.Spec.Replicas)
+                klog.Infof("Foo %s replicas: %d, deployment replicas: %d\n", name, *foo.Spec.Replicas, *deployment.Spec.Replicas)
                 deployment, err = c.kubeclientset.AppsV1().Deployments(foo.Namespace).Update(context.TODO(), newDeployment(foo), metav1.UpdateOptions{})
             }
             // If an error occurs during Update, we'll requeue the item so we can
@@ -664,7 +664,7 @@ Steps:
 1. Remove unused `handleAdd` function.
     ```diff
     -func (c *Controller) handleAdd(obj interface{}) {
-    -       log.Println("handleAdd was called")
+    -       klog.Info("handleAdd was called")
     -       c.enqueueFoo(obj)
     -}
     ```
@@ -751,7 +751,7 @@ Steps:
         // current state of the world
         err = c.updateFooStatus(foo, deployment)
         if err != nil {
-            log.Printf("failed to update Foo status for %s", foo.Name)
+            klog.Errorf("failed to update Foo status for %s", foo.Name)
             return err
         }
 
@@ -853,9 +853,9 @@ In the previous section, `status.availableReplicas` is not updated immediately. 
             if !ok {
                 return
             }
-            log.Printf("Recovered deleted object '%s' from tombstone", object.GetName())
+            klog.Infof("Recovered deleted object '%s' from tombstone", object.GetName())
         }
-        log.Printf("Processing object: %s", object.GetName())
+        klog.Infof("Processing object: %s", object.GetName())
         if ownerRef := metav1.GetControllerOf(object); ownerRef != nil {
             // If this object is not owned by a Foo, we should not do anything more
             // with it.
@@ -865,7 +865,7 @@ In the previous section, `status.availableReplicas` is not updated immediately. 
 
             foo, err := c.foosLister.Foos(object.GetNamespace()).Get(ownerRef.Name)
             if err != nil {
-                log.Printf("ignoring orphaned object '%s' of foo '%s'", object.GetSelfLink(), ownerRef.Name)
+                klog.Errorf("ignoring orphaned object '%s' of foo '%s'", object.GetSelfLink(), ownerRef.Name)
                 return
             }
 
@@ -1013,7 +1013,7 @@ In the previous section, `status.availableReplicas` is not updated immediately. 
             if !metav1.IsControlledBy(deployment, foo) {
                     msg := fmt.Sprintf(MessageResourceExists, deployment.Name)
     +               c.recorder.Event(foo, corev1.EventTypeWarning, ErrResourceExists, msg)
-                    log.Println(msg)
+                    klog.Info(msg)
                     return fmt.Errorf("%s", msg)
             }
     @@ -228,6 +253,7 @@ func (c *Controller) syncHandler(key string) error {

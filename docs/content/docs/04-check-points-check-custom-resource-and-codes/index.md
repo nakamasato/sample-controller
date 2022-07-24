@@ -25,18 +25,19 @@ Steps:
     import (
         "context"
         "flag"
-        "fmt"
         "log"
         "path/filepath"
 
         "k8s.io/client-go/tools/clientcmd"
         "k8s.io/client-go/util/homedir"
+        "k8s.io/klog/v2"
 
         client "github.com/nakamasato/sample-controller/pkg/generated/clientset/versioned"
         metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
     )
 
     func main() {
+        klog.InitFlags(nil)
         var kubeconfig *string
 
         if home := homedir.HomeDir(); home != "" {
@@ -48,20 +49,20 @@ Steps:
 
         config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
         if err != nil {
-            log.Printf("Building config from flags, %s", err.Error())
+            klog.Fatalf("Error building kubeconfig: %s", err.Error())
         }
 
         clientset, err := client.NewForConfig(config)
         if err != nil {
-            log.Printf("getting client set %s\n", err.Error())
+            klog.Fatalf("Error building kubernetes clientset: %s", err.Error())
         }
-        fmt.Println(clientset)
+        klog.Infof(clientset)
 
         foos, err := clientset.ExampleV1alpha1().Foos("").List(context.Background(), metav1.ListOptions{})
         if err != nil {
-            log.Printf("listing foos %s\n", err.Error())
+            klog.Fatalf("listing foos %s %s", err.Error())
         }
-        fmt.Printf("length of foos is %d\n", len(foos.Items))
+        klog.Infof("llength of foos is %d", err.Error())
     }
     ```
 
