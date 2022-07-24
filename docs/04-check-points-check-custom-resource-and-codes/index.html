@@ -100,14 +100,13 @@
 <span class=kn>import</span> <span class=p>(</span>
     <span class=s>&#34;context&#34;</span>
     <span class=s>&#34;flag&#34;</span>
-    <span class=s>&#34;log&#34;</span>
     <span class=s>&#34;path/filepath&#34;</span>
 
     <span class=s>&#34;k8s.io/client-go/tools/clientcmd&#34;</span>
     <span class=s>&#34;k8s.io/client-go/util/homedir&#34;</span>
     <span class=s>&#34;k8s.io/klog/v2&#34;</span>
 
-    <span class=nx>client</span> <span class=s>&#34;github.com/nakamasato/sample-controller/pkg/generated/clientset/versioned&#34;</span>
+    <span class=nx>clientset</span> <span class=s>&#34;github.com/nakamasato/sample-controller/pkg/generated/clientset/versioned&#34;</span>
     <span class=nx>metav1</span> <span class=s>&#34;k8s.io/apimachinery/pkg/apis/meta/v1&#34;</span>
 <span class=p>)</span>
 
@@ -127,17 +126,17 @@
         <span class=nx>klog</span><span class=p>.</span><span class=nf>Fatalf</span><span class=p>(</span><span class=s>&#34;Error building kubeconfig: %s&#34;</span><span class=p>,</span> <span class=nx>err</span><span class=p>.</span><span class=nf>Error</span><span class=p>())</span>
     <span class=p>}</span>
 
-    <span class=nx>clientset</span><span class=p>,</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>client</span><span class=p>.</span><span class=nf>NewForConfig</span><span class=p>(</span><span class=nx>config</span><span class=p>)</span>
+    <span class=nx>exampleClientset</span><span class=p>,</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>clientset</span><span class=p>.</span><span class=nf>NewForConfig</span><span class=p>(</span><span class=nx>config</span><span class=p>)</span>
     <span class=k>if</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
         <span class=nx>klog</span><span class=p>.</span><span class=nf>Fatalf</span><span class=p>(</span><span class=s>&#34;Error building kubernetes clientset: %s&#34;</span><span class=p>,</span> <span class=nx>err</span><span class=p>.</span><span class=nf>Error</span><span class=p>())</span>
     <span class=p>}</span>
-    <span class=nx>klog</span><span class=p>.</span><span class=nf>Infof</span><span class=p>(</span><span class=nx>clientset</span><span class=p>)</span>
+    <span class=nx>klog</span><span class=p>.</span><span class=nf>Info</span><span class=p>(</span><span class=nx>exampleClientset</span><span class=p>)</span>
 
-    <span class=nx>foos</span><span class=p>,</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>clientset</span><span class=p>.</span><span class=nf>ExampleV1alpha1</span><span class=p>().</span><span class=nf>Foos</span><span class=p>(</span><span class=s>&#34;&#34;</span><span class=p>).</span><span class=nf>List</span><span class=p>(</span><span class=nx>context</span><span class=p>.</span><span class=nf>Background</span><span class=p>(),</span> <span class=nx>metav1</span><span class=p>.</span><span class=nx>ListOptions</span><span class=p>{})</span>
+    <span class=nx>foos</span><span class=p>,</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>exampleClientset</span><span class=p>.</span><span class=nf>ExampleV1alpha1</span><span class=p>().</span><span class=nf>Foos</span><span class=p>(</span><span class=s>&#34;&#34;</span><span class=p>).</span><span class=nf>List</span><span class=p>(</span><span class=nx>context</span><span class=p>.</span><span class=nf>Background</span><span class=p>(),</span> <span class=nx>metav1</span><span class=p>.</span><span class=nx>ListOptions</span><span class=p>{})</span>
     <span class=k>if</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
         <span class=nx>klog</span><span class=p>.</span><span class=nf>Fatalf</span><span class=p>(</span><span class=s>&#34;listing foos %s %s&#34;</span><span class=p>,</span> <span class=nx>err</span><span class=p>.</span><span class=nf>Error</span><span class=p>())</span>
     <span class=p>}</span>
-    <span class=nx>klog</span><span class=p>.</span><span class=nf>Infof</span><span class=p>(</span><span class=s>&#34;llength of foos is %d&#34;</span><span class=p>,</span> <span class=nx>err</span><span class=p>.</span><span class=nf>Error</span><span class=p>())</span>
+    <span class=nx>klog</span><span class=p>.</span><span class=nf>Infof</span><span class=p>(</span><span class=s>&#34;length of foos is %d&#34;</span><span class=p>,</span> <span class=nb>len</span><span class=p>(</span><span class=nx>foos</span><span class=p>.</span><span class=nx>Items</span><span class=p>))</span>
 <span class=p>}</span>
 </code></pre></div>
 </li>

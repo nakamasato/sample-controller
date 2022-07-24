@@ -85,9 +85,80 @@
 <h1 class=title>5. Implement reconciliation</h1>
 <div class=content>
 <h2 id=51-create-controllerhttpsgithubcomnakamasatosample-controllercommitbf02111b25e06d58ad8177a380336a19c3780f0c><a href=https://github.com/nakamasato/sample-controller/commit/bf02111b25e06d58ad8177a380336a19c3780f0c>5.1. Create Controller</a></h2>
-<ol>
-<li>
-<p>Create controller.</p>
+<h3 id=511-create-controller>5.1.1. Create controller.</h3>
+<div class=highlight><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kn>package</span> <span class=nx>main</span>
+
+<span class=kn>import</span> <span class=p>(</span>
+    <span class=s>&#34;time&#34;</span>
+
+    <span class=nx>clientset</span> <span class=s>&#34;github.com/nakamasato/sample-controller/pkg/generated/clientset/versioned&#34;</span>
+    <span class=nx>informers</span> <span class=s>&#34;github.com/nakamasato/sample-controller/pkg/generated/informers/externalversions/example.com/v1alpha1&#34;</span>
+    <span class=nx>listers</span> <span class=s>&#34;github.com/nakamasato/sample-controller/pkg/generated/listers/example.com/v1alpha1&#34;</span>
+
+    <span class=s>&#34;k8s.io/apimachinery/pkg/util/wait&#34;</span>
+    <span class=s>&#34;k8s.io/client-go/tools/cache&#34;</span>
+    <span class=s>&#34;k8s.io/client-go/util/workqueue&#34;</span>
+    <span class=s>&#34;k8s.io/klog/v2&#34;</span>
+<span class=p>)</span>
+
+<span class=kd>type</span> <span class=nx>Controller</span> <span class=kd>struct</span> <span class=p>{</span>
+    <span class=c1>// sampleclientset is a clientset for our own API group
+</span><span class=c1></span>    <span class=nx>sampleclientset</span> <span class=nx>clientset</span><span class=p>.</span><span class=nx>Interface</span>
+
+    <span class=nx>foosLister</span> <span class=nx>listers</span><span class=p>.</span><span class=nx>FooLister</span>    <span class=c1>// lister for foo
+</span><span class=c1></span>    <span class=nx>foosSynced</span> <span class=nx>cache</span><span class=p>.</span><span class=nx>InformerSynced</span> <span class=c1>// cache is synced for foo
+</span><span class=c1></span>
+    <span class=c1>// queue
+</span><span class=c1></span>    <span class=nx>workqueue</span> <span class=nx>workqueue</span><span class=p>.</span><span class=nx>RateLimitingInterface</span>
+<span class=p>}</span>
+
+<span class=kd>func</span> <span class=nf>NewController</span><span class=p>(</span><span class=nx>sampleclientset</span> <span class=nx>clientset</span><span class=p>.</span><span class=nx>Interface</span><span class=p>,</span> <span class=nx>fooInformer</span> <span class=nx>informers</span><span class=p>.</span><span class=nx>FooInformer</span><span class=p>)</span> <span class=o>*</span><span class=nx>Controller</span> <span class=p>{</span>
+    <span class=nx>controller</span> <span class=o>:=</span> <span class=o>&amp;</span><span class=nx>Controller</span><span class=p>{</span>
+        <span class=nx>sampleclientset</span><span class=p>:</span> <span class=nx>sampleclientset</span><span class=p>,</span>
+        <span class=nx>foosSynced</span><span class=p>:</span>      <span class=nx>fooInformer</span><span class=p>.</span><span class=nf>Informer</span><span class=p>().</span><span class=nx>HasSynced</span><span class=p>,</span>
+        <span class=nx>foosLister</span><span class=p>:</span>      <span class=nx>fooInformer</span><span class=p>.</span><span class=nf>Lister</span><span class=p>(),</span>
+        <span class=nx>workqueue</span><span class=p>:</span>       <span class=nx>workqueue</span><span class=p>.</span><span class=nf>NewNamedRateLimitingQueue</span><span class=p>(</span><span class=nx>workqueue</span><span class=p>.</span><span class=nf>DefaultControllerRateLimiter</span><span class=p>(),</span> <span class=s>&#34;foo&#34;</span><span class=p>),</span>
+    <span class=p>}</span>
+
+    <span class=nx>fooInformer</span><span class=p>.</span><span class=nf>Informer</span><span class=p>().</span><span class=nf>AddEventHandler</span><span class=p>(</span>
+        <span class=nx>cache</span><span class=p>.</span><span class=nx>ResourceEventHandlerFuncs</span><span class=p>{</span>
+            <span class=nx>AddFunc</span><span class=p>:</span>    <span class=nx>controller</span><span class=p>.</span><span class=nx>handleAdd</span><span class=p>,</span>
+            <span class=nx>DeleteFunc</span><span class=p>:</span> <span class=nx>controller</span><span class=p>.</span><span class=nx>handleDelete</span><span class=p>,</span>
+        <span class=p>},</span>
+    <span class=p>)</span>
+    <span class=k>return</span> <span class=nx>controller</span>
+<span class=p>}</span>
+
+<span class=kd>func</span> <span class=p>(</span><span class=nx>c</span> <span class=o>*</span><span class=nx>Controller</span><span class=p>)</span> <span class=nf>Run</span><span class=p>(</span><span class=nx>stopCh</span> <span class=kd>chan</span> <span class=kd>struct</span><span class=p>{})</span> <span class=kt>error</span> <span class=p>{</span>
+    <span class=k>defer</span> <span class=nx>c</span><span class=p>.</span><span class=nx>workqueue</span><span class=p>.</span><span class=nf>ShutDown</span><span class=p>()</span>
+    <span class=k>if</span> <span class=nx>ok</span> <span class=o>:=</span> <span class=nx>cache</span><span class=p>.</span><span class=nf>WaitForCacheSync</span><span class=p>(</span><span class=nx>stopCh</span><span class=p>,</span> <span class=nx>c</span><span class=p>.</span><span class=nx>foosSynced</span><span class=p>);</span> <span class=p>!</span><span class=nx>ok</span> <span class=p>{</span>
+        <span class=nx>klog</span><span class=p>.</span><span class=nf>Info</span><span class=p>(</span><span class=s>&#34;cache is not synced&#34;</span><span class=p>)</span>
+    <span class=p>}</span>
+
+    <span class=k>go</span> <span class=nx>wait</span><span class=p>.</span><span class=nf>Until</span><span class=p>(</span><span class=nx>c</span><span class=p>.</span><span class=nx>worker</span><span class=p>,</span> <span class=nx>time</span><span class=p>.</span><span class=nx>Second</span><span class=p>,</span> <span class=nx>stopCh</span><span class=p>)</span>
+
+    <span class=o>&lt;-</span><span class=nx>stopCh</span>
+    <span class=k>return</span> <span class=kc>nil</span>
+<span class=p>}</span>
+
+<span class=kd>func</span> <span class=p>(</span><span class=nx>c</span> <span class=o>*</span><span class=nx>Controller</span><span class=p>)</span> <span class=nf>worker</span><span class=p>()</span> <span class=p>{</span>
+    <span class=nx>c</span><span class=p>.</span><span class=nf>processNextItem</span><span class=p>()</span>
+<span class=p>}</span>
+
+<span class=kd>func</span> <span class=p>(</span><span class=nx>c</span> <span class=o>*</span><span class=nx>Controller</span><span class=p>)</span> <span class=nf>processNextItem</span><span class=p>()</span> <span class=kt>bool</span> <span class=p>{</span>
+    <span class=k>return</span> <span class=kc>true</span>
+<span class=p>}</span>
+
+<span class=kd>func</span> <span class=p>(</span><span class=nx>c</span> <span class=o>*</span><span class=nx>Controller</span><span class=p>)</span> <span class=nf>handleAdd</span><span class=p>(</span><span class=nx>obj</span> <span class=kd>interface</span><span class=p>{})</span> <span class=p>{</span>
+    <span class=nx>klog</span><span class=p>.</span><span class=nf>Info</span><span class=p>(</span><span class=s>&#34;handleAdd was called&#34;</span><span class=p>)</span>
+    <span class=nx>c</span><span class=p>.</span><span class=nx>workqueue</span><span class=p>.</span><span class=nf>Add</span><span class=p>(</span><span class=nx>obj</span><span class=p>)</span>
+<span class=p>}</span>
+
+<span class=kd>func</span> <span class=p>(</span><span class=nx>c</span> <span class=o>*</span><span class=nx>Controller</span><span class=p>)</span> <span class=nf>handleDelete</span><span class=p>(</span><span class=nx>obj</span> <span class=kd>interface</span><span class=p>{})</span> <span class=p>{</span>
+    <span class=nx>klog</span><span class=p>.</span><span class=nf>Info</span><span class=p>(</span><span class=s>&#34;handleDelete was called&#34;</span><span class=p>)</span>
+    <span class=nx>c</span><span class=p>.</span><span class=nx>workqueue</span><span class=p>.</span><span class=nf>Add</span><span class=p>(</span><span class=nx>obj</span><span class=p>)</span>
+<span class=p>}</span>
+</code></pre></div>
 <p>What&rsquo;s inside the controller:</p>
 <ol>
 <li>Define <code>Controller</code> struct with <code>sampleclientset</code>, <code>foosLister</code>, <code>foosSynced</code>, and <code>workqueue</code>.</li>
@@ -107,110 +178,31 @@
 <li>Define <code>worker</code>: just call <code>processNextItem</code>.</li>
 <li>Define <code>processNextItem</code>: always return true for now.</li>
 </ol>
-<div class=highlight><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kn>package</span> <span class=nx>main</span>
-
-<span class=kn>import</span> <span class=p>(</span>
-	<span class=s>&#34;time&#34;</span>
-
-	<span class=nx>clientset</span> <span class=s>&#34;github.com/nakamasato/sample-controller/pkg/generated/clientset/versioned&#34;</span>
-	<span class=nx>informers</span> <span class=s>&#34;github.com/nakamasato/sample-controller/pkg/generated/informers/externalversions/example.com/v1alpha1&#34;</span>
-	<span class=nx>listers</span> <span class=s>&#34;github.com/nakamasato/sample-controller/pkg/generated/listers/example.com/v1alpha1&#34;</span>
-
-	<span class=s>&#34;k8s.io/apimachinery/pkg/util/wait&#34;</span>
-	<span class=s>&#34;k8s.io/client-go/tools/cache&#34;</span>
-	<span class=s>&#34;k8s.io/client-go/util/workqueue&#34;</span>
-    <span class=s>&#34;k8s.io/klog/v2&#34;</span>
-<span class=p>)</span>
-
-<span class=kd>type</span> <span class=nx>Controller</span> <span class=kd>struct</span> <span class=p>{</span>
-	<span class=c1>// sampleclientset is a clientset for our own API group
-</span><span class=c1></span>	<span class=nx>sampleclientset</span> <span class=nx>clientset</span><span class=p>.</span><span class=nx>Interface</span>
-
-	<span class=nx>foosLister</span> <span class=nx>listers</span><span class=p>.</span><span class=nx>FooLister</span>    <span class=c1>// lister for foo
-</span><span class=c1></span>	<span class=nx>foosSynced</span> <span class=nx>cache</span><span class=p>.</span><span class=nx>InformerSynced</span> <span class=c1>// cache is synced for foo
-</span><span class=c1></span>
-	<span class=c1>// queue
-</span><span class=c1></span>	<span class=nx>workqueue</span> <span class=nx>workqueue</span><span class=p>.</span><span class=nx>RateLimitingInterface</span>
-<span class=p>}</span>
-
-<span class=kd>func</span> <span class=nf>NewController</span><span class=p>(</span><span class=nx>sampleclientset</span> <span class=nx>clientset</span><span class=p>.</span><span class=nx>Interface</span><span class=p>,</span> <span class=nx>fooInformer</span> <span class=nx>informers</span><span class=p>.</span><span class=nx>FooInformer</span><span class=p>)</span> <span class=o>*</span><span class=nx>Controller</span> <span class=p>{</span>
-	<span class=nx>controller</span> <span class=o>:=</span> <span class=o>&amp;</span><span class=nx>Controller</span><span class=p>{</span>
-        <span class=nx>sampleclientset</span><span class=p>:</span> <span class=nx>sampleclientset</span><span class=p>,</span>
-        <span class=nx>foosSynced</span><span class=p>:</span>      <span class=nx>fooInformer</span><span class=p>.</span><span class=nf>Informer</span><span class=p>().</span><span class=nx>HasSynced</span><span class=p>,</span>
-        <span class=nx>foosLister</span><span class=p>:</span>      <span class=nx>fooInformer</span><span class=p>.</span><span class=nf>Lister</span><span class=p>(),</span>
-        <span class=nx>workqueue</span><span class=p>:</span>       <span class=nx>workqueue</span><span class=p>.</span><span class=nf>NewNamedRateLimitingQueue</span><span class=p>(</span><span class=nx>workqueue</span><span class=p>.</span><span class=nf>DefaultControllerRateLimiter</span><span class=p>(),</span> <span class=s>&#34;foo&#34;</span><span class=p>),</span>
-	<span class=p>}</span>
-
-	<span class=nx>fooInformer</span><span class=p>.</span><span class=nf>Informer</span><span class=p>().</span><span class=nf>AddEventHandler</span><span class=p>(</span>
-        <span class=nx>cache</span><span class=p>.</span><span class=nx>ResourceEventHandlerFuncs</span><span class=p>{</span>
-            <span class=nx>AddFunc</span><span class=p>:</span>    <span class=nx>controller</span><span class=p>.</span><span class=nx>handleAdd</span><span class=p>,</span>
-            <span class=nx>DeleteFunc</span><span class=p>:</span> <span class=nx>controller</span><span class=p>.</span><span class=nx>handleDelete</span><span class=p>,</span>
-        <span class=p>},</span>
-	<span class=p>)</span>
-	<span class=k>return</span> <span class=nx>controller</span>
-<span class=p>}</span>
-
-<span class=kd>func</span> <span class=p>(</span><span class=nx>c</span> <span class=o>*</span><span class=nx>Controller</span><span class=p>)</span> <span class=nf>Run</span><span class=p>(</span><span class=nx>ch</span> <span class=kd>chan</span> <span class=kd>struct</span><span class=p>{})</span> <span class=kt>error</span> <span class=p>{</span>
-	<span class=k>if</span> <span class=nx>ok</span> <span class=o>:=</span> <span class=nx>cache</span><span class=p>.</span><span class=nf>WaitForCacheSync</span><span class=p>(</span><span class=nx>ch</span><span class=p>,</span> <span class=nx>c</span><span class=p>.</span><span class=nx>foosSynced</span><span class=p>);</span> <span class=p>!</span><span class=nx>ok</span> <span class=p>{</span>
-        <span class=nx>klog</span><span class=p>.</span><span class=nf>Info</span><span class=p>(</span><span class=s>&#34;cache is not synced&#34;</span><span class=p>)</span>
-	<span class=p>}</span>
-
-	<span class=k>go</span> <span class=nx>wait</span><span class=p>.</span><span class=nf>Until</span><span class=p>(</span><span class=nx>c</span><span class=p>.</span><span class=nx>worker</span><span class=p>,</span> <span class=nx>time</span><span class=p>.</span><span class=nx>Second</span><span class=p>,</span> <span class=nx>ch</span><span class=p>)</span>
-
-	<span class=o>&lt;-</span><span class=nx>ch</span>
-	<span class=k>return</span> <span class=kc>nil</span>
-<span class=p>}</span>
-
-<span class=kd>func</span> <span class=p>(</span><span class=nx>c</span> <span class=o>*</span><span class=nx>Controller</span><span class=p>)</span> <span class=nf>worker</span><span class=p>()</span> <span class=p>{</span>
-	<span class=nx>c</span><span class=p>.</span><span class=nf>processNextItem</span><span class=p>()</span>
-<span class=p>}</span>
-
-<span class=kd>func</span> <span class=p>(</span><span class=nx>c</span> <span class=o>*</span><span class=nx>Controller</span><span class=p>)</span> <span class=nf>processNextItem</span><span class=p>()</span> <span class=kt>bool</span> <span class=p>{</span>
-	<span class=k>return</span> <span class=kc>true</span>
-<span class=p>}</span>
-
-<span class=kd>func</span> <span class=p>(</span><span class=nx>c</span> <span class=o>*</span><span class=nx>Controller</span><span class=p>)</span> <span class=nf>handleAdd</span><span class=p>(</span><span class=nx>obj</span> <span class=kd>interface</span><span class=p>{})</span> <span class=p>{</span>
-	<span class=nx>klog</span><span class=p>.</span><span class=nf>Info</span><span class=p>(</span><span class=s>&#34;handleAdd was called&#34;</span><span class=p>)</span>
-	<span class=nx>c</span><span class=p>.</span><span class=nx>workqueue</span><span class=p>.</span><span class=nf>Add</span><span class=p>(</span><span class=nx>obj</span><span class=p>)</span>
-<span class=p>}</span>
-
-<span class=kd>func</span> <span class=p>(</span><span class=nx>c</span> <span class=o>*</span><span class=nx>Controller</span><span class=p>)</span> <span class=nf>handleDelete</span><span class=p>(</span><span class=nx>obj</span> <span class=kd>interface</span><span class=p>{})</span> <span class=p>{</span>
-	<span class=nx>klog</span><span class=p>.</span><span class=nf>Info</span><span class=p>(</span><span class=s>&#34;handleDelete was called&#34;</span><span class=p>)</span>
-	<span class=nx>c</span><span class=p>.</span><span class=nx>workqueue</span><span class=p>.</span><span class=nf>Add</span><span class=p>(</span><span class=nx>obj</span><span class=p>)</span>
-<span class=p>}</span>
-</code></pre></div>
-</li>
-<li>
-<p>Update <code>main.go</code> to initialize a controller and run it.</p>
+<h3 id=512-update-maingo-to-initialize-a-controller-and-run-it>5.1.2. Update <code>main.go</code> to initialize a controller and run it.</h3>
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-diff data-lang=diff> import (
 <span class=gd>-       &#34;context&#34;
 </span><span class=gd></span>        &#34;flag&#34;
         &#34;path/filepath&#34;
 <span class=gi>+       &#34;time&#34;
-</span><span class=gi></span>
-        &#34;k8s.io/client-go/tools/clientcmd&#34;
+</span><span class=gi></span>        &#34;k8s.io/client-go/tools/clientcmd&#34;
         &#34;k8s.io/client-go/util/homedir&#34;
         &#34;k8s.io/klog/v2&#34;
-
 <span class=gd>-       client &#34;github.com/nakamasato/sample-controller/pkg/generated/clientset/versioned&#34;
 </span><span class=gd>-       metav1 &#34;k8s.io/apimachinery/pkg/apis/meta/v1&#34;
 </span><span class=gd></span><span class=gi>+       clientset &#34;github.com/nakamasato/sample-controller/pkg/generated/clientset/versioned&#34;
 </span><span class=gi>+       informers &#34;github.com/nakamasato/sample-controller/pkg/generated/informers/externalversions&#34;
 </span><span class=gi></span> )
-
  func main() {
 <span class=gu>@@ -29,15 +29,16 @@ func main() {
 </span><span class=gu></span>                klog.Fatalf(&#34;Building config from flags, %s&#34;, err.Error())
         }
-
 <span class=gd>-       clientset, err := client.NewForConfig(config)
 </span><span class=gd></span><span class=gi>+       exampleClient, err := clientset.NewForConfig(config)
 </span><span class=gi></span>        if err != nil {
                 klog.Fatalf(&#34;getting client set %s\n&#34;, err.Error())
         }
 <span class=gd>-       fmt.Println(clientset)
-</span><span class=gd></span>
-<span class=gd>-       foos, err := clientset.ExampleV1alpha1().Foos(&#34;&#34;).List(context.Background(), metav1.ListOptions{})
+</span><span class=gd>-       foos, err := clientset.ExampleV1alpha1().Foos(&#34;&#34;).List(context.Background(), metav1.ListOptions{})
 </span><span class=gd>-       if err != nil {
 </span><span class=gd>-               klog.Fatalf(&#34;listing foos %s\n&#34;, err.Error())
 </span><span class=gd></span><span class=gi>+       exampleInformerFactory := informers.NewSharedInformerFactory(exampleClient, time.Second*30)
@@ -223,52 +215,8 @@
 <span class=gd>-       klog.Infof(&#34;length of foos is %d\n&#34;, len(foos.Items))
 </span><span class=gd></span> }
 </code></pre></div><p>At the line of <code>exampleInformerFactory := informers.NewSharedInformerFactory(exampleClient, time.Second*30)</code>, the second argument specifies <em><strong>ResyncPeriod</strong></em>, which defines the interval of <em><strong>resync</strong></em> (<em>The resync operation consists of delivering to the handler an update notification for every object in the informer&rsquo;s local cache</em>). For more detail, please read <a href=https://pkg.go.dev/k8s.io/client-go@v0.23.1/tools/cache#NewSharedIndexInformer>NewSharedIndexInformer</a></p>
-<div class=highlight><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kn>package</span> <span class=nx>main</span>
-
-<span class=kn>import</span> <span class=p>(</span>
-	<span class=s>&#34;flag&#34;</span>
-	<span class=s>&#34;path/filepath&#34;</span>
-	<span class=s>&#34;time&#34;</span>
-
-	<span class=s>&#34;k8s.io/client-go/tools/clientcmd&#34;</span>
-	<span class=s>&#34;k8s.io/client-go/util/homedir&#34;</span>
-    <span class=s>&#34;k8s.io/klog/v2&#34;</span>
-
-	<span class=nx>clientset</span> <span class=s>&#34;github.com/nakamasato/sample-controller/pkg/generated/clientset/versioned&#34;</span>
-	<span class=nx>informers</span> <span class=s>&#34;github.com/nakamasato/sample-controller/pkg/generated/informers/externalversions&#34;</span>
-<span class=p>)</span>
-
-<span class=kd>func</span> <span class=nf>main</span><span class=p>()</span> <span class=p>{</span>
-    <span class=nx>klog</span><span class=p>.</span><span class=nf>InitFlags</span><span class=p>(</span><span class=kc>nil</span><span class=p>)</span>
-	<span class=kd>var</span> <span class=nx>kubeconfig</span> <span class=o>*</span><span class=kt>string</span>
-
-	<span class=k>if</span> <span class=nx>home</span> <span class=o>:=</span> <span class=nx>homedir</span><span class=p>.</span><span class=nf>HomeDir</span><span class=p>();</span> <span class=nx>home</span> <span class=o>!=</span> <span class=s>&#34;&#34;</span> <span class=p>{</span>
-        <span class=nx>kubeconfig</span> <span class=p>=</span> <span class=nx>flag</span><span class=p>.</span><span class=nf>String</span><span class=p>(</span><span class=s>&#34;kubeconfig&#34;</span><span class=p>,</span> <span class=nx>filepath</span><span class=p>.</span><span class=nf>Join</span><span class=p>(</span><span class=nx>home</span><span class=p>,</span> <span class=s>&#34;.kube&#34;</span><span class=p>,</span> <span class=s>&#34;config&#34;</span><span class=p>),</span> <span class=s>&#34;(optional)&#34;</span><span class=p>)</span>
-	<span class=p>}</span> <span class=k>else</span> <span class=p>{</span>
-        <span class=nx>kubeconfig</span> <span class=p>=</span> <span class=nx>flag</span><span class=p>.</span><span class=nf>String</span><span class=p>(</span><span class=s>&#34;kubeconfig&#34;</span><span class=p>,</span> <span class=s>&#34;&#34;</span><span class=p>,</span> <span class=s>&#34;absolute path to kubeconfig file&#34;</span><span class=p>)</span>
-	<span class=p>}</span>
-	<span class=nx>flag</span><span class=p>.</span><span class=nf>Parse</span><span class=p>()</span>
-
-	<span class=nx>config</span><span class=p>,</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>clientcmd</span><span class=p>.</span><span class=nf>BuildConfigFromFlags</span><span class=p>(</span><span class=s>&#34;&#34;</span><span class=p>,</span> <span class=o>*</span><span class=nx>kubeconfig</span><span class=p>)</span>
-	<span class=k>if</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
-        <span class=nx>klog</span><span class=p>.</span><span class=nf>Fatalf</span><span class=p>(</span><span class=s>&#34;Building config from flags, %s&#34;</span><span class=p>,</span> <span class=nx>err</span><span class=p>.</span><span class=nf>Error</span><span class=p>())</span>
-	<span class=p>}</span>
-
-	<span class=nx>exampleClient</span><span class=p>,</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>clientset</span><span class=p>.</span><span class=nf>NewForConfig</span><span class=p>(</span><span class=nx>config</span><span class=p>)</span>
-	<span class=k>if</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
-        <span class=nx>klog</span><span class=p>.</span><span class=nf>Fatalf</span><span class=p>(</span><span class=s>&#34;getting client set %s\n&#34;</span><span class=p>,</span> <span class=nx>err</span><span class=p>.</span><span class=nf>Error</span><span class=p>())</span>
-	<span class=p>}</span>
-
-	<span class=nx>exampleInformerFactory</span> <span class=o>:=</span> <span class=nx>informers</span><span class=p>.</span><span class=nf>NewSharedInformerFactory</span><span class=p>(</span><span class=nx>exampleClient</span><span class=p>,</span> <span class=nx>time</span><span class=p>.</span><span class=nx>Second</span><span class=o>*</span><span class=mi>30</span><span class=p>)</span>
-	<span class=nx>ch</span> <span class=o>:=</span> <span class=nb>make</span><span class=p>(</span><span class=kd>chan</span> <span class=kd>struct</span><span class=p>{})</span>
-	<span class=nx>controller</span> <span class=o>:=</span> <span class=nx>controller</span><span class=p>.</span><span class=nf>NewController</span><span class=p>(</span><span class=nx>exampleClient</span><span class=p>,</span> <span class=nx>exampleInformerFactory</span><span class=p>.</span><span class=nf>Example</span><span class=p>().</span><span class=nf>V1alpha1</span><span class=p>().</span><span class=nf>Foos</span><span class=p>())</span>
-	<span class=nx>exampleInformerFactory</span><span class=p>.</span><span class=nf>Start</span><span class=p>(</span><span class=nx>ch</span><span class=p>)</span>
-	<span class=k>if</span> <span class=nx>err</span> <span class=p>=</span> <span class=nx>controller</span><span class=p>.</span><span class=nf>Run</span><span class=p>(</span><span class=nx>ch</span><span class=p>);</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
-        <span class=nx>klog</span><span class=p>.</span><span class=nf>Fatalf</span><span class=p>(</span><span class=s>&#34;error occurred when running controller %s\n&#34;</span><span class=p>,</span> <span class=nx>err</span><span class=p>.</span><span class=nf>Error</span><span class=p>())</span>
-	<span class=p>}</span>
-<span class=p>}</span>
-</code></pre></div>
-</li>
+<h3 id=513-run-and-check>5.1.3 Run and check</h3>
+<ol>
 <li>
 <p>Run the controller.</p>
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>go run .
@@ -285,6 +233,7 @@
 </code></pre></div></li>
 </ol>
 <h2 id=52-fetch-foo-objecthttpsgithubcomnakamasatosample-controllercommit0d9c689f4ecb707e6c160632ad7a397d89f0c5ab><a href=https://github.com/nakamasato/sample-controller/commit/0d9c689f4ecb707e6c160632ad7a397d89f0c5ab>5.2. Fetch foo object</a></h2>
+<h3 id=521-overview>5.2.1. Overview</h3>
 <p>Implement the following logic:</p>
 <ol>
 <li>Get a workqueue item.</li>
@@ -292,7 +241,7 @@
 <li>Split the key into namespace and name.</li>
 <li>Get the <code>Foo</code> resource with namespace and name from the lister.</li>
 </ol>
-<p>Steps:</p>
+<h3 id=522-implement>5.2.2. Implement</h3>
 <ol>
 <li>
 <p>Define <code>enqueueFoo</code> to convert Foo resource into namespace/name string before putting into the workqueue.</p>
@@ -371,6 +320,9 @@
     <span class=k>return</span> <span class=kc>true</span>
 <span class=p>}</span>
 </code></pre></div></li>
+</ol>
+<h3 id=523-run-and-check>5.2.3. Run and check</h3>
+<ol>
 <li>
 <p>Run the controller.</p>
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>go run .
@@ -389,7 +341,16 @@
 </code></pre></div></li>
 </ol>
 <h2 id=53-enable-to-createdelete-deployment-for-foo-resourcehttpsgithubcomnakamasatosample-controllercommit328581a50dd3a646289bc086538ce6892c90080b><a href=https://github.com/nakamasato/sample-controller/commit/328581a50dd3a646289bc086538ce6892c90080b>5.3. Enable to Create/Delete Deployment for Foo resource</a></h2>
-<p>At the end of this step, we&rsquo;ll be able to create <code>Deployment</code> for <code>Foo</code> resource.</p>
+<h3 id=531-overview>5.3.1. Overview</h3>
+<p>In this section, we&rsquo;ll add a logic to create a <code>Deployment</code> for <code>Foo</code> resource.</p>
+<p>The logic to implement is:</p>
+<ol>
+<li>Add clientset, informer and lister for Deployment to <code>Controller</code>.</li>
+<li>Initialize clientset and informer in main.go and pass them to a Controller when initializing it.</li>
+<li>In <code>syncHandler</code> func, add a logic to create a Deployment if there doesn&rsquo;t exist a Deployment with name <code>foo.spec.deploymentName</code> in the same namespace as Foo object.</li>
+<li>Set <code>OwnerReferences</code> for a new Deployment in <code>newDeployment</code> so that the Deployment will be cleaned up when the owner, <code>Foo</code> object, is deleted.</li>
+</ol>
+<h3 id=532-implement>5.3.2. Implement</h3>
 <ol>
 <li>
 <p>Import the necessary packages.</p>
@@ -595,8 +556,8 @@
 </span><span class=gd>-       c.enqueueFoo(obj)
 </span><span class=gd>-}
 </span></code></pre></div></li>
-<li>
-<p>Test <code>sample-controller</code>.</p>
+</ol>
+<h3 id=533-run-and-check>5.3.3. Run and check</h3>
 <ol>
 <li>
 <p>Run the controller.</p>
@@ -623,8 +584,6 @@ No resources found in default namespace.
 <blockquote>
 <p>Kubernetes checks for and deletes objects that no longer have owner references, like the pods left behind when you delete a ReplicaSet. When you delete an object, you can control whether Kubernetes deletes the object&rsquo;s dependents automatically, in a process called cascading deletion.</p>
 </blockquote>
-</li>
-</ol>
 </li>
 </ol>
 <h2 id=54-check-and-update-deployment-if-necessaryhttpsgithubcomnakamasatosample-controllercommit8b405a96ab54c85da00bc1b902d76fa89e3584fe><a href=https://github.com/nakamasato/sample-controller/commit/8b405a96ab54c85da00bc1b902d76fa89e3584fe>5.4. Check and update Deployment if necessary</a></h2>
