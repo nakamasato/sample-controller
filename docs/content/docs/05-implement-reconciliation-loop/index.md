@@ -112,74 +112,79 @@ What's inside the controller:
         "k8s.io/client-go/tools/clientcmd"
         "k8s.io/client-go/util/homedir"
         "k8s.io/klog/v2"
--       client "github.com/nakamasato/sample-controller/pkg/generated/clientset/versioned"
+
 -       metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-+       clientset "github.com/nakamasato/sample-controller/pkg/generated/clientset/versioned"
 +       informers "github.com/nakamasato/sample-controller/pkg/generated/informers/externalversions"
  )
  func main() {
 @@ -29,15 +29,16 @@ func main() {
-                klog.Fatalf("Building config from flags, %s", err.Error())
-        }
--       clientset, err := client.NewForConfig(config)
-+       exampleClient, err := clientset.NewForConfig(config)
         if err != nil {
                 klog.Fatalf("getting client set %s\n", err.Error())
         }
--       fmt.Println(clientset)
--       foos, err := clientset.ExampleV1alpha1().Foos("").List(context.Background(), metav1.ListOptions{})
+-       fmt.Println(exampleClientset)
+-       foos, err := exampleClientset.ExampleV1alpha1().Foos("").List(context.Background(), metav1.ListOptions{})
 -       if err != nil {
 -               klog.Fatalf("listing foos %s\n", err.Error())
-+       exampleInformerFactory := informers.NewSharedInformerFactory(exampleClient, time.Second*30)
-+       ch := make(chan struct{})
-+       controller := controller.NewController(exampleClient, informerFactory.Example().V1alpha1().Foos())
-+       exampleInformerFactory.Start(ch)
-+       if err = controller.Run(ch); err != nil {
++       exampleInformerFactory := informers.NewSharedInformerFactory(exampleClientset, time.Second*30)
++       stopCh := make(chan struct{})
++       controller := NewController(exampleClientset, exampleInformerFactory.Example().V1alpha1().Foos())
++       exampleInformerFactory.Start(stopCh)
++       if err = controller.Run(stopCh); err != nil {
 +               klog.Fatalf("error occurred when running controller %s\n", err.Error())
         }
 -       klog.Infof("length of foos is %d\n", len(foos.Items))
  }
 ```
-At the line of `exampleInformerFactory := informers.NewSharedInformerFactory(exampleClient, time.Second*30)`, the second argument specifies ***ResyncPeriod***, which defines the interval of ***resync*** (*The resync operation consists of delivering to the handler an update notification for every object in the informer's local cache*). For more detail, please read [NewSharedIndexInformer](https://pkg.go.dev/k8s.io/client-go@v0.23.1/tools/cache#NewSharedIndexInformer)
+At the line of `exampleInformerFactory := informers.NewSharedInformerFactory(exampleClientset, time.Second*30)`, the second argument specifies ***ResyncPeriod***, which defines the interval of ***resync*** (*The resync operation consists of delivering to the handler an update notification for every object in the informer's local cache*). For more detail, please read [NewSharedIndexInformer](https://pkg.go.dev/k8s.io/client-go@v0.23.1/tools/cache#NewSharedIndexInformer)
 <details><summary>main.go</summary>
+
 ```go
 package main
+
 import (
-	"flag"
-	"path/filepath"
-	"time"
-	"k8s.io/client-go/tools/clientcmd"
-	"k8s.io/client-go/util/homedir"
+    "flag"
+    "path/filepath"
+    "time"
+
+    "k8s.io/client-go/tools/clientcmd"
+    "k8s.io/client-go/util/homedir"
     "k8s.io/klog/v2"
-	clientset "github.com/nakamasato/sample-controller/pkg/generated/clientset/versioned"
-	informers "github.com/nakamasato/sample-controller/pkg/generated/informers/externalversions"
+
+    clientset "github.com/nakamasato/sample-controller/pkg/generated/clientset/versioned"
+    informers "github.com/nakamasato/sample-controller/pkg/generated/informers/externalversions"
 )
+
 func main() {
     klog.InitFlags(nil)
-	var kubeconfig *string
-	if home := homedir.HomeDir(); home != "" {
-		kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional)")
-	} else {
-		kubeconfig = flag.String("kubeconfig", "", "absolute path to kubeconfig file")
-	}
-	flag.Parse()
-	config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
-	if err != nil {
-		klog.Fatalf("Building config from flags, %s", err.Error())
-	}
-	exampleClient, err := clientset.NewForConfig(config)
-	if err != nil {
-		klog.Fatalf("getting client set %s\n", err.Error())
-	}
-	exampleInformerFactory := informers.NewSharedInformerFactory(exampleClient, time.Second*30)
-	ch := make(chan struct{})
-	controller := controller.NewController(exampleClient, exampleInformerFactory.Example().V1alpha1().Foos())
-	exampleInformerFactory.Start(ch)
-	if err = controller.Run(ch); err != nil {
-		klog.Fatalf("error occurred when running controller %s\n", err.Error())
-	}
+    var kubeconfig *string
+
+    if home := homedir.HomeDir(); home != "" {
+        kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional)")
+    } else {
+        kubeconfig = flag.String("kubeconfig", "", "absolute path to kubeconfig file")
+    }
+    flag.Parse()
+
+    config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
+    if err != nil {
+        klog.Fatalf("Error building kubeconfig: %s", err.Error())
+    }
+
+    exampleClientset, err := clientset.NewForConfig(config)
+    if err != nil {
+        klog.Fatalf("Error building kubernetes clientset: %s", err.Error())
+    }
+
+    exampleInformerFactory := informers.NewSharedInformerFactory(exampleClientset, time.Second*30)
+    stopCh := make(chan struct{})
+    controller := NewController(exampleClientset, exampleInformerFactory.Example().V1alpha1().Foos())
+    exampleInformerFactory.Start(stopCh)
+    if err = controller.Run(stopCh); err != nil {
+        klog.Fatalf("error occurred when running controller %s\n", err.Error())
+    }
 }
 ```
+
 </details>
 
 ### 5.1.3 Run and check
@@ -324,6 +329,7 @@ Implement the following logic:
     ```
     2022/07/18 07:46:42 handleAdd was called
     2022/07/18 07:46:42 Got foo {DeploymentName:foo-sample Replicas:0x1400030194c}
+    2022/07/18 07:46:42 Successfully synced 'default/foo-sample'
     2022/07/18 07:46:49 handleDelete was called
     2022/07/18 07:46:49 failed to get foo resource from lister foo.example.com "foo-sample" not found
     ```
@@ -411,22 +417,22 @@ The logic to implement is:
     +               klog.Errorf("getting kubernetes client set %s\n", err.Error())
     +       }
     +
-            exampleClient, err := clientset.NewForConfig(config)
+            exampleClientset, err := clientset.NewForConfig(config)
             if err != nil {
                     klog.Errorf("getting client set %s\n", err.Error())
             }
 
     +       kubeInformerFactory := kubeinformers.NewSharedInformerFactory(kubeClient, time.Second*30)
-            exampleInformerFactory := informers.NewSharedInformerFactory(exampleClient, time.Second*30)
-            ch := make(chan struct{})
-    -       controller := controller.NewController(exampleClient, exampleInformerFactory.Example().V1alpha1().Foos())
+            exampleInformerFactory := informers.NewSharedInformerFactory(exampleClientset, time.Second*30)
+            stopCh := make(chan struct{})
+    -       controller := controller.NewController(exampleClientset, exampleInformerFactory.Example().V1alpha1().Foos())
     +       controller := controller.NewController(
     +               kubeClient,
-    +               exampleClient,
+    +               exampleClientset,
     +               kubeInformerFactory.Apps().V1().Deployments(),
     +               exampleInformerFactory.Example().V1alpha1().Foos(),
     +       )
-    +       kubeInformerFactory.Start(ch)
+    +       kubeInformerFactory.Start(stopCh)
         ...
     }
     ```
@@ -435,71 +441,71 @@ The logic to implement is:
 
     ```go
     func (c *Controller) syncHandler(key string) error {
-    	ns, name, err := cache.SplitMetaNamespaceKey(key)
-    	if err != nil {
-    		klog.Errorf("failed to split key into namespace and name %s\n", err.Error())
-    		return err
-    	}
+        ns, name, err := cache.SplitMetaNamespaceKey(key)
+        if err != nil {
+            klog.Errorf("failed to split key into namespace and name %s\n", err.Error())
+            return err
+        }
 
-    	foo, err := c.foosLister.Foos(ns).Get(name)
-    	if err != nil {
-    		klog.Errorf("failed to get foo resource from lister %s\n", err.Error())
-    		if errors.IsNotFound(err) {
-    			return nil
-    		}
-    		return err
-    	}
+        foo, err := c.foosLister.Foos(ns).Get(name)
+        if err != nil {
+            klog.Errorf("failed to get foo resource from lister %s\n", err.Error())
+            if errors.IsNotFound(err) {
+                return nil
+            }
+            return err
+        }
 
-    	deploymentName := foo.Spec.DeploymentName
-    	if deploymentName == "" {
-    		klog.Errorf("deploymentName must be specified %s\n", key)
-    		return nil
-    	}
-    	deployment, err := c.deploymentsLister.Deployments(foo.Namespace).Get(deploymentName)
-    	if errors.IsNotFound(err) {
-    		deployment, err = c.kubeclientset.AppsV1().Deployments(foo.Namespace).Create(context.TODO(), newDeployment(foo), metav1.CreateOptions{})
-    	}
+        deploymentName := foo.Spec.DeploymentName
+        if deploymentName == "" {
+            klog.Errorf("deploymentName must be specified %s\n", key)
+            return nil
+        }
+        deployment, err := c.deploymentsLister.Deployments(foo.Namespace).Get(deploymentName)
+        if errors.IsNotFound(err) {
+            deployment, err = c.kubeclientset.AppsV1().Deployments(foo.Namespace).Create(context.TODO(), newDeployment(foo), metav1.CreateOptions{})
+        }
 
-    	if err != nil {
-    		return err
-    	}
+        if err != nil {
+            return err
+        }
 
-    	klog.Infof("deployment %s is valid", deployment.Name)
+        klog.Infof("deployment %s is valid", deployment.Name)
 
-    	return nil
+        return nil
     }
 
     func newDeployment(foo *samplev1alpha1.Foo) *appsv1.Deployment {
-    	labels := map[string]string{
-    		"app":        "nginx",
-    		"controller": foo.Name,
-    	}
-    	return &appsv1.Deployment{
-    		ObjectMeta: metav1.ObjectMeta{
-    			Name:            foo.Spec.DeploymentName,
-    			Namespace:       foo.Namespace,
-    			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(foo, samplev1alpha1.SchemeGroupVersion.WithKind("Foo"))},
-    		},
-    		Spec: appsv1.DeploymentSpec{
-    			Replicas: foo.Spec.Replicas,
-    			Selector: &metav1.LabelSelector{
-    				MatchLabels: labels,
-    			},
-    			Template: corev1.PodTemplateSpec{
-    				ObjectMeta: metav1.ObjectMeta{
-    					Labels: labels,
-    				},
-    				Spec: corev1.PodSpec{
-    					Containers: []corev1.Container{
-    						{
-    							Name:  "nginx",
-    							Image: "nginx:latest",
-    						},
-    					},
-    				},
-    			},
-    		},
-    	}
+        labels := map[string]string{
+            "app":        "nginx",
+            "controller": foo.Name,
+        }
+        return &appsv1.Deployment{
+            ObjectMeta: metav1.ObjectMeta{
+                Name:            foo.Spec.DeploymentName,
+                Namespace:       foo.Namespace,
+                OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(foo, samplev1alpha1.SchemeGroupVersion.WithKind("Foo"))},
+            },
+            Spec: appsv1.DeploymentSpec{
+                Replicas: foo.Spec.Replicas,
+                Selector: &metav1.LabelSelector{
+                    MatchLabels: labels,
+                },
+                Template: corev1.PodTemplateSpec{
+                    ObjectMeta: metav1.ObjectMeta{
+                        Labels: labels,
+                    },
+                    Spec: corev1.PodSpec{
+                        Containers: []corev1.Container{
+                            {
+                                Name:  "nginx",
+                                Image: "nginx:latest",
+                            },
+                        },
+                    },
+                },
+            },
+        }
     }
     ```
 
@@ -508,9 +514,9 @@ The logic to implement is:
     ```go
     import (
         "context"
-	    "fmt"
+        "fmt"
         appsv1 "k8s.io/api/apps/v1"
-	    corev1 "k8s.io/api/core/v1"
+        corev1 "k8s.io/api/core/v1"
         metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
         "k8s.io/apimachinery/pkg/api/errors"
         samplev1alpha1 "github.com/nakamasato/sample-controller/pkg/apis/example.com/v1alpha1"
