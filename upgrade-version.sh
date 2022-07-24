@@ -5,7 +5,7 @@ set -ue
 MODULE_NAME=github.com/nakamasato/sample-controller
 REPO_URL=https://$MODULE_NAME
 DATE_FORMAT="%Y-%m-%dT%H:%M:%S%z"
-FOO_CONTROLLER_FILE=pkg/controller/foo.go
+FOO_CONTROLLER_FILE=controller.go
 FOO_CRD_FILE=config/crd/foos.yaml
 MAIN_GO_FILE=main.go
 
@@ -14,14 +14,13 @@ MAIN_GO_FILE=main.go
 # git reset origin/main --hard # TODO: confirm this will blow up all the uncommited changes
 
 # Delete files
-for f in go.mod go.sum $MAIN_GO_FILE config/**/*.yaml;do
+for f in go.mod go.sum $MAIN_GO_FILE $FOO_CONTROLLER_FILE config/**/*.yaml;do
     if [ -f $f ];then
         rm $f
         git add $f
     fi
 done
-rm -rf pkg
-git add pkg
+if [ -d pkg ]; then rm -rf pkg;git add pkg; fi
 git commit -m "Remove files"
 
 # 0. Init Go module
@@ -277,9 +276,8 @@ You can check the behavior at this point:
 gsed -i "s/date:.*/date: $(date +"$DATE_FORMAT")/" docs/content/docs/05-implement-reconciliation-loop/index.md
 
 # 5.1. Create controller
-mkdir -p pkg/controller
 cat <<EOF >> $FOO_CONTROLLER_FILE
-package controller
+package main
 
 import (
 	"log"
@@ -367,7 +365,6 @@ import (
 
 	clientset "$MODULE_NAME/pkg/generated/clientset/versioned"
 	informers "$MODULE_NAME/pkg/generated/informers/externalversions"
-	"$MODULE_NAME/pkg/controller"
 )
 
 func main() {
@@ -392,7 +389,7 @@ func main() {
 
 	exampleInformerFactory := informers.NewSharedInformerFactory(exampleClient, time.Second*30)
 	ch := make(chan struct{})
-	controller := controller.NewController(exampleClient, exampleInformerFactory.Example().V1alpha1().Foos())
+	controller := NewController(exampleClient, exampleInformerFactory.Example().V1alpha1().Foos())
 	exampleInformerFactory.Start(ch)
 	if err = controller.Run(ch); err != nil {
 		log.Printf("error occurred when running controller %s\n", err.Error())
@@ -550,7 +547,7 @@ gsed -i 's/(exampleClient, 20*time.Minute)/(exampleClient, time.Second*30)/g' $M
 echo 'kubeInformerFactory := kubeinformers.NewSharedInformerFactory(kubeClient, time.Second*30)' > tmpfile
 gsed -i $'/exampleInformerFactory :=/{e cat tmpfile\n}' $MAIN_GO_FILE # add before exampleInformerFactory :=
 cat <<EOF > tmpfile
-	controller := controller.NewController(
+	controller := NewController(
 		kubeClient,
 		exampleClient,
 		kubeInformerFactory.Apps().V1().Deployments(),
@@ -558,7 +555,7 @@ cat <<EOF > tmpfile
 	)
   kubeInformerFactory.Start(ch)
 EOF
-gsed -i 's/.*controller := controller.NewController(exampleClient.*/cat tmpfile/e' $MAIN_GO_FILE # replace controller := xxx
+gsed -i 's/.*controller := NewController(exampleClient.*/cat tmpfile/e' $MAIN_GO_FILE # replace controller := xxx
 
 
 gsed -i "/ns, name, err/,/^$/d" $FOO_CONTROLLER_FILE # remove ns, name, err := xxx if err != nil {}
