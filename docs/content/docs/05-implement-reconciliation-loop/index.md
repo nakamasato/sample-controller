@@ -1,12 +1,12 @@
 ---
 title: '5. Implement reconciliation'
-date: 2022-07-22T07:39:49+0900
+date: 2022-07-25T05:40:07+0900
 draft: false
 weight: 7
 summary: Implement controller.
 ---
 
-## [5.1. Create Controller](https://github.com/nakamasato/sample-controller/commit/ee3fd613477b23829d2bbf4ead28c662cb0dcf5d)
+## [5.1. Create Controller](https://github.com/nakamasato/sample-controller/commit/a81fbbf56de2536ea7066381ad7f971ea149a83d)
 
 1. Create controller.
 
@@ -31,9 +31,9 @@ summary: Implement controller.
     	"log"
     	"time"
 
-    	clientset "github.com/nakamasato/sample-controller/pkg/client/clientset/versioned"
-    	informers "github.com/nakamasato/sample-controller/pkg/client/informers/externalversions/example.com/v1alpha1"
-    	listers "github.com/nakamasato/sample-controller/pkg/client/listers/example.com/v1alpha1"
+    	clientset "github.com/nakamasato/sample-controller/pkg/generated/clientset/versioned"
+    	informers "github.com/nakamasato/sample-controller/pkg/generated/informers/externalversions/example.com/v1alpha1"
+    	listers "github.com/nakamasato/sample-controller/pkg/generated/listers/example.com/v1alpha1"
 
     	"k8s.io/apimachinery/pkg/util/wait"
     	"k8s.io/client-go/tools/cache"
@@ -117,10 +117,10 @@ summary: Implement controller.
             "k8s.io/client-go/tools/clientcmd"
             "k8s.io/client-go/util/homedir"
 
-    -       client "github.com/nakamasato/sample-controller/pkg/client/clientset/versioned"
+    -       client "github.com/nakamasato/sample-controller/pkg/generated/clientset/versioned"
     -       metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-    +       clientset "github.com/nakamasato/sample-controller/pkg/client/clientset/versioned"
-    +       informers "github.com/nakamasato/sample-controller/pkg/client/informers/externalversions"
+    +       clientset "github.com/nakamasato/sample-controller/pkg/generated/clientset/versioned"
+    +       informers "github.com/nakamasato/sample-controller/pkg/generated/informers/externalversions"
     +       "github.com/nakamasato/sample-controller/pkg/controller"
      )
 
@@ -166,8 +166,8 @@ summary: Implement controller.
     	"k8s.io/client-go/tools/clientcmd"
     	"k8s.io/client-go/util/homedir"
 
-    	clientset "github.com/nakamasato/sample-controller/pkg/client/clientset/versioned"
-    	informers "github.com/nakamasato/sample-controller/pkg/client/informers/externalversions"
+    	clientset "github.com/nakamasato/sample-controller/pkg/generated/clientset/versioned"
+    	informers "github.com/nakamasato/sample-controller/pkg/generated/informers/externalversions"
     	"github.com/nakamasato/sample-controller/pkg/controller"
     )
 
@@ -341,7 +341,7 @@ Steps:
     2022/07/18 07:46:49 failed to get foo resource from lister foo.example.com "foo-sample" not found
     ```
 
-## [5.3. Enable to Create/Delete Deployment for Foo resource](https://github.com/nakamasato/sample-controller/commit/0524614c1810474526fca8385255aff5bc78b690)
+## [5.3. Enable to Create/Delete Deployment for Foo resource](https://github.com/nakamasato/sample-controller/commit/31a8b1cbd2be153db3ffc5b4a089c4a5b1826fa9)
 
 At the end of this step, we'll be able to create `Deployment` for `Foo` resource.
 
@@ -603,7 +603,7 @@ At the end of this step, we'll be able to create `Deployment` for `Foo` resource
 
         > Kubernetes checks for and deletes objects that no longer have owner references, like the pods left behind when you delete a ReplicaSet. When you delete an object, you can control whether Kubernetes deletes the object's dependents automatically, in a process called cascading deletion.
 
-## [5.4. Check and update Deployment if necessary](https://github.com/nakamasato/sample-controller/commit/4ad1a675a3afe2c2a59d1b92b04dc1cc6bf4bd5e)
+## [5.4. Check and update Deployment if necessary](https://github.com/nakamasato/sample-controller/commit/7acff75b29a0888eae336a4e7ae6d865807441b5)
 
 What needs to be done:
 - In `syncHandler`
@@ -726,7 +726,7 @@ Steps:
         kubectl delete deploy foo-sample
         ```
 
-## [5.5. Update Foo status](https://github.com/nakamasato/sample-controller/commit/32a856fc80b1e9af8c8db5b32d1a54d3ac9a7c51)
+## [5.5. Update Foo status](https://github.com/nakamasato/sample-controller/commit/9448ee3ed22e8aeda9634722d45b55c4c765787d)
 
 1. Create `updateFooStatus` function.
 
@@ -834,7 +834,7 @@ Steps:
     ```
     kubectl delete -f config/sample/foo.yaml
     ```
-## [5.6. Capture the update of Deployment](https://github.com/nakamasato/sample-controller/commit/dcaec06771e461dd302a3799cac9c7c097f3708a)
+## [5.6. Capture the update of Deployment](https://github.com/nakamasato/sample-controller/commit/998508a6866c377112fe32cd0d8ea0313e9af4f5)
 
 In the previous section, `status.availableReplicas` is not updated immediately. This is because we just monitor our custom resource `Foo`. In this section, we'll enable to capture changes of Deployment controlled by our custom resource `Foo`.
 
@@ -933,7 +933,7 @@ In the previous section, `status.availableReplicas` is not updated immediately. 
         kubectl delete -f config/sample/foo.yaml
         ```
 
-## [5.7. Create events for Foo resource](https://github.com/nakamasato/sample-controller/commit/68a441efd814a38d2a3c51876ffb94df0b0a3435)
+## [5.7. Create events for Foo resource](https://github.com/nakamasato/sample-controller/commit/d6dec49cf276461731e7dc22da9dde215f314007)
 
 1. Add necessary packages.
     ```diff
@@ -949,13 +949,13 @@ In the previous section, `status.availableReplicas` is not updated immediately. 
 
             samplev1alpha1 "github.com/nakamasato/sample-controller/pkg/apis/example.com/v
     1alpha1"
-            clientset "github.com/nakamasato/sample-controller/pkg/client/clientset/versio
+            clientset "github.com/nakamasato/sample-controller/pkg/generated/clientset/versio
     ned"
-    +       "github.com/nakamasato/sample-controller/pkg/client/clientset/versioned/scheme
+    +       "github.com/nakamasato/sample-controller/pkg/generated/clientset/versioned/scheme
     "
-            informers "github.com/nakamasato/sample-controller/pkg/client/informers/extern
+            informers "github.com/nakamasato/sample-controller/pkg/generated/informers/extern
     alversions/example.com/v1alpha1"
-            listers "github.com/nakamasato/sample-controller/pkg/client/listers/example.com/v1alpha1"
+            listers "github.com/nakamasato/sample-controller/pkg/generated/listers/example.com/v1alpha1"
     ```
 1. Add eventRecorder to Controller.
     ```diff

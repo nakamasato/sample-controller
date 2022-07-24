@@ -1,11 +1,11 @@
 ---
 title: '0. Initialize Go module'
-date: 2022-07-22T07:39:20+0900
+date: 2022-07-25T05:39:46+0900
 weight: 2
 summary: Initialize Go module.
 ---
 
-## [0. Initialize Go module](https://github.com/nakamasato/sample-controller/commit/61f7aee1df8a1f36daf5124441b5db7a156be500)
+## [0. Initialize Go module](https://github.com/nakamasato/sample-controller/commit/4b63203996cd0f880e7db293a5e9d319285a5413)
 
 ```
 go mod init github.com/<yourname>/sample-controller

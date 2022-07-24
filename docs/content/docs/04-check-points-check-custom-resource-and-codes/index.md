@@ -1,12 +1,12 @@
 ---
 title: '4. Checkpoint'
-date: 2022-07-22T07:39:49+0900
+date: 2022-07-25T05:40:07+0900
 draft: false
 weight: 6
 summary: Check the behavior at this point.
 ---
 
-## [4. Checkpoint: Check custom resource and codes](https://github.com/nakamasato/sample-controller/commit/2eb6a438249217e0bd2e80cd6053d6fe7f6b3599)
+## [4. Checkpoint: Check custom resource and codes](https://github.com/nakamasato/sample-controller/commit/c722b073f2246d3a9e74095aa75a94abc688d191)
 
 What to check:
 - [x] Create CRD
@@ -32,7 +32,7 @@ Steps:
         "k8s.io/client-go/tools/clientcmd"
         "k8s.io/client-go/util/homedir"
 
-        client "github.com/nakamasato/sample-controller/pkg/client/clientset/versioned"
+        client "github.com/nakamasato/sample-controller/pkg/generated/clientset/versioned"
         metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
     )
 
