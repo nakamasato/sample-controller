@@ -201,7 +201,7 @@ summary: Implement controller.
 1. Run the controller.
 
     ```
-    go run main.go
+    go run .
     ```
 
 1. Create and delete CR.
@@ -314,7 +314,7 @@ Steps:
 1. Run the controller.
 
     ```
-    go run main.go
+    go run .
     ```
 
 1. Create and delete CR.
@@ -566,7 +566,7 @@ At the end of this step, we'll be able to create `Deployment` for `Foo` resource
 1. Test `sample-controller`.
     1. Run the controller.
         ```
-        go run main.go
+        go run .
         ```
     1. Create `Foo` resource.
         ```
@@ -779,7 +779,7 @@ Steps:
         ```
     1. Run the controller.
         ```
-        go run main.go
+        go run .
         ```
     1. Apply `Foo`
         ```
@@ -912,7 +912,7 @@ In the previous section, `status.availableReplicas` is not updated immediately. 
 1. Test the Foo's status after Deployment is updated.
     1. Run the controller
         ```
-        go run main.go
+        go run .
         ```
     1. Create Foo resource.
         ```
@@ -1027,7 +1027,7 @@ In the previous section, `status.availableReplicas` is not updated immediately. 
 1. Test event.
     1. Run the controller.
         ```
-        go run main.go
+        go run .
         ```
     1. Apply `Foo`.
         ```
