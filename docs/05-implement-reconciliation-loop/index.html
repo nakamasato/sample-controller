@@ -84,7 +84,7 @@
 <div class="col-12 col-md-9">
 <h1 class=title>5. Implement reconciliation</h1>
 <div class=content>
-<h2 id=51-create-controllerhttpsgithubcomnakamasatosample-controllercommitee3fd613477b23829d2bbf4ead28c662cb0dcf5d><a href=https://github.com/nakamasato/sample-controller/commit/ee3fd613477b23829d2bbf4ead28c662cb0dcf5d>5.1. Create Controller</a></h2>
+<h2 id=51-create-controllerhttpsgithubcomnakamasatosample-controllercommitbf02111b25e06d58ad8177a380336a19c3780f0c><a href=https://github.com/nakamasato/sample-controller/commit/bf02111b25e06d58ad8177a380336a19c3780f0c>5.1. Create Controller</a></h2>
 <ol>
 <li>
 <p>Create controller.</p>
@@ -107,19 +107,19 @@
 <li>Define <code>worker</code>: just call <code>processNextItem</code>.</li>
 <li>Define <code>processNextItem</code>: always return true for now.</li>
 </ol>
-<div class=highlight><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kn>package</span> <span class=nx>controller</span>
+<div class=highlight><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kn>package</span> <span class=nx>main</span>
 
 <span class=kn>import</span> <span class=p>(</span>
-	<span class=s>&#34;log&#34;</span>
 	<span class=s>&#34;time&#34;</span>
 
-	<span class=nx>clientset</span> <span class=s>&#34;github.com/nakamasato/sample-controller/pkg/client/clientset/versioned&#34;</span>
-	<span class=nx>informers</span> <span class=s>&#34;github.com/nakamasato/sample-controller/pkg/client/informers/externalversions/example.com/v1alpha1&#34;</span>
-	<span class=nx>listers</span> <span class=s>&#34;github.com/nakamasato/sample-controller/pkg/client/listers/example.com/v1alpha1&#34;</span>
+	<span class=nx>clientset</span> <span class=s>&#34;github.com/nakamasato/sample-controller/pkg/generated/clientset/versioned&#34;</span>
+	<span class=nx>informers</span> <span class=s>&#34;github.com/nakamasato/sample-controller/pkg/generated/informers/externalversions/example.com/v1alpha1&#34;</span>
+	<span class=nx>listers</span> <span class=s>&#34;github.com/nakamasato/sample-controller/pkg/generated/listers/example.com/v1alpha1&#34;</span>
 
 	<span class=s>&#34;k8s.io/apimachinery/pkg/util/wait&#34;</span>
 	<span class=s>&#34;k8s.io/client-go/tools/cache&#34;</span>
 	<span class=s>&#34;k8s.io/client-go/util/workqueue&#34;</span>
+    <span class=s>&#34;k8s.io/klog/v2&#34;</span>
 <span class=p>)</span>
 
 <span class=kd>type</span> <span class=nx>Controller</span> <span class=kd>struct</span> <span class=p>{</span>
@@ -152,7 +152,7 @@
 
 <span class=kd>func</span> <span class=p>(</span><span class=nx>c</span> <span class=o>*</span><span class=nx>Controller</span><span class=p>)</span> <span class=nf>Run</span><span class=p>(</span><span class=nx>ch</span> <span class=kd>chan</span> <span class=kd>struct</span><span class=p>{})</span> <span class=kt>error</span> <span class=p>{</span>
 	<span class=k>if</span> <span class=nx>ok</span> <span class=o>:=</span> <span class=nx>cache</span><span class=p>.</span><span class=nf>WaitForCacheSync</span><span class=p>(</span><span class=nx>ch</span><span class=p>,</span> <span class=nx>c</span><span class=p>.</span><span class=nx>foosSynced</span><span class=p>);</span> <span class=p>!</span><span class=nx>ok</span> <span class=p>{</span>
-        <span class=nx>log</span><span class=p>.</span><span class=nf>Printf</span><span class=p>(</span><span class=s>&#34;cache is not synced&#34;</span><span class=p>)</span>
+        <span class=nx>klog</span><span class=p>.</span><span class=nf>Info</span><span class=p>(</span><span class=s>&#34;cache is not synced&#34;</span><span class=p>)</span>
 	<span class=p>}</span>
 
 	<span class=k>go</span> <span class=nx>wait</span><span class=p>.</span><span class=nf>Until</span><span class=p>(</span><span class=nx>c</span><span class=p>.</span><span class=nx>worker</span><span class=p>,</span> <span class=nx>time</span><span class=p>.</span><span class=nx>Second</span><span class=p>,</span> <span class=nx>ch</span><span class=p>)</span>
@@ -170,79 +170,76 @@
 <span class=p>}</span>
 
 <span class=kd>func</span> <span class=p>(</span><span class=nx>c</span> <span class=o>*</span><span class=nx>Controller</span><span class=p>)</span> <span class=nf>handleAdd</span><span class=p>(</span><span class=nx>obj</span> <span class=kd>interface</span><span class=p>{})</span> <span class=p>{</span>
-	<span class=nx>log</span><span class=p>.</span><span class=nf>Println</span><span class=p>(</span><span class=s>&#34;handleAdd was called&#34;</span><span class=p>)</span>
+	<span class=nx>klog</span><span class=p>.</span><span class=nf>Info</span><span class=p>(</span><span class=s>&#34;handleAdd was called&#34;</span><span class=p>)</span>
 	<span class=nx>c</span><span class=p>.</span><span class=nx>workqueue</span><span class=p>.</span><span class=nf>Add</span><span class=p>(</span><span class=nx>obj</span><span class=p>)</span>
 <span class=p>}</span>
 
 <span class=kd>func</span> <span class=p>(</span><span class=nx>c</span> <span class=o>*</span><span class=nx>Controller</span><span class=p>)</span> <span class=nf>handleDelete</span><span class=p>(</span><span class=nx>obj</span> <span class=kd>interface</span><span class=p>{})</span> <span class=p>{</span>
-	<span class=nx>log</span><span class=p>.</span><span class=nf>Println</span><span class=p>(</span><span class=s>&#34;handleDelete was called&#34;</span><span class=p>)</span>
+	<span class=nx>klog</span><span class=p>.</span><span class=nf>Info</span><span class=p>(</span><span class=s>&#34;handleDelete was called&#34;</span><span class=p>)</span>
 	<span class=nx>c</span><span class=p>.</span><span class=nx>workqueue</span><span class=p>.</span><span class=nf>Add</span><span class=p>(</span><span class=nx>obj</span><span class=p>)</span>
 <span class=p>}</span>
 </code></pre></div>
-<p>Although <code>controller.go</code> is under the root directory in <a href=https://github.com/kubernetes/sample-controller/blob/master/controller.go>sample-controller</a>, here creates controller under <code>pkg/controller</code> directory in this repo. You can also move it to <code>main</code> package if you want.</p>
 </li>
 <li>
 <p>Update <code>main.go</code> to initialize a controller and run it.</p>
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-diff data-lang=diff> import (
 <span class=gd>-       &#34;context&#34;
 </span><span class=gd></span>        &#34;flag&#34;
-<span class=gd>-       &#34;fmt&#34;
-</span><span class=gd></span>        &#34;log&#34;
         &#34;path/filepath&#34;
 <span class=gi>+       &#34;time&#34;
 </span><span class=gi></span>
         &#34;k8s.io/client-go/tools/clientcmd&#34;
         &#34;k8s.io/client-go/util/homedir&#34;
+        &#34;k8s.io/klog/v2&#34;
 
-<span class=gd>-       client &#34;github.com/nakamasato/sample-controller/pkg/client/clientset/versioned&#34;
+<span class=gd>-       client &#34;github.com/nakamasato/sample-controller/pkg/generated/clientset/versioned&#34;
 </span><span class=gd>-       metav1 &#34;k8s.io/apimachinery/pkg/apis/meta/v1&#34;
-</span><span class=gd></span><span class=gi>+       clientset &#34;github.com/nakamasato/sample-controller/pkg/client/clientset/versioned&#34;
-</span><span class=gi>+       informers &#34;github.com/nakamasato/sample-controller/pkg/client/informers/externalversions&#34;
-</span><span class=gi>+       &#34;github.com/nakamasato/sample-controller/pkg/controller&#34;
+</span><span class=gd></span><span class=gi>+       clientset &#34;github.com/nakamasato/sample-controller/pkg/generated/clientset/versioned&#34;
+</span><span class=gi>+       informers &#34;github.com/nakamasato/sample-controller/pkg/generated/informers/externalversions&#34;
 </span><span class=gi></span> )
 
  func main() {
 <span class=gu>@@ -29,15 +29,16 @@ func main() {
-</span><span class=gu></span>                log.Printf(&#34;Building config from flags, %s&#34;, err.Error())
+</span><span class=gu></span>                klog.Fatalf(&#34;Building config from flags, %s&#34;, err.Error())
         }
 
 <span class=gd>-       clientset, err := client.NewForConfig(config)
 </span><span class=gd></span><span class=gi>+       exampleClient, err := clientset.NewForConfig(config)
 </span><span class=gi></span>        if err != nil {
-                log.Printf(&#34;getting client set %s\n&#34;, err.Error())
+                klog.Fatalf(&#34;getting client set %s\n&#34;, err.Error())
         }
 <span class=gd>-       fmt.Println(clientset)
 </span><span class=gd></span>
 <span class=gd>-       foos, err := clientset.ExampleV1alpha1().Foos(&#34;&#34;).List(context.Background(), metav1.ListOptions{})
 </span><span class=gd>-       if err != nil {
-</span><span class=gd>-               log.Printf(&#34;listing foos %s\n&#34;, err.Error())
+</span><span class=gd>-               klog.Fatalf(&#34;listing foos %s\n&#34;, err.Error())
 </span><span class=gd></span><span class=gi>+       exampleInformerFactory := informers.NewSharedInformerFactory(exampleClient, time.Second*30)
 </span><span class=gi>+       ch := make(chan struct{})
 </span><span class=gi>+       controller := controller.NewController(exampleClient, informerFactory.Example().V1alpha1().Foos())
 </span><span class=gi>+       exampleInformerFactory.Start(ch)
 </span><span class=gi>+       if err = controller.Run(ch); err != nil {
-</span><span class=gi>+               log.Printf(&#34;error occurred when running controller %s\n&#34;, err.Error())
+</span><span class=gi>+               klog.Fatalf(&#34;error occurred when running controller %s\n&#34;, err.Error())
 </span><span class=gi></span>        }
-<span class=gd>-       fmt.Printf(&#34;length of foos is %d\n&#34;, len(foos.Items))
+<span class=gd>-       klog.Infof(&#34;length of foos is %d\n&#34;, len(foos.Items))
 </span><span class=gd></span> }
 </code></pre></div><p>At the line of <code>exampleInformerFactory := informers.NewSharedInformerFactory(exampleClient, time.Second*30)</code>, the second argument specifies <em><strong>ResyncPeriod</strong></em>, which defines the interval of <em><strong>resync</strong></em> (<em>The resync operation consists of delivering to the handler an update notification for every object in the informer&rsquo;s local cache</em>). For more detail, please read <a href=https://pkg.go.dev/k8s.io/client-go@v0.23.1/tools/cache#NewSharedIndexInformer>NewSharedIndexInformer</a></p>
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kn>package</span> <span class=nx>main</span>
 
 <span class=kn>import</span> <span class=p>(</span>
 	<span class=s>&#34;flag&#34;</span>
-	<span class=s>&#34;log&#34;</span>
 	<span class=s>&#34;path/filepath&#34;</span>
 	<span class=s>&#34;time&#34;</span>
 
 	<span class=s>&#34;k8s.io/client-go/tools/clientcmd&#34;</span>
 	<span class=s>&#34;k8s.io/client-go/util/homedir&#34;</span>
+    <span class=s>&#34;k8s.io/klog/v2&#34;</span>
 
-	<span class=nx>clientset</span> <span class=s>&#34;github.com/nakamasato/sample-controller/pkg/client/clientset/versioned&#34;</span>
-	<span class=nx>informers</span> <span class=s>&#34;github.com/nakamasato/sample-controller/pkg/client/informers/externalversions&#34;</span>
-	<span class=s>&#34;github.com/nakamasato/sample-controller/pkg/controller&#34;</span>
+	<span class=nx>clientset</span> <span class=s>&#34;github.com/nakamasato/sample-controller/pkg/generated/clientset/versioned&#34;</span>
+	<span class=nx>informers</span> <span class=s>&#34;github.com/nakamasato/sample-controller/pkg/generated/informers/externalversions&#34;</span>
 <span class=p>)</span>
 
 <span class=kd>func</span> <span class=nf>main</span><span class=p>()</span> <span class=p>{</span>
+    <span class=nx>klog</span><span class=p>.</span><span class=nf>InitFlags</span><span class=p>(</span><span class=kc>nil</span><span class=p>)</span>
 	<span class=kd>var</span> <span class=nx>kubeconfig</span> <span class=o>*</span><span class=kt>string</span>
 
 	<span class=k>if</span> <span class=nx>home</span> <span class=o>:=</span> <span class=nx>homedir</span><span class=p>.</span><span class=nf>HomeDir</span><span class=p>();</span> <span class=nx>home</span> <span class=o>!=</span> <span class=s>&#34;&#34;</span> <span class=p>{</span>
@@ -254,12 +251,12 @@
 
 	<span class=nx>config</span><span class=p>,</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>clientcmd</span><span class=p>.</span><span class=nf>BuildConfigFromFlags</span><span class=p>(</span><span class=s>&#34;&#34;</span><span class=p>,</span> <span class=o>*</span><span class=nx>kubeconfig</span><span class=p>)</span>
 	<span class=k>if</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
-        <span class=nx>log</span><span class=p>.</span><span class=nf>Printf</span><span class=p>(</span><span class=s>&#34;Building config from flags, %s&#34;</span><span class=p>,</span> <span class=nx>err</span><span class=p>.</span><span class=nf>Error</span><span class=p>())</span>
+        <span class=nx>klog</span><span class=p>.</span><span class=nf>Fatalf</span><span class=p>(</span><span class=s>&#34;Building config from flags, %s&#34;</span><span class=p>,</span> <span class=nx>err</span><span class=p>.</span><span class=nf>Error</span><span class=p>())</span>
 	<span class=p>}</span>
 
 	<span class=nx>exampleClient</span><span class=p>,</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>clientset</span><span class=p>.</span><span class=nf>NewForConfig</span><span class=p>(</span><span class=nx>config</span><span class=p>)</span>
 	<span class=k>if</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
-        <span class=nx>log</span><span class=p>.</span><span class=nf>Printf</span><span class=p>(</span><span class=s>&#34;getting client set %s\n&#34;</span><span class=p>,</span> <span class=nx>err</span><span class=p>.</span><span class=nf>Error</span><span class=p>())</span>
+        <span class=nx>klog</span><span class=p>.</span><span class=nf>Fatalf</span><span class=p>(</span><span class=s>&#34;getting client set %s\n&#34;</span><span class=p>,</span> <span class=nx>err</span><span class=p>.</span><span class=nf>Error</span><span class=p>())</span>
 	<span class=p>}</span>
 
 	<span class=nx>exampleInformerFactory</span> <span class=o>:=</span> <span class=nx>informers</span><span class=p>.</span><span class=nf>NewSharedInformerFactory</span><span class=p>(</span><span class=nx>exampleClient</span><span class=p>,</span> <span class=nx>time</span><span class=p>.</span><span class=nx>Second</span><span class=o>*</span><span class=mi>30</span><span class=p>)</span>
@@ -267,14 +264,14 @@
 	<span class=nx>controller</span> <span class=o>:=</span> <span class=nx>controller</span><span class=p>.</span><span class=nf>NewController</span><span class=p>(</span><span class=nx>exampleClient</span><span class=p>,</span> <span class=nx>exampleInformerFactory</span><span class=p>.</span><span class=nf>Example</span><span class=p>().</span><span class=nf>V1alpha1</span><span class=p>().</span><span class=nf>Foos</span><span class=p>())</span>
 	<span class=nx>exampleInformerFactory</span><span class=p>.</span><span class=nf>Start</span><span class=p>(</span><span class=nx>ch</span><span class=p>)</span>
 	<span class=k>if</span> <span class=nx>err</span> <span class=p>=</span> <span class=nx>controller</span><span class=p>.</span><span class=nf>Run</span><span class=p>(</span><span class=nx>ch</span><span class=p>);</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
-        <span class=nx>log</span><span class=p>.</span><span class=nf>Printf</span><span class=p>(</span><span class=s>&#34;error occurred when running controller %s\n&#34;</span><span class=p>,</span> <span class=nx>err</span><span class=p>.</span><span class=nf>Error</span><span class=p>())</span>
+        <span class=nx>klog</span><span class=p>.</span><span class=nf>Fatalf</span><span class=p>(</span><span class=s>&#34;error occurred when running controller %s\n&#34;</span><span class=p>,</span> <span class=nx>err</span><span class=p>.</span><span class=nf>Error</span><span class=p>())</span>
 	<span class=p>}</span>
 <span class=p>}</span>
 </code></pre></div>
 </li>
 <li>
 <p>Run the controller.</p>
-<div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>go run main.go
+<div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>go run .
 </code></pre></div></li>
 <li>
 <p>Create and delete CR.</p>
@@ -300,12 +297,12 @@
 <li>
 <p>Define <code>enqueueFoo</code> to convert Foo resource into namespace/name string before putting into the workqueue.</p>
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kd>func</span> <span class=p>(</span><span class=nx>c</span> <span class=o>*</span><span class=nx>Controller</span><span class=p>)</span> <span class=nf>handleAdd</span><span class=p>(</span><span class=nx>obj</span> <span class=kd>interface</span><span class=p>{})</span> <span class=p>{</span>
-    <span class=nx>log</span><span class=p>.</span><span class=nf>Println</span><span class=p>(</span><span class=s>&#34;handleAdd was called&#34;</span><span class=p>)</span>
+    <span class=nx>klog</span><span class=p>.</span><span class=nf>Info</span><span class=p>(</span><span class=s>&#34;handleAdd was called&#34;</span><span class=p>)</span>
     <span class=nx>c</span><span class=p>.</span><span class=nf>enqueueFoo</span><span class=p>(</span><span class=nx>obj</span><span class=p>)</span>
 <span class=p>}</span>
 
 <span class=kd>func</span> <span class=p>(</span><span class=nx>c</span> <span class=o>*</span><span class=nx>Controller</span><span class=p>)</span> <span class=nf>handleDelete</span><span class=p>(</span><span class=nx>obj</span> <span class=kd>interface</span><span class=p>{})</span> <span class=p>{</span>
-    <span class=nx>log</span><span class=p>.</span><span class=nf>Println</span><span class=p>(</span><span class=s>&#34;handleDelete was called&#34;</span><span class=p>)</span>
+    <span class=nx>klog</span><span class=p>.</span><span class=nf>Info</span><span class=p>(</span><span class=s>&#34;handleDelete was called&#34;</span><span class=p>)</span>
     <span class=nx>c</span><span class=p>.</span><span class=nf>enqueueFoo</span><span class=p>(</span><span class=nx>obj</span><span class=p>)</span>
 <span class=p>}</span>
 
@@ -316,7 +313,7 @@
     <span class=kd>var</span> <span class=nx>key</span> <span class=kt>string</span>
     <span class=kd>var</span> <span class=nx>err</span> <span class=kt>error</span>
     <span class=k>if</span> <span class=nx>key</span><span class=p>,</span> <span class=nx>err</span> <span class=p>=</span> <span class=nx>cache</span><span class=p>.</span><span class=nf>MetaNamespaceKeyFunc</span><span class=p>(</span><span class=nx>obj</span><span class=p>);</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
-        <span class=nx>log</span><span class=p>.</span><span class=nf>Printf</span><span class=p>(</span><span class=s>&#34;failed to get key from the cache %s\n&#34;</span><span class=p>,</span> <span class=nx>err</span><span class=p>.</span><span class=nf>Error</span><span class=p>())</span>
+        <span class=nx>klog</span><span class=p>.</span><span class=nf>Errorf</span><span class=p>(</span><span class=s>&#34;failed to get key from the cache %s\n&#34;</span><span class=p>,</span> <span class=nx>err</span><span class=p>.</span><span class=nf>Error</span><span class=p>())</span>
         <span class=k>return</span>
     <span class=p>}</span>
     <span class=nx>c</span><span class=p>.</span><span class=nx>workqueue</span><span class=p>.</span><span class=nf>Add</span><span class=p>(</span><span class=nx>key</span><span class=p>)</span>
@@ -342,28 +339,28 @@
 </span><span class=c1></span>            <span class=c1>// Forget here else we&#39;d go into a loop of attempting to
 </span><span class=c1></span>            <span class=c1>// process a work item that is invalid.
 </span><span class=c1></span>            <span class=nx>c</span><span class=p>.</span><span class=nx>workqueue</span><span class=p>.</span><span class=nf>Forget</span><span class=p>(</span><span class=nx>obj</span><span class=p>)</span>
-            <span class=nx>log</span><span class=p>.</span><span class=nf>Printf</span><span class=p>(</span><span class=s>&#34;expected string in workqueue but got %#v&#34;</span><span class=p>,</span> <span class=nx>obj</span><span class=p>)</span>
+            <span class=nx>klog</span><span class=p>.</span><span class=nf>Errorf</span><span class=p>(</span><span class=s>&#34;expected string in workqueue but got %#v&#34;</span><span class=p>,</span> <span class=nx>obj</span><span class=p>)</span>
             <span class=k>return</span> <span class=kc>nil</span>
         <span class=p>}</span>
 
         <span class=nx>ns</span><span class=p>,</span> <span class=nx>name</span><span class=p>,</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>cache</span><span class=p>.</span><span class=nf>SplitMetaNamespaceKey</span><span class=p>(</span><span class=nx>key</span><span class=p>)</span>
         <span class=k>if</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
-            <span class=nx>log</span><span class=p>.</span><span class=nf>Printf</span><span class=p>(</span><span class=s>&#34;failed to split key into namespace and name %s\n&#34;</span><span class=p>,</span> <span class=nx>err</span><span class=p>.</span><span class=nf>Error</span><span class=p>())</span>
+            <span class=nx>klog</span><span class=p>.</span><span class=nf>Errorf</span><span class=p>(</span><span class=s>&#34;failed to split key into namespace and name %s\n&#34;</span><span class=p>,</span> <span class=nx>err</span><span class=p>.</span><span class=nf>Error</span><span class=p>())</span>
             <span class=k>return</span> <span class=nx>err</span>
         <span class=p>}</span>
 
         <span class=c1>// temporary main logic
 </span><span class=c1></span>        <span class=nx>foo</span><span class=p>,</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>c</span><span class=p>.</span><span class=nx>foosLister</span><span class=p>.</span><span class=nf>Foos</span><span class=p>(</span><span class=nx>ns</span><span class=p>).</span><span class=nf>Get</span><span class=p>(</span><span class=nx>name</span><span class=p>)</span>
         <span class=k>if</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
-            <span class=nx>log</span><span class=p>.</span><span class=nf>Printf</span><span class=p>(</span><span class=s>&#34;failed to get foo resource from lister %s\n&#34;</span><span class=p>,</span> <span class=nx>err</span><span class=p>.</span><span class=nf>Error</span><span class=p>())</span>
+            <span class=nx>klog</span><span class=p>.</span><span class=nf>Errorf</span><span class=p>(</span><span class=s>&#34;failed to get foo resource from lister %s\n&#34;</span><span class=p>,</span> <span class=nx>err</span><span class=p>.</span><span class=nf>Error</span><span class=p>())</span>
             <span class=k>return</span> <span class=nx>err</span>
         <span class=p>}</span>
-        <span class=nx>log</span><span class=p>.</span><span class=nf>Printf</span><span class=p>(</span><span class=s>&#34;Got foo %+v\n&#34;</span><span class=p>,</span> <span class=nx>foo</span><span class=p>.</span><span class=nx>Spec</span><span class=p>)</span>
+        <span class=nx>klog</span><span class=p>.</span><span class=nf>Infof</span><span class=p>(</span><span class=s>&#34;Got foo %+v\n&#34;</span><span class=p>,</span> <span class=nx>foo</span><span class=p>.</span><span class=nx>Spec</span><span class=p>)</span>
 
         <span class=c1>// Forget the queue item as it&#39;s successfully processed and
 </span><span class=c1></span>        <span class=c1>// the item will not be requeued.
 </span><span class=c1></span>        <span class=nx>c</span><span class=p>.</span><span class=nx>workqueue</span><span class=p>.</span><span class=nf>Forget</span><span class=p>(</span><span class=nx>obj</span><span class=p>)</span>
-        <span class=nx>log</span><span class=p>.</span><span class=nf>Printf</span><span class=p>(</span><span class=s>&#34;Successfully synced &#39;%s&#39;&#34;</span><span class=p>,</span> <span class=nx>key</span><span class=p>)</span>
+        <span class=nx>klog</span><span class=p>.</span><span class=nf>Infof</span><span class=p>(</span><span class=s>&#34;Successfully synced &#39;%s&#39;&#34;</span><span class=p>,</span> <span class=nx>key</span><span class=p>)</span>
         <span class=k>return</span> <span class=kc>nil</span>
     <span class=p>}(</span><span class=nx>obj</span><span class=p>)</span>
 
@@ -376,7 +373,7 @@
 </code></pre></div></li>
 <li>
 <p>Run the controller.</p>
-<div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>go run main.go
+<div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>go run .
 </code></pre></div></li>
 <li>
 <p>Create and delete CR.</p>
@@ -391,7 +388,7 @@
 2022/07/18 07:46:49 failed to get foo resource from lister foo.example.com &#34;foo-sample&#34; not found
 </code></pre></div></li>
 </ol>
-<h2 id=53-enable-to-createdelete-deployment-for-foo-resourcehttpsgithubcomnakamasatosample-controllercommit0524614c1810474526fca8385255aff5bc78b690><a href=https://github.com/nakamasato/sample-controller/commit/0524614c1810474526fca8385255aff5bc78b690>5.3. Enable to Create/Delete Deployment for Foo resource</a></h2>
+<h2 id=53-enable-to-createdelete-deployment-for-foo-resourcehttpsgithubcomnakamasatosample-controllercommit328581a50dd3a646289bc086538ce6892c90080b><a href=https://github.com/nakamasato/sample-controller/commit/328581a50dd3a646289bc086538ce6892c90080b>5.3. Enable to Create/Delete Deployment for Foo resource</a></h2>
 <p>At the end of this step, we&rsquo;ll be able to create <code>Deployment</code> for <code>Foo</code> resource.</p>
 <ol>
 <li>
@@ -455,12 +452,12 @@
     ...
 <span class=gi>+       kubeClient, err := kubernetes.NewForConfig(config)
 </span><span class=gi>+       if err != nil {
-</span><span class=gi>+               log.Printf(&#34;getting kubernetes client set %s\n&#34;, err.Error())
+</span><span class=gi>+               klog.Errorf(&#34;getting kubernetes client set %s\n&#34;, err.Error())
 </span><span class=gi>+       }
 </span><span class=gi>+
 </span><span class=gi></span>        exampleClient, err := clientset.NewForConfig(config)
         if err != nil {
-                log.Printf(&#34;getting client set %s\n&#34;, err.Error())
+                klog.Errorf(&#34;getting client set %s\n&#34;, err.Error())
         }
 
 <span class=gi>+       kubeInformerFactory := kubeinformers.NewSharedInformerFactory(kubeClient, time.Second*30)
@@ -478,17 +475,17 @@
 }
 </code></pre></div></li>
 <li>
-<p>Create <code>syncHandler</code> and <code>newDeployment</code> in <code>pkg/controller/foo.go</code>.</p>
+<p>Create <code>syncHandler</code> and <code>newDeployment</code> in <code>controller.go</code>.</p>
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kd>func</span> <span class=p>(</span><span class=nx>c</span> <span class=o>*</span><span class=nx>Controller</span><span class=p>)</span> <span class=nf>syncHandler</span><span class=p>(</span><span class=nx>key</span> <span class=kt>string</span><span class=p>)</span> <span class=kt>error</span> <span class=p>{</span>
 	<span class=nx>ns</span><span class=p>,</span> <span class=nx>name</span><span class=p>,</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>cache</span><span class=p>.</span><span class=nf>SplitMetaNamespaceKey</span><span class=p>(</span><span class=nx>key</span><span class=p>)</span>
 	<span class=k>if</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
-        <span class=nx>log</span><span class=p>.</span><span class=nf>Printf</span><span class=p>(</span><span class=s>&#34;failed to split key into namespace and name %s\n&#34;</span><span class=p>,</span> <span class=nx>err</span><span class=p>.</span><span class=nf>Error</span><span class=p>())</span>
+        <span class=nx>klog</span><span class=p>.</span><span class=nf>Errorf</span><span class=p>(</span><span class=s>&#34;failed to split key into namespace and name %s\n&#34;</span><span class=p>,</span> <span class=nx>err</span><span class=p>.</span><span class=nf>Error</span><span class=p>())</span>
         <span class=k>return</span> <span class=nx>err</span>
 	<span class=p>}</span>
 
 	<span class=nx>foo</span><span class=p>,</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>c</span><span class=p>.</span><span class=nx>foosLister</span><span class=p>.</span><span class=nf>Foos</span><span class=p>(</span><span class=nx>ns</span><span class=p>).</span><span class=nf>Get</span><span class=p>(</span><span class=nx>name</span><span class=p>)</span>
 	<span class=k>if</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
-        <span class=nx>log</span><span class=p>.</span><span class=nf>Printf</span><span class=p>(</span><span class=s>&#34;failed to get foo resource from lister %s\n&#34;</span><span class=p>,</span> <span class=nx>err</span><span class=p>.</span><span class=nf>Error</span><span class=p>())</span>
+        <span class=nx>klog</span><span class=p>.</span><span class=nf>Errorf</span><span class=p>(</span><span class=s>&#34;failed to get foo resource from lister %s\n&#34;</span><span class=p>,</span> <span class=nx>err</span><span class=p>.</span><span class=nf>Error</span><span class=p>())</span>
         <span class=k>if</span> <span class=nx>errors</span><span class=p>.</span><span class=nf>IsNotFound</span><span class=p>(</span><span class=nx>err</span><span class=p>)</span> <span class=p>{</span>
             <span class=k>return</span> <span class=kc>nil</span>
         <span class=p>}</span>
@@ -497,7 +494,7 @@
 
 	<span class=nx>deploymentName</span> <span class=o>:=</span> <span class=nx>foo</span><span class=p>.</span><span class=nx>Spec</span><span class=p>.</span><span class=nx>DeploymentName</span>
 	<span class=k>if</span> <span class=nx>deploymentName</span> <span class=o>==</span> <span class=s>&#34;&#34;</span> <span class=p>{</span>
-        <span class=nx>log</span><span class=p>.</span><span class=nf>Printf</span><span class=p>(</span><span class=s>&#34;deploymentName must be specified %s\n&#34;</span><span class=p>,</span> <span class=nx>key</span><span class=p>)</span>
+        <span class=nx>klog</span><span class=p>.</span><span class=nf>Errorf</span><span class=p>(</span><span class=s>&#34;deploymentName must be specified %s\n&#34;</span><span class=p>,</span> <span class=nx>key</span><span class=p>)</span>
         <span class=k>return</span> <span class=kc>nil</span>
 	<span class=p>}</span>
 	<span class=nx>deployment</span><span class=p>,</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>c</span><span class=p>.</span><span class=nx>deploymentsLister</span><span class=p>.</span><span class=nf>Deployments</span><span class=p>(</span><span class=nx>foo</span><span class=p>.</span><span class=nx>Namespace</span><span class=p>).</span><span class=nf>Get</span><span class=p>(</span><span class=nx>deploymentName</span><span class=p>)</span>
@@ -509,7 +506,7 @@
         <span class=k>return</span> <span class=nx>err</span>
 	<span class=p>}</span>
 
-	<span class=nx>log</span><span class=p>.</span><span class=nf>Printf</span><span class=p>(</span><span class=s>&#34;deployment %s is valid&#34;</span><span class=p>,</span> <span class=nx>deployment</span><span class=p>.</span><span class=nx>Name</span><span class=p>)</span>
+	<span class=nx>klog</span><span class=p>.</span><span class=nf>Infof</span><span class=p>(</span><span class=s>&#34;deployment %s is valid&#34;</span><span class=p>,</span> <span class=nx>deployment</span><span class=p>.</span><span class=nx>Name</span><span class=p>)</span>
 
 	<span class=k>return</span> <span class=kc>nil</span>
 <span class=p>}</span>
@@ -565,7 +562,7 @@
 
 <span class=gd>-               ns, name, err := cache.SplitMetaNamespaceKey(key)
 </span><span class=gd>-               if err != nil {
-</span><span class=gd>-                       log.Printf(&#34;failed to split key into namespace and name %s\n&#34;, err.Error())
+</span><span class=gd>-                       klog.Errorf(&#34;failed to split key into namespace and name %s\n&#34;, err.Error())
 </span><span class=gd>-                       return err
 </span><span class=gd></span><span class=gi>+               if err := c.syncHandler(key); err != nil {
 </span><span class=gi>+                       // Put the item back on the workqueue to handle any transient errors.
@@ -576,7 +573,7 @@
 <span class=gd>-               // temporary main logic
 </span><span class=gd>-               foo, err := c.foosLister.Foos(ns).Get(name)
 </span><span class=gd>-               if err != nil {
-</span><span class=gd>-                       log.Printf(&#34;failed to get foo resource from lister %s\n&#34;, err.Error())
+</span><span class=gd>-                       klog.Errorf(&#34;failed to get foo resource from lister %s\n&#34;, err.Error())
 </span><span class=gd>-                       return err
 </span><span class=gd>-               }
 </span><span class=gd>-               log.Printf(&#34;Got foo %+v\n&#34;, foo.Spec)
@@ -594,7 +591,7 @@
 </span><span class=gd></span>                },
         )
 </code></pre></div><div class=highlight><pre tabindex=0 class=chroma><code class=language-diff data-lang=diff><span class=gd>-func (c *Controller) handleDelete(obj interface{}) {
-</span><span class=gd>-       log.Println(&#34;handleDelete was called&#34;)
+</span><span class=gd>-       klog.Info(&#34;handleDelete was called&#34;)
 </span><span class=gd>-       c.enqueueFoo(obj)
 </span><span class=gd>-}
 </span></code></pre></div></li>
@@ -603,7 +600,7 @@
 <ol>
 <li>
 <p>Run the controller.</p>
-<div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>go run main.go
+<div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>go run .
 </code></pre></div></li>
 <li>
 <p>Create <code>Foo</code> resource.</p>
@@ -630,7 +627,7 @@ No resources found in default namespace.
 </ol>
 </li>
 </ol>
-<h2 id=54-check-and-update-deployment-if-necessaryhttpsgithubcomnakamasatosample-controllercommit4ad1a675a3afe2c2a59d1b92b04dc1cc6bf4bd5e><a href=https://github.com/nakamasato/sample-controller/commit/4ad1a675a3afe2c2a59d1b92b04dc1cc6bf4bd5e>5.4. Check and update Deployment if necessary</a></h2>
+<h2 id=54-check-and-update-deployment-if-necessaryhttpsgithubcomnakamasatosample-controllercommit8b405a96ab54c85da00bc1b902d76fa89e3584fe><a href=https://github.com/nakamasato/sample-controller/commit/8b405a96ab54c85da00bc1b902d76fa89e3584fe>5.4. Check and update Deployment if necessary</a></h2>
 <p>What needs to be done:</p>
 <ul>
 <li>In <code>syncHandler</code>
@@ -667,7 +664,7 @@ No resources found in default namespace.
 </span><span class=c1></span>    <span class=c1>// a warning to the event recorder and return error msg.
 </span><span class=c1></span>    <span class=k>if</span> <span class=p>!</span><span class=nx>metav1</span><span class=p>.</span><span class=nf>IsControlledBy</span><span class=p>(</span><span class=nx>deployment</span><span class=p>,</span> <span class=nx>foo</span><span class=p>)</span> <span class=p>{</span>
         <span class=nx>msg</span> <span class=o>:=</span> <span class=nx>fmt</span><span class=p>.</span><span class=nf>Sprintf</span><span class=p>(</span><span class=nx>MessageResourceExists</span><span class=p>,</span> <span class=nx>deployment</span><span class=p>.</span><span class=nx>Name</span><span class=p>)</span>
-        <span class=nx>log</span><span class=p>.</span><span class=nf>Println</span><span class=p>(</span><span class=nx>msg</span><span class=p>)</span>
+        <span class=nx>klog</span><span class=p>.</span><span class=nf>Info</span><span class=p>(</span><span class=nx>msg</span><span class=p>)</span>
         <span class=k>return</span> <span class=nx>fmt</span><span class=p>.</span><span class=nf>Errorf</span><span class=p>(</span><span class=s>&#34;%s&#34;</span><span class=p>,</span> <span class=nx>msg</span><span class=p>)</span>
     <span class=p>}</span>
 </code></pre></div></li>
@@ -677,7 +674,7 @@ No resources found in default namespace.
 </span><span class=c1></span>    <span class=c1>// number does not equal the current desired replicas on the Deployment, we
 </span><span class=c1></span>    <span class=c1>// should update the Deployment resource.
 </span><span class=c1></span>    <span class=k>if</span> <span class=nx>foo</span><span class=p>.</span><span class=nx>Spec</span><span class=p>.</span><span class=nx>Replicas</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=o>&amp;&amp;</span> <span class=o>*</span><span class=nx>foo</span><span class=p>.</span><span class=nx>Spec</span><span class=p>.</span><span class=nx>Replicas</span> <span class=o>!=</span> <span class=o>*</span><span class=nx>deployment</span><span class=p>.</span><span class=nx>Spec</span><span class=p>.</span><span class=nx>Replicas</span> <span class=p>{</span>
-        <span class=nx>log</span><span class=p>.</span><span class=nf>Printf</span><span class=p>(</span><span class=s>&#34;Foo %s replicas: %d, deployment replicas: %d\n&#34;</span><span class=p>,</span> <span class=nx>name</span><span class=p>,</span> <span class=o>*</span><span class=nx>foo</span><span class=p>.</span><span class=nx>Spec</span><span class=p>.</span><span class=nx>Replicas</span><span class=p>,</span> <span class=o>*</span><span class=nx>deployment</span><span class=p>.</span><span class=nx>Spec</span><span class=p>.</span><span class=nx>Replicas</span><span class=p>)</span>
+        <span class=nx>klog</span><span class=p>.</span><span class=nf>Infof</span><span class=p>(</span><span class=s>&#34;Foo %s replicas: %d, deployment replicas: %d\n&#34;</span><span class=p>,</span> <span class=nx>name</span><span class=p>,</span> <span class=o>*</span><span class=nx>foo</span><span class=p>.</span><span class=nx>Spec</span><span class=p>.</span><span class=nx>Replicas</span><span class=p>,</span> <span class=o>*</span><span class=nx>deployment</span><span class=p>.</span><span class=nx>Spec</span><span class=p>.</span><span class=nx>Replicas</span><span class=p>)</span>
         <span class=nx>deployment</span><span class=p>,</span> <span class=nx>err</span> <span class=p>=</span> <span class=nx>c</span><span class=p>.</span><span class=nx>kubeclientset</span><span class=p>.</span><span class=nf>AppsV1</span><span class=p>().</span><span class=nf>Deployments</span><span class=p>(</span><span class=nx>foo</span><span class=p>.</span><span class=nx>Namespace</span><span class=p>).</span><span class=nf>Update</span><span class=p>(</span><span class=nx>context</span><span class=p>.</span><span class=nf>TODO</span><span class=p>(),</span> <span class=nf>newDeployment</span><span class=p>(</span><span class=nx>foo</span><span class=p>),</span> <span class=nx>metav1</span><span class=p>.</span><span class=nx>UpdateOptions</span><span class=p>{})</span>
     <span class=p>}</span>
     <span class=c1>// If an error occurs during Update, we&#39;ll requeue the item so we can
@@ -704,7 +701,7 @@ No resources found in default namespace.
 <li>
 <p>Remove unused <code>handleAdd</code> function.</p>
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-diff data-lang=diff><span class=gd>-func (c *Controller) handleAdd(obj interface{}) {
-</span><span class=gd>-       log.Println(&#34;handleAdd was called&#34;)
+</span><span class=gd>-       klog.Info(&#34;handleAdd was called&#34;)
 </span><span class=gd>-       c.enqueueFoo(obj)
 </span><span class=gd>-}
 </span></code></pre></div></li>
@@ -757,7 +754,7 @@ kubectl delete deploy foo-sample
 </ol>
 </li>
 </ol>
-<h2 id=55-update-foo-statushttpsgithubcomnakamasatosample-controllercommit32a856fc80b1e9af8c8db5b32d1a54d3ac9a7c51><a href=https://github.com/nakamasato/sample-controller/commit/32a856fc80b1e9af8c8db5b32d1a54d3ac9a7c51>5.5. Update Foo status</a></h2>
+<h2 id=55-update-foo-statushttpsgithubcomnakamasatosample-controllercommit63d7d403ccdf0ed1a8a0dacad5f34b349c35d0d9><a href=https://github.com/nakamasato/sample-controller/commit/63d7d403ccdf0ed1a8a0dacad5f34b349c35d0d9>5.5. Update Foo status</a></h2>
 <ol>
 <li>
 <p>Create <code>updateFooStatus</code> function.</p>
@@ -784,7 +781,7 @@ kubectl delete deploy foo-sample
 </span><span class=c1></span>    <span class=c1>// current state of the world
 </span><span class=c1></span>    <span class=nx>err</span> <span class=p>=</span> <span class=nx>c</span><span class=p>.</span><span class=nf>updateFooStatus</span><span class=p>(</span><span class=nx>foo</span><span class=p>,</span> <span class=nx>deployment</span><span class=p>)</span>
     <span class=k>if</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
-        <span class=nx>log</span><span class=p>.</span><span class=nf>Printf</span><span class=p>(</span><span class=s>&#34;failed to update Foo status for %s&#34;</span><span class=p>,</span> <span class=nx>foo</span><span class=p>.</span><span class=nx>Name</span><span class=p>)</span>
+        <span class=nx>klog</span><span class=p>.</span><span class=nf>Errorf</span><span class=p>(</span><span class=s>&#34;failed to update Foo status for %s&#34;</span><span class=p>,</span> <span class=nx>foo</span><span class=p>.</span><span class=nx>Name</span><span class=p>)</span>
         <span class=k>return</span> <span class=nx>err</span>
     <span class=p>}</span>
 
@@ -810,7 +807,7 @@ kubectl delete deploy foo-sample
 </code></pre></div></li>
 <li>
 <p>Run the controller.</p>
-<div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>go run main.go
+<div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>go run .
 </code></pre></div></li>
 <li>
 <p>Apply <code>Foo</code></p>
@@ -853,7 +850,7 @@ foo-sample   1/1     1            1           9m10s
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>kubectl delete -f config/sample/foo.yaml
 </code></pre></div></li>
 </ol>
-<h2 id=56-capture-the-update-of-deploymenthttpsgithubcomnakamasatosample-controllercommitdcaec06771e461dd302a3799cac9c7c097f3708a><a href=https://github.com/nakamasato/sample-controller/commit/dcaec06771e461dd302a3799cac9c7c097f3708a>5.6. Capture the update of Deployment</a></h2>
+<h2 id=56-capture-the-update-of-deploymenthttpsgithubcomnakamasatosample-controllercommit2f6245d754d9f826919cea02840e8395c88cbf88><a href=https://github.com/nakamasato/sample-controller/commit/2f6245d754d9f826919cea02840e8395c88cbf88>5.6. Capture the update of Deployment</a></h2>
 <p>In the previous section, <code>status.availableReplicas</code> is not updated immediately. This is because we just monitor our custom resource <code>Foo</code>. In this section, we&rsquo;ll enable to capture changes of Deployment controlled by our custom resource <code>Foo</code>.</p>
 <ol>
 <li>
@@ -875,9 +872,9 @@ foo-sample   1/1     1            1           9m10s
         <span class=k>if</span> <span class=p>!</span><span class=nx>ok</span> <span class=p>{</span>
             <span class=k>return</span>
         <span class=p>}</span>
-        <span class=nx>log</span><span class=p>.</span><span class=nf>Printf</span><span class=p>(</span><span class=s>&#34;Recovered deleted object &#39;%s&#39; from tombstone&#34;</span><span class=p>,</span> <span class=nx>object</span><span class=p>.</span><span class=nf>GetName</span><span class=p>())</span>
+        <span class=nx>klog</span><span class=p>.</span><span class=nf>Infof</span><span class=p>(</span><span class=s>&#34;Recovered deleted object &#39;%s&#39; from tombstone&#34;</span><span class=p>,</span> <span class=nx>object</span><span class=p>.</span><span class=nf>GetName</span><span class=p>())</span>
     <span class=p>}</span>
-    <span class=nx>log</span><span class=p>.</span><span class=nf>Printf</span><span class=p>(</span><span class=s>&#34;Processing object: %s&#34;</span><span class=p>,</span> <span class=nx>object</span><span class=p>.</span><span class=nf>GetName</span><span class=p>())</span>
+    <span class=nx>klog</span><span class=p>.</span><span class=nf>Infof</span><span class=p>(</span><span class=s>&#34;Processing object: %s&#34;</span><span class=p>,</span> <span class=nx>object</span><span class=p>.</span><span class=nf>GetName</span><span class=p>())</span>
     <span class=k>if</span> <span class=nx>ownerRef</span> <span class=o>:=</span> <span class=nx>metav1</span><span class=p>.</span><span class=nf>GetControllerOf</span><span class=p>(</span><span class=nx>object</span><span class=p>);</span> <span class=nx>ownerRef</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
         <span class=c1>// If this object is not owned by a Foo, we should not do anything more
 </span><span class=c1></span>        <span class=c1>// with it.
@@ -887,7 +884,7 @@ foo-sample   1/1     1            1           9m10s
 
         <span class=nx>foo</span><span class=p>,</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>c</span><span class=p>.</span><span class=nx>foosLister</span><span class=p>.</span><span class=nf>Foos</span><span class=p>(</span><span class=nx>object</span><span class=p>.</span><span class=nf>GetNamespace</span><span class=p>()).</span><span class=nf>Get</span><span class=p>(</span><span class=nx>ownerRef</span><span class=p>.</span><span class=nx>Name</span><span class=p>)</span>
         <span class=k>if</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
-            <span class=nx>log</span><span class=p>.</span><span class=nf>Printf</span><span class=p>(</span><span class=s>&#34;ignoring orphaned object &#39;%s&#39; of foo &#39;%s&#39;&#34;</span><span class=p>,</span> <span class=nx>object</span><span class=p>.</span><span class=nf>GetSelfLink</span><span class=p>(),</span> <span class=nx>ownerRef</span><span class=p>.</span><span class=nx>Name</span><span class=p>)</span>
+            <span class=nx>klog</span><span class=p>.</span><span class=nf>Errorf</span><span class=p>(</span><span class=s>&#34;ignoring orphaned object &#39;%s&#39; of foo &#39;%s&#39;&#34;</span><span class=p>,</span> <span class=nx>object</span><span class=p>.</span><span class=nf>GetSelfLink</span><span class=p>(),</span> <span class=nx>ownerRef</span><span class=p>.</span><span class=nx>Name</span><span class=p>)</span>
             <span class=k>return</span>
         <span class=p>}</span>
 
@@ -930,7 +927,7 @@ foo-sample   1/1     1            1           9m10s
 <p>Test the Foo&rsquo;s status after Deployment is updated.</p>
 <ol>
 <li>Run the controller
-<div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>go run main.go
+<div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>go run .
 </code></pre></div></li>
 <li>Create Foo resource.
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>kubectl apply -f config/sample/foo.yaml
@@ -945,7 +942,7 @@ foo-sample   1/1     1            1           9m10s
 </ol>
 </li>
 </ol>
-<h2 id=57-create-events-for-foo-resourcehttpsgithubcomnakamasatosample-controllercommit68a441efd814a38d2a3c51876ffb94df0b0a3435><a href=https://github.com/nakamasato/sample-controller/commit/68a441efd814a38d2a3c51876ffb94df0b0a3435>5.7. Create events for Foo resource</a></h2>
+<h2 id=57-create-events-for-foo-resourcehttpsgithubcomnakamasatosample-controllercommit98c32e22ea9f204a2728c5e3a732d6226aa576e3><a href=https://github.com/nakamasato/sample-controller/commit/98c32e22ea9f204a2728c5e3a732d6226aa576e3>5.7. Create events for Foo resource</a></h2>
 <ol>
 <li>Add necessary packages.
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-diff data-lang=diff><span class=gu>@@ -13,20 +13,34 @@ import (
@@ -960,13 +957,13 @@ foo-sample   1/1     1            1           9m10s
 
         samplev1alpha1 &#34;github.com/nakamasato/sample-controller/pkg/apis/example.com/v
 1alpha1&#34;
-        clientset &#34;github.com/nakamasato/sample-controller/pkg/client/clientset/versio
+        clientset &#34;github.com/nakamasato/sample-controller/pkg/generated/clientset/versio
 ned&#34;
-<span class=gi>+       &#34;github.com/nakamasato/sample-controller/pkg/client/clientset/versioned/scheme
+<span class=gi>+       &#34;github.com/nakamasato/sample-controller/pkg/generated/clientset/versioned/scheme
 </span><span class=gi></span>&#34;
-        informers &#34;github.com/nakamasato/sample-controller/pkg/client/informers/extern
+        informers &#34;github.com/nakamasato/sample-controller/pkg/generated/informers/extern
 alversions/example.com/v1alpha1&#34;
-        listers &#34;github.com/nakamasato/sample-controller/pkg/client/listers/example.com/v1alpha1&#34;
+        listers &#34;github.com/nakamasato/sample-controller/pkg/generated/listers/example.com/v1alpha1&#34;
 </code></pre></div></li>
 <li>Add eventRecorder to Controller.
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-diff data-lang=diff> type Controller struct {
@@ -1025,7 +1022,7 @@ alversions/example.com/v1alpha1&#34;
         if !metav1.IsControlledBy(deployment, foo) {
                 msg := fmt.Sprintf(MessageResourceExists, deployment.Name)
 <span class=gi>+               c.recorder.Event(foo, corev1.EventTypeWarning, ErrResourceExists, msg)
-</span><span class=gi></span>                log.Println(msg)
+</span><span class=gi></span>                klog.Info(msg)
                 return fmt.Errorf(&#34;%s&#34;, msg)
         }
 <span class=gu>@@ -228,6 +253,7 @@ func (c *Controller) syncHandler(key string) error {
@@ -1039,7 +1036,7 @@ alversions/example.com/v1alpha1&#34;
 <li>Test event.
 <ol>
 <li>Run the controller.
-<div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>go run main.go
+<div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>go run .
 </code></pre></div></li>
 <li>Apply <code>Foo</code>.
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback> kubectl apply -f config/sample/foo.yaml

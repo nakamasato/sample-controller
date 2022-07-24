@@ -84,7 +84,7 @@
 <div class="col-12 col-md-9">
 <h1 class=title>4. Checkpoint</h1>
 <div class=content>
-<h2 id=4-checkpoint-check-custom-resource-and-codeshttpsgithubcomnakamasatosample-controllercommit2eb6a438249217e0bd2e80cd6053d6fe7f6b3599><a href=https://github.com/nakamasato/sample-controller/commit/2eb6a438249217e0bd2e80cd6053d6fe7f6b3599>4. Checkpoint: Check custom resource and codes</a></h2>
+<h2 id=4-checkpoint-check-custom-resource-and-codeshttpsgithubcomnakamasatosample-controllercommit366cb8ed1cea3a3436862a4597b346b4cdced2da><a href=https://github.com/nakamasato/sample-controller/commit/366cb8ed1cea3a3436862a4597b346b4cdced2da>4. Checkpoint: Check custom resource and codes</a></h2>
 <p>What to check:</p>
 <ul>
 <li><input checked disabled type=checkbox> Create CRD</li>
@@ -100,18 +100,19 @@
 <span class=kn>import</span> <span class=p>(</span>
     <span class=s>&#34;context&#34;</span>
     <span class=s>&#34;flag&#34;</span>
-    <span class=s>&#34;fmt&#34;</span>
     <span class=s>&#34;log&#34;</span>
     <span class=s>&#34;path/filepath&#34;</span>
 
     <span class=s>&#34;k8s.io/client-go/tools/clientcmd&#34;</span>
     <span class=s>&#34;k8s.io/client-go/util/homedir&#34;</span>
+    <span class=s>&#34;k8s.io/klog/v2&#34;</span>
 
-    <span class=nx>client</span> <span class=s>&#34;github.com/nakamasato/sample-controller/pkg/client/clientset/versioned&#34;</span>
+    <span class=nx>client</span> <span class=s>&#34;github.com/nakamasato/sample-controller/pkg/generated/clientset/versioned&#34;</span>
     <span class=nx>metav1</span> <span class=s>&#34;k8s.io/apimachinery/pkg/apis/meta/v1&#34;</span>
 <span class=p>)</span>
 
 <span class=kd>func</span> <span class=nf>main</span><span class=p>()</span> <span class=p>{</span>
+    <span class=nx>klog</span><span class=p>.</span><span class=nf>InitFlags</span><span class=p>(</span><span class=kc>nil</span><span class=p>)</span>
     <span class=kd>var</span> <span class=nx>kubeconfig</span> <span class=o>*</span><span class=kt>string</span>
 
     <span class=k>if</span> <span class=nx>home</span> <span class=o>:=</span> <span class=nx>homedir</span><span class=p>.</span><span class=nf>HomeDir</span><span class=p>();</span> <span class=nx>home</span> <span class=o>!=</span> <span class=s>&#34;&#34;</span> <span class=p>{</span>
@@ -123,20 +124,20 @@
 
     <span class=nx>config</span><span class=p>,</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>clientcmd</span><span class=p>.</span><span class=nf>BuildConfigFromFlags</span><span class=p>(</span><span class=s>&#34;&#34;</span><span class=p>,</span> <span class=o>*</span><span class=nx>kubeconfig</span><span class=p>)</span>
     <span class=k>if</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
-        <span class=nx>log</span><span class=p>.</span><span class=nf>Printf</span><span class=p>(</span><span class=s>&#34;Building config from flags, %s&#34;</span><span class=p>,</span> <span class=nx>err</span><span class=p>.</span><span class=nf>Error</span><span class=p>())</span>
+        <span class=nx>klog</span><span class=p>.</span><span class=nf>Fatalf</span><span class=p>(</span><span class=s>&#34;Error building kubeconfig: %s&#34;</span><span class=p>,</span> <span class=nx>err</span><span class=p>.</span><span class=nf>Error</span><span class=p>())</span>
     <span class=p>}</span>
 
     <span class=nx>clientset</span><span class=p>,</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>client</span><span class=p>.</span><span class=nf>NewForConfig</span><span class=p>(</span><span class=nx>config</span><span class=p>)</span>
     <span class=k>if</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
-        <span class=nx>log</span><span class=p>.</span><span class=nf>Printf</span><span class=p>(</span><span class=s>&#34;getting client set %s\n&#34;</span><span class=p>,</span> <span class=nx>err</span><span class=p>.</span><span class=nf>Error</span><span class=p>())</span>
+        <span class=nx>klog</span><span class=p>.</span><span class=nf>Fatalf</span><span class=p>(</span><span class=s>&#34;Error building kubernetes clientset: %s&#34;</span><span class=p>,</span> <span class=nx>err</span><span class=p>.</span><span class=nf>Error</span><span class=p>())</span>
     <span class=p>}</span>
-    <span class=nx>fmt</span><span class=p>.</span><span class=nf>Println</span><span class=p>(</span><span class=nx>clientset</span><span class=p>)</span>
+    <span class=nx>klog</span><span class=p>.</span><span class=nf>Infof</span><span class=p>(</span><span class=nx>clientset</span><span class=p>)</span>
 
     <span class=nx>foos</span><span class=p>,</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>clientset</span><span class=p>.</span><span class=nf>ExampleV1alpha1</span><span class=p>().</span><span class=nf>Foos</span><span class=p>(</span><span class=s>&#34;&#34;</span><span class=p>).</span><span class=nf>List</span><span class=p>(</span><span class=nx>context</span><span class=p>.</span><span class=nf>Background</span><span class=p>(),</span> <span class=nx>metav1</span><span class=p>.</span><span class=nx>ListOptions</span><span class=p>{})</span>
     <span class=k>if</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
-        <span class=nx>log</span><span class=p>.</span><span class=nf>Printf</span><span class=p>(</span><span class=s>&#34;listing foos %s\n&#34;</span><span class=p>,</span> <span class=nx>err</span><span class=p>.</span><span class=nf>Error</span><span class=p>())</span>
+        <span class=nx>klog</span><span class=p>.</span><span class=nf>Fatalf</span><span class=p>(</span><span class=s>&#34;listing foos %s %s&#34;</span><span class=p>,</span> <span class=nx>err</span><span class=p>.</span><span class=nf>Error</span><span class=p>())</span>
     <span class=p>}</span>
-    <span class=nx>fmt</span><span class=p>.</span><span class=nf>Printf</span><span class=p>(</span><span class=s>&#34;length of foos is %d\n&#34;</span><span class=p>,</span> <span class=nb>len</span><span class=p>(</span><span class=nx>foos</span><span class=p>.</span><span class=nx>Items</span><span class=p>))</span>
+    <span class=nx>klog</span><span class=p>.</span><span class=nf>Infof</span><span class=p>(</span><span class=s>&#34;llength of foos is %d&#34;</span><span class=p>,</span> <span class=nx>err</span><span class=p>.</span><span class=nf>Error</span><span class=p>())</span>
 <span class=p>}</span>
 </code></pre></div>
 </li>
