@@ -13,6 +13,9 @@ const (
     Name      string = Plural + "." + GroupName
 )
 
+// +genclient
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
 // Foo is a specification for a Foo resource
 type Foo struct {
     metav1.TypeMeta   `json:",inline"`
@@ -32,6 +35,8 @@ type FooSpec struct {
 type FooStatus struct {
     AvailableReplicas int32 `json:"availableReplicas"`
 }
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // FooList is a list of Foo resources
 type FooList struct {
