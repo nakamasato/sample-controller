@@ -23,6 +23,12 @@ import (
 	"k8s.io/klog/v2"
 )
 
+const (
+	// MessageResourceExists is the message used for Events when a resource
+	// fails to sync due to a Deployment already existing
+	MessageResourceExists = "Resource %q already exists and is not managed by Foo"
+)
+
 type Controller struct {
 	// kubeclientset is a standard kubernetes clientset
 	kubeclientset kubernetes.Interface
@@ -56,7 +62,10 @@ func NewController(
 
 	fooInformer.Informer().AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
-			AddFunc: controller.handleAdd,
+			AddFunc: controller.enqueueFoo,
+			UpdateFunc: func(old, new interface{}) {
+				controller.enqueueFoo(new)
+			},
 		},
 	)
 	return controller
@@ -118,11 +127,6 @@ func (c *Controller) processNextItem() bool {
 	}
 
 	return true
-}
-
-func (c *Controller) handleAdd(obj interface{}) {
-	klog.Info("handleAdd was called")
-	c.enqueueFoo(obj)
 }
 
 // enqueueFoo takes a Foo resource and converts it into a namespace/name
