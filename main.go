@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"time"
 
+	kubeinformers "k8s.io/client-go/informers"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
 	"k8s.io/klog/v2"
@@ -29,14 +31,26 @@ func main() {
 		klog.Fatalf("Error building kubeconfig: %s", err.Error())
 	}
 
+	kubeClient, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		klog.Errorf("getting kubernetes client set %s\n", err.Error())
+	}
+
 	exampleClientset, err := clientset.NewForConfig(config)
 	if err != nil {
 		klog.Fatalf("Error building kubernetes clientset: %s", err.Error())
 	}
 
+	kubeInformerFactory := kubeinformers.NewSharedInformerFactory(kubeClient, time.Second*30)
 	exampleInformerFactory := informers.NewSharedInformerFactory(exampleClientset, time.Second*30)
 	stopCh := make(chan struct{})
-	controller := NewController(exampleClientset, exampleInformerFactory.Example().V1alpha1().Foos())
+	controller := NewController(
+		kubeClient,
+		exampleClientset,
+		kubeInformerFactory.Apps().V1().Deployments(),
+		exampleInformerFactory.Example().V1alpha1().Foos(),
+	)
+	kubeInformerFactory.Start(ch)
 	exampleInformerFactory.Start(stopCh)
 	if err = controller.Run(stopCh); err != nil {
 		klog.Fatalf("error occurred when running controller %s\n", err.Error())
