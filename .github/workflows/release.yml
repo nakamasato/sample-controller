@@ -12,10 +12,10 @@ on:
 jobs:
   release:
     runs-on: ubuntu-latest
-    if: ${{ github.ref == 'refs/heads/main' }}
+    if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v3
       - run: ./tools/publish-release.sh # currently only support patch version release
-        if: ${{ inputs.version_type == "patch" }}
+        if: inputs.version_type == 'patch'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
