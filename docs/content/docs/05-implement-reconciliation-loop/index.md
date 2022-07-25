@@ -1,12 +1,12 @@
 ---
 title: '5. Implement reconciliation'
-date: 2022-07-25T09:54:09+0900
+date: 2022-07-25T09:58:52+0900
 draft: false
 weight: 7
 summary: Implement controller.
 ---
 
-## [5.1. Create Controller](https://github.com/nakamasato/sample-controller/commit/2703876cc24d1efb003f7073be8c150f1c811215)
+## [5.1. Create Controller](https://github.com/nakamasato/sample-controller/commit/2029956ed0e6b77f3311068fc89c794d2d69ffdc)
 
 ### 5.1.1. Create controller.
 
@@ -121,13 +121,13 @@ What's inside the controller:
         if err != nil {
                 klog.Fatalf("getting client set %s\n", err.Error())
         }
--       fmt.Println(exampleClientset)
--       foos, err := exampleClientset.ExampleV1alpha1().Foos("").List(context.Background(), metav1.ListOptions{})
+-       fmt.Println(exampleClient)
+-       foos, err := exampleClient.ExampleV1alpha1().Foos("").List(context.Background(), metav1.ListOptions{})
 -       if err != nil {
 -               klog.Fatalf("listing foos %s\n", err.Error())
-+       exampleInformerFactory := informers.NewSharedInformerFactory(exampleClientset, time.Second*30)
++       exampleInformerFactory := informers.NewSharedInformerFactory(exampleClient, time.Second*30)
 +       stopCh := make(chan struct{})
-+       controller := NewController(exampleClientset, exampleInformerFactory.Example().V1alpha1().Foos())
++       controller := NewController(exampleClient, exampleInformerFactory.Example().V1alpha1().Foos())
 +       exampleInformerFactory.Start(stopCh)
 +       if err = controller.Run(stopCh); err != nil {
 +               klog.Fatalf("error occurred when running controller %s\n", err.Error())
@@ -135,7 +135,7 @@ What's inside the controller:
 -       klog.Infof("length of foos is %d\n", len(foos.Items))
  }
 ```
-At the line of `exampleInformerFactory := informers.NewSharedInformerFactory(exampleClientset, time.Second*30)`, the second argument specifies ***ResyncPeriod***, which defines the interval of ***resync*** (*The resync operation consists of delivering to the handler an update notification for every object in the informer's local cache*). For more detail, please read [NewSharedIndexInformer](https://pkg.go.dev/k8s.io/client-go@v0.23.1/tools/cache#NewSharedIndexInformer)
+At the line of `exampleInformerFactory := informers.NewSharedInformerFactory(exampleClient, time.Second*30)`, the second argument specifies ***ResyncPeriod***, which defines the interval of ***resync*** (*The resync operation consists of delivering to the handler an update notification for every object in the informer's local cache*). For more detail, please read [NewSharedIndexInformer](https://pkg.go.dev/k8s.io/client-go@v0.23.1/tools/cache#NewSharedIndexInformer)
 <details><summary>main.go</summary>
 
 ```go
@@ -170,14 +170,14 @@ func main() {
         klog.Fatalf("Error building kubeconfig: %s", err.Error())
     }
 
-    exampleClientset, err := clientset.NewForConfig(config)
+    exampleClient, err := clientset.NewForConfig(config)
     if err != nil {
         klog.Fatalf("Error building kubernetes clientset: %s", err.Error())
     }
 
-    exampleInformerFactory := informers.NewSharedInformerFactory(exampleClientset, time.Second*30)
+    exampleInformerFactory := informers.NewSharedInformerFactory(exampleClient, time.Second*30)
     stopCh := make(chan struct{})
-    controller := NewController(exampleClientset, exampleInformerFactory.Example().V1alpha1().Foos())
+    controller := NewController(exampleClient, exampleInformerFactory.Example().V1alpha1().Foos())
     exampleInformerFactory.Start(stopCh)
     if err = controller.Run(stopCh); err != nil {
         klog.Fatalf("error occurred when running controller %s\n", err.Error())
@@ -334,7 +334,7 @@ Implement the following logic:
     2022/07/18 07:46:49 failed to get foo resource from lister foo.example.com "foo-sample" not found
     ```
 
-## [5.3. Enable to Create/Delete Deployment for Foo resource](https://github.com/nakamasato/sample-controller/commit/69e676b44950ff64b470e79a43bc40275ba37795)
+## [5.3. Enable to Create/Delete Deployment for Foo resource](https://github.com/nakamasato/sample-controller/commit/73225eb96c74537e015af7e4b09dd3721800a00e)
 
 ### 5.3.1. Overview
 
@@ -417,18 +417,18 @@ The logic to implement is:
     +               klog.Errorf("getting kubernetes client set %s\n", err.Error())
     +       }
     +
-            exampleClientset, err := clientset.NewForConfig(config)
+            exampleClient, err := clientset.NewForConfig(config)
             if err != nil {
                     klog.Errorf("getting client set %s\n", err.Error())
             }
 
     +       kubeInformerFactory := kubeinformers.NewSharedInformerFactory(kubeClient, time.Second*30)
-            exampleInformerFactory := informers.NewSharedInformerFactory(exampleClientset, time.Second*30)
+            exampleInformerFactory := informers.NewSharedInformerFactory(exampleClient, time.Second*30)
             stopCh := make(chan struct{})
-    -       controller := controller.NewController(exampleClientset, exampleInformerFactory.Example().V1alpha1().Foos())
+    -       controller := controller.NewController(exampleClient, exampleInformerFactory.Example().V1alpha1().Foos())
     +       controller := controller.NewController(
     +               kubeClient,
-    +               exampleClientset,
+    +               exampleClient,
     +               kubeInformerFactory.Apps().V1().Deployments(),
     +               exampleInformerFactory.Example().V1alpha1().Foos(),
     +       )
@@ -607,7 +607,7 @@ The logic to implement is:
 
     > Kubernetes checks for and deletes objects that no longer have owner references, like the pods left behind when you delete a ReplicaSet. When you delete an object, you can control whether Kubernetes deletes the object's dependents automatically, in a process called cascading deletion.
 
-## [5.4. Check and update Deployment if necessary](https://github.com/nakamasato/sample-controller/commit/8f8e433d87a02a67d0145488f15c73550349e467)
+## [5.4. Check and update Deployment if necessary](https://github.com/nakamasato/sample-controller/commit/1a74248cb99d9f8ff4dc5f7cdec1836d0ed225a8)
 
 ### 5.4.1. Overview
 
@@ -750,7 +750,7 @@ What needs to be done:
     kubectl delete deploy foo-sample
     ```
 
-## [5.5. Update Foo status](https://github.com/nakamasato/sample-controller/commit/7f18219eb9587c1323ac3a003736681901d375b3)
+## [5.5. Update Foo status](https://github.com/nakamasato/sample-controller/commit/6f23c8fe6a0f534d5cb25c7387b5b9e6547f3a33)
 
 ### 5.5.1. Overview
 
@@ -834,7 +834,7 @@ What needs to be done:
     ```
     kubectl delete -f config/sample/foo.yaml
     ```
-## [5.6. Capture the update of Deployment](https://github.com/nakamasato/sample-controller/commit/e50888903adb38dcd9ab7563ae623605d08616ea)
+## [5.6. Capture the update of Deployment](https://github.com/nakamasato/sample-controller/commit/622e4731127a2833e8802dd1399b98aa6c9d7133)
 
 ### 5.6.1. Overview
 
@@ -939,7 +939,7 @@ In the previous section, `status.availableReplicas` is not updated immediately. 
     kubectl delete -f config/sample/foo.yaml
     ```
 
-## [5.7. Create events for Foo resource](https://github.com/nakamasato/sample-controller/commit/d5c64281b4635f7dcfd225a45fc473c85134a191)
+## [5.7. Create events for Foo resource](https://github.com/nakamasato/sample-controller/commit/12960c21dfde022f5c163a65998625e038bff401)
 
 ### 5.7.1. Overview
 

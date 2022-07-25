@@ -1,12 +1,12 @@
 ---
 title: '4. Checkpoint'
-date: 2022-07-25T09:54:09+0900
+date: 2022-07-25T09:58:52+0900
 draft: false
 weight: 6
 summary: Check the behavior at this point.
 ---
 
-## [4. Checkpoint: Check custom resource and codes](https://github.com/nakamasato/sample-controller/commit/00eed493039f4938ae66b5c27ad2c169d18535e2)
+## [4. Checkpoint: Check custom resource and codes](https://github.com/nakamasato/sample-controller/commit/4f5a6c0fa2502ea7704c5d4e22cc6c84493593c6)
 
 What to check:
 - [x] Create CRD
@@ -51,13 +51,13 @@ Steps:
             klog.Fatalf("Error building kubeconfig: %s", err.Error())
         }
 
-        exampleClientset, err := clientset.NewForConfig(config)
+        exampleClient, err := clientset.NewForConfig(config)
         if err != nil {
             klog.Fatalf("Error building kubernetes clientset: %s", err.Error())
         }
-        klog.Info(exampleClientset)
+        klog.Info(exampleClient)
 
-        foos, err := exampleClientset.ExampleV1alpha1().Foos("").List(context.Background(), metav1.ListOptions{})
+        foos, err := exampleClient.ExampleV1alpha1().Foos("").List(context.Background(), metav1.ListOptions{})
         if err != nil {
             klog.Fatalf("listing foos %s %s", err.Error())
         }
