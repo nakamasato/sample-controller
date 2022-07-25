@@ -385,14 +385,14 @@ func main() {
         klog.Fatalf("Error building kubeconfig: %s", err.Error())
     }
 
-    exampleClientset, err := clientset.NewForConfig(config)
+    exampleClient, err := clientset.NewForConfig(config)
     if err != nil {
         klog.Fatalf("Error building kubernetes clientset: %s", err.Error())
     }
 
-    exampleInformerFactory := informers.NewSharedInformerFactory(exampleClientset, time.Second*30)
+    exampleInformerFactory := informers.NewSharedInformerFactory(exampleClient, time.Second*30)
     stopCh := make(chan struct{})
-    controller := NewController(exampleClientset, exampleInformerFactory.Example().V1alpha1().Foos())
+    controller := NewController(exampleClient, exampleInformerFactory.Example().V1alpha1().Foos())
     exampleInformerFactory.Start(stopCh)
     if err = controller.Run(stopCh); err != nil {
         klog.Fatalf("error occurred when running controller %s\n", err.Error())
@@ -545,19 +545,19 @@ cat <<EOF > tmpfile
 	}
 
 EOF
-gsed -i $'/exampleClientset, err :=/{e cat tmpfile\n}' $MAIN_GO_FILE # add before example, err := xxx
+gsed -i $'/exampleClient, err :=/{e cat tmpfile\n}' $MAIN_GO_FILE # add before example, err := xxx
 echo 'kubeInformerFactory := kubeinformers.NewSharedInformerFactory(kubeClient, time.Second*30)' > tmpfile
 gsed -i $'/exampleInformerFactory :=/{e cat tmpfile\n}' $MAIN_GO_FILE # add before exampleInformerFactory :=
 cat <<EOF > tmpfile
 	controller := NewController(
 		kubeClient,
-		exampleClientset,
+		exampleClient,
 		kubeInformerFactory.Apps().V1().Deployments(),
 		exampleInformerFactory.Example().V1alpha1().Foos(),
 	)
   kubeInformerFactory.Start(stopCh)
 EOF
-gsed -i 's/.*controller := NewController(exampleClientset.*/cat tmpfile/e' $MAIN_GO_FILE # replace controller := xxx
+gsed -i 's/.*controller := NewController(exampleClient.*/cat tmpfile/e' $MAIN_GO_FILE # replace controller := xxx
 
 
 gsed -i "/ns, name, err/,/^$/d" $FOO_CONTROLLER_FILE # remove ns, name, err := xxx if err != nil {}
