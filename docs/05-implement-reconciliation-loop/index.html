@@ -84,7 +84,7 @@
 <div class="col-12 col-md-9">
 <h1 class=title>5. Implement reconciliation</h1>
 <div class=content>
-<h2 id=51-create-controllerhttpsgithubcomnakamasatosample-controllercommit2703876cc24d1efb003f7073be8c150f1c811215><a href=https://github.com/nakamasato/sample-controller/commit/2703876cc24d1efb003f7073be8c150f1c811215>5.1. Create Controller</a></h2>
+<h2 id=51-create-controllerhttpsgithubcomnakamasatosample-controllercommit2029956ed0e6b77f3311068fc89c794d2d69ffdc><a href=https://github.com/nakamasato/sample-controller/commit/2029956ed0e6b77f3311068fc89c794d2d69ffdc>5.1. Create Controller</a></h2>
 <h3 id=511-create-controller>5.1.1. Create controller.</h3>
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kn>package</span> <span class=nx>main</span>
 
@@ -196,20 +196,20 @@
 </span><span class=gu></span>        if err != nil {
                 klog.Fatalf(&#34;getting client set %s\n&#34;, err.Error())
         }
-<span class=gd>-       fmt.Println(exampleClientset)
-</span><span class=gd>-       foos, err := exampleClientset.ExampleV1alpha1().Foos(&#34;&#34;).List(context.Background(), metav1.ListOptions{})
+<span class=gd>-       fmt.Println(exampleClient)
+</span><span class=gd>-       foos, err := exampleClient.ExampleV1alpha1().Foos(&#34;&#34;).List(context.Background(), metav1.ListOptions{})
 </span><span class=gd>-       if err != nil {
 </span><span class=gd>-               klog.Fatalf(&#34;listing foos %s\n&#34;, err.Error())
-</span><span class=gd></span><span class=gi>+       exampleInformerFactory := informers.NewSharedInformerFactory(exampleClientset, time.Second*30)
+</span><span class=gd></span><span class=gi>+       exampleInformerFactory := informers.NewSharedInformerFactory(exampleClient, time.Second*30)
 </span><span class=gi>+       stopCh := make(chan struct{})
-</span><span class=gi>+       controller := NewController(exampleClientset, exampleInformerFactory.Example().V1alpha1().Foos())
+</span><span class=gi>+       controller := NewController(exampleClient, exampleInformerFactory.Example().V1alpha1().Foos())
 </span><span class=gi>+       exampleInformerFactory.Start(stopCh)
 </span><span class=gi>+       if err = controller.Run(stopCh); err != nil {
 </span><span class=gi>+               klog.Fatalf(&#34;error occurred when running controller %s\n&#34;, err.Error())
 </span><span class=gi></span>        }
 <span class=gd>-       klog.Infof(&#34;length of foos is %d\n&#34;, len(foos.Items))
 </span><span class=gd></span> }
-</code></pre></div><p>At the line of <code>exampleInformerFactory := informers.NewSharedInformerFactory(exampleClientset, time.Second*30)</code>, the second argument specifies <em><strong>ResyncPeriod</strong></em>, which defines the interval of <em><strong>resync</strong></em> (<em>The resync operation consists of delivering to the handler an update notification for every object in the informer&rsquo;s local cache</em>). For more detail, please read <a href=https://pkg.go.dev/k8s.io/client-go@v0.23.1/tools/cache#NewSharedIndexInformer>NewSharedIndexInformer</a></p>
+</code></pre></div><p>At the line of <code>exampleInformerFactory := informers.NewSharedInformerFactory(exampleClient, time.Second*30)</code>, the second argument specifies <em><strong>ResyncPeriod</strong></em>, which defines the interval of <em><strong>resync</strong></em> (<em>The resync operation consists of delivering to the handler an update notification for every object in the informer&rsquo;s local cache</em>). For more detail, please read <a href=https://pkg.go.dev/k8s.io/client-go@v0.23.1/tools/cache#NewSharedIndexInformer>NewSharedIndexInformer</a></p>
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kn>package</span> <span class=nx>main</span>
 
 <span class=kn>import</span> <span class=p>(</span>
@@ -241,14 +241,14 @@
         <span class=nx>klog</span><span class=p>.</span><span class=nf>Fatalf</span><span class=p>(</span><span class=s>&#34;Error building kubeconfig: %s&#34;</span><span class=p>,</span> <span class=nx>err</span><span class=p>.</span><span class=nf>Error</span><span class=p>())</span>
     <span class=p>}</span>
 
-    <span class=nx>exampleClientset</span><span class=p>,</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>clientset</span><span class=p>.</span><span class=nf>NewForConfig</span><span class=p>(</span><span class=nx>config</span><span class=p>)</span>
+    <span class=nx>exampleClient</span><span class=p>,</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>clientset</span><span class=p>.</span><span class=nf>NewForConfig</span><span class=p>(</span><span class=nx>config</span><span class=p>)</span>
     <span class=k>if</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
         <span class=nx>klog</span><span class=p>.</span><span class=nf>Fatalf</span><span class=p>(</span><span class=s>&#34;Error building kubernetes clientset: %s&#34;</span><span class=p>,</span> <span class=nx>err</span><span class=p>.</span><span class=nf>Error</span><span class=p>())</span>
     <span class=p>}</span>
 
-    <span class=nx>exampleInformerFactory</span> <span class=o>:=</span> <span class=nx>informers</span><span class=p>.</span><span class=nf>NewSharedInformerFactory</span><span class=p>(</span><span class=nx>exampleClientset</span><span class=p>,</span> <span class=nx>time</span><span class=p>.</span><span class=nx>Second</span><span class=o>*</span><span class=mi>30</span><span class=p>)</span>
+    <span class=nx>exampleInformerFactory</span> <span class=o>:=</span> <span class=nx>informers</span><span class=p>.</span><span class=nf>NewSharedInformerFactory</span><span class=p>(</span><span class=nx>exampleClient</span><span class=p>,</span> <span class=nx>time</span><span class=p>.</span><span class=nx>Second</span><span class=o>*</span><span class=mi>30</span><span class=p>)</span>
     <span class=nx>stopCh</span> <span class=o>:=</span> <span class=nb>make</span><span class=p>(</span><span class=kd>chan</span> <span class=kd>struct</span><span class=p>{})</span>
-    <span class=nx>controller</span> <span class=o>:=</span> <span class=nf>NewController</span><span class=p>(</span><span class=nx>exampleClientset</span><span class=p>,</span> <span class=nx>exampleInformerFactory</span><span class=p>.</span><span class=nf>Example</span><span class=p>().</span><span class=nf>V1alpha1</span><span class=p>().</span><span class=nf>Foos</span><span class=p>())</span>
+    <span class=nx>controller</span> <span class=o>:=</span> <span class=nf>NewController</span><span class=p>(</span><span class=nx>exampleClient</span><span class=p>,</span> <span class=nx>exampleInformerFactory</span><span class=p>.</span><span class=nf>Example</span><span class=p>().</span><span class=nf>V1alpha1</span><span class=p>().</span><span class=nf>Foos</span><span class=p>())</span>
     <span class=nx>exampleInformerFactory</span><span class=p>.</span><span class=nf>Start</span><span class=p>(</span><span class=nx>stopCh</span><span class=p>)</span>
     <span class=k>if</span> <span class=nx>err</span> <span class=p>=</span> <span class=nx>controller</span><span class=p>.</span><span class=nf>Run</span><span class=p>(</span><span class=nx>stopCh</span><span class=p>);</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
         <span class=nx>klog</span><span class=p>.</span><span class=nf>Fatalf</span><span class=p>(</span><span class=s>&#34;error occurred when running controller %s\n&#34;</span><span class=p>,</span> <span class=nx>err</span><span class=p>.</span><span class=nf>Error</span><span class=p>())</span>
@@ -381,7 +381,7 @@
 2022/07/18 07:46:49 failed to get foo resource from lister foo.example.com &#34;foo-sample&#34; not found
 </code></pre></div></li>
 </ol>
-<h2 id=53-enable-to-createdelete-deployment-for-foo-resourcehttpsgithubcomnakamasatosample-controllercommit69e676b44950ff64b470e79a43bc40275ba37795><a href=https://github.com/nakamasato/sample-controller/commit/69e676b44950ff64b470e79a43bc40275ba37795>5.3. Enable to Create/Delete Deployment for Foo resource</a></h2>
+<h2 id=53-enable-to-createdelete-deployment-for-foo-resourcehttpsgithubcomnakamasatosample-controllercommit73225eb96c74537e015af7e4b09dd3721800a00e><a href=https://github.com/nakamasato/sample-controller/commit/73225eb96c74537e015af7e4b09dd3721800a00e>5.3. Enable to Create/Delete Deployment for Foo resource</a></h2>
 <h3 id=531-overview>5.3.1. Overview</h3>
 <p>In this section, we&rsquo;ll add a logic to create a <code>Deployment</code> for <code>Foo</code> resource.</p>
 <p>The logic to implement is:</p>
@@ -457,18 +457,18 @@
 </span><span class=gi>+               klog.Errorf(&#34;getting kubernetes client set %s\n&#34;, err.Error())
 </span><span class=gi>+       }
 </span><span class=gi>+
-</span><span class=gi></span>        exampleClientset, err := clientset.NewForConfig(config)
+</span><span class=gi></span>        exampleClient, err := clientset.NewForConfig(config)
         if err != nil {
                 klog.Errorf(&#34;getting client set %s\n&#34;, err.Error())
         }
 
 <span class=gi>+       kubeInformerFactory := kubeinformers.NewSharedInformerFactory(kubeClient, time.Second*30)
-</span><span class=gi></span>        exampleInformerFactory := informers.NewSharedInformerFactory(exampleClientset, time.Second*30)
+</span><span class=gi></span>        exampleInformerFactory := informers.NewSharedInformerFactory(exampleClient, time.Second*30)
         stopCh := make(chan struct{})
-<span class=gd>-       controller := controller.NewController(exampleClientset, exampleInformerFactory.Example().V1alpha1().Foos())
+<span class=gd>-       controller := controller.NewController(exampleClient, exampleInformerFactory.Example().V1alpha1().Foos())
 </span><span class=gd></span><span class=gi>+       controller := controller.NewController(
 </span><span class=gi>+               kubeClient,
-</span><span class=gi>+               exampleClientset,
+</span><span class=gi>+               exampleClient,
 </span><span class=gi>+               kubeInformerFactory.Apps().V1().Deployments(),
 </span><span class=gi>+               exampleInformerFactory.Example().V1alpha1().Foos(),
 </span><span class=gi>+       )
@@ -628,7 +628,7 @@ No resources found in default namespace.
 </blockquote>
 </li>
 </ol>
-<h2 id=54-check-and-update-deployment-if-necessaryhttpsgithubcomnakamasatosample-controllercommit8f8e433d87a02a67d0145488f15c73550349e467><a href=https://github.com/nakamasato/sample-controller/commit/8f8e433d87a02a67d0145488f15c73550349e467>5.4. Check and update Deployment if necessary</a></h2>
+<h2 id=54-check-and-update-deployment-if-necessaryhttpsgithubcomnakamasatosample-controllercommit1a74248cb99d9f8ff4dc5f7cdec1836d0ed225a8><a href=https://github.com/nakamasato/sample-controller/commit/1a74248cb99d9f8ff4dc5f7cdec1836d0ed225a8>5.4. Check and update Deployment if necessary</a></h2>
 <h3 id=541-overview>5.4.1. Overview</h3>
 <p>What needs to be done:</p>
 <ul>
@@ -761,7 +761,7 @@ foo-sample   2/2     2            2           3h42m
 kubectl delete deploy foo-sample
 </code></pre></div></li>
 </ol>
-<h2 id=55-update-foo-statushttpsgithubcomnakamasatosample-controllercommit7f18219eb9587c1323ac3a003736681901d375b3><a href=https://github.com/nakamasato/sample-controller/commit/7f18219eb9587c1323ac3a003736681901d375b3>5.5. Update Foo status</a></h2>
+<h2 id=55-update-foo-statushttpsgithubcomnakamasatosample-controllercommit6f23c8fe6a0f534d5cb25c7387b5b9e6547f3a33><a href=https://github.com/nakamasato/sample-controller/commit/6f23c8fe6a0f534d5cb25c7387b5b9e6547f3a33>5.5. Update Foo status</a></h2>
 <h3 id=551-overview>5.5.1. Overview</h3>
 <ol>
 <li>Enable <code>status</code> subresource in <code>CustomResourceDefinition</code>.</li>
@@ -838,7 +838,7 @@ kubectl delete deploy foo-sample
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>kubectl delete -f config/sample/foo.yaml
 </code></pre></div></li>
 </ol>
-<h2 id=56-capture-the-update-of-deploymenthttpsgithubcomnakamasatosample-controllercommite50888903adb38dcd9ab7563ae623605d08616ea><a href=https://github.com/nakamasato/sample-controller/commit/e50888903adb38dcd9ab7563ae623605d08616ea>5.6. Capture the update of Deployment</a></h2>
+<h2 id=56-capture-the-update-of-deploymenthttpsgithubcomnakamasatosample-controllercommit622e4731127a2833e8802dd1399b98aa6c9d7133><a href=https://github.com/nakamasato/sample-controller/commit/622e4731127a2833e8802dd1399b98aa6c9d7133>5.6. Capture the update of Deployment</a></h2>
 <h3 id=561-overview>5.6.1. Overview</h3>
 <p>In the previous section, <code>status.availableReplicas</code> is not updated immediately. This is because sample-contrller just monitors our custom resource <code>Foo</code>. In this section, we&rsquo;ll enable to capture changes of Deployments controlled by <code>Foo</code>.</p>
 <h3 id=562-implement>5.6.2. Implement</h3>
@@ -931,7 +931,7 @@ kubectl delete deploy foo-sample
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>kubectl delete -f config/sample/foo.yaml
 </code></pre></div></li>
 </ol>
-<h2 id=57-create-events-for-foo-resourcehttpsgithubcomnakamasatosample-controllercommitd5c64281b4635f7dcfd225a45fc473c85134a191><a href=https://github.com/nakamasato/sample-controller/commit/d5c64281b4635f7dcfd225a45fc473c85134a191>5.7. Create events for Foo resource</a></h2>
+<h2 id=57-create-events-for-foo-resourcehttpsgithubcomnakamasatosample-controllercommit12960c21dfde022f5c163a65998625e038bff401><a href=https://github.com/nakamasato/sample-controller/commit/12960c21dfde022f5c163a65998625e038bff401>5.7. Create events for Foo resource</a></h2>
 <h3 id=571-overview>5.7.1. Overview</h3>
 <ol>
 <li>Add <code>record.EventRecorder</code> to <code>Controller</code>.</li>

@@ -84,7 +84,7 @@
 <div class="col-12 col-md-9">
 <h1 class=title>4. Checkpoint</h1>
 <div class=content>
-<h2 id=4-checkpoint-check-custom-resource-and-codeshttpsgithubcomnakamasatosample-controllercommit00eed493039f4938ae66b5c27ad2c169d18535e2><a href=https://github.com/nakamasato/sample-controller/commit/00eed493039f4938ae66b5c27ad2c169d18535e2>4. Checkpoint: Check custom resource and codes</a></h2>
+<h2 id=4-checkpoint-check-custom-resource-and-codeshttpsgithubcomnakamasatosample-controllercommit4f5a6c0fa2502ea7704c5d4e22cc6c84493593c6><a href=https://github.com/nakamasato/sample-controller/commit/4f5a6c0fa2502ea7704c5d4e22cc6c84493593c6>4. Checkpoint: Check custom resource and codes</a></h2>
 <p>What to check:</p>
 <ul>
 <li><input checked disabled type=checkbox> Create CRD</li>
@@ -126,13 +126,13 @@
         <span class=nx>klog</span><span class=p>.</span><span class=nf>Fatalf</span><span class=p>(</span><span class=s>&#34;Error building kubeconfig: %s&#34;</span><span class=p>,</span> <span class=nx>err</span><span class=p>.</span><span class=nf>Error</span><span class=p>())</span>
     <span class=p>}</span>
 
-    <span class=nx>exampleClientset</span><span class=p>,</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>clientset</span><span class=p>.</span><span class=nf>NewForConfig</span><span class=p>(</span><span class=nx>config</span><span class=p>)</span>
+    <span class=nx>exampleClient</span><span class=p>,</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>clientset</span><span class=p>.</span><span class=nf>NewForConfig</span><span class=p>(</span><span class=nx>config</span><span class=p>)</span>
     <span class=k>if</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
         <span class=nx>klog</span><span class=p>.</span><span class=nf>Fatalf</span><span class=p>(</span><span class=s>&#34;Error building kubernetes clientset: %s&#34;</span><span class=p>,</span> <span class=nx>err</span><span class=p>.</span><span class=nf>Error</span><span class=p>())</span>
     <span class=p>}</span>
-    <span class=nx>klog</span><span class=p>.</span><span class=nf>Info</span><span class=p>(</span><span class=nx>exampleClientset</span><span class=p>)</span>
+    <span class=nx>klog</span><span class=p>.</span><span class=nf>Info</span><span class=p>(</span><span class=nx>exampleClient</span><span class=p>)</span>
 
-    <span class=nx>foos</span><span class=p>,</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>exampleClientset</span><span class=p>.</span><span class=nf>ExampleV1alpha1</span><span class=p>().</span><span class=nf>Foos</span><span class=p>(</span><span class=s>&#34;&#34;</span><span class=p>).</span><span class=nf>List</span><span class=p>(</span><span class=nx>context</span><span class=p>.</span><span class=nf>Background</span><span class=p>(),</span> <span class=nx>metav1</span><span class=p>.</span><span class=nx>ListOptions</span><span class=p>{})</span>
+    <span class=nx>foos</span><span class=p>,</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>exampleClient</span><span class=p>.</span><span class=nf>ExampleV1alpha1</span><span class=p>().</span><span class=nf>Foos</span><span class=p>(</span><span class=s>&#34;&#34;</span><span class=p>).</span><span class=nf>List</span><span class=p>(</span><span class=nx>context</span><span class=p>.</span><span class=nf>Background</span><span class=p>(),</span> <span class=nx>metav1</span><span class=p>.</span><span class=nx>ListOptions</span><span class=p>{})</span>
     <span class=k>if</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
         <span class=nx>klog</span><span class=p>.</span><span class=nf>Fatalf</span><span class=p>(</span><span class=s>&#34;listing foos %s %s&#34;</span><span class=p>,</span> <span class=nx>err</span><span class=p>.</span><span class=nf>Error</span><span class=p>())</span>
     <span class=p>}</span>
