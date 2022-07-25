@@ -7,6 +7,7 @@ REPO_URL=https://$MODULE_NAME
 DATE_FORMAT="%Y-%m-%dT%H:%M:%S%z"
 FOO_CONTROLLER_FILE=controller.go
 FOO_CRD_FILE=config/crd/foos.yaml
+FOO_TYPES_FILE=pkg/apis/example.com/v1alpha1/types.go
 MAIN_GO_FILE=main.go
 
 # Start from main
@@ -35,30 +36,13 @@ gsed -i "s/date:.*/date: $(date +"$DATE_FORMAT")/" docs/content/docs/00-init-mod
 mkdir -p pkg/apis/example.com/v1alpha1
 
 cat <<EOF >> pkg/apis/example.com/v1alpha1/doc.go
-// +k8s:deepcopy-gen=package
-// +groupName=example.com
-
 package v1alpha1
 EOF
 
-cat <<EOF >> pkg/apis/example.com/v1alpha1/types.go
+cat <<EOF >> $FOO_TYPES_FILE
 package v1alpha1
 
 import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-// These const variables are used in our custom controller.
-const (
-    GroupName string = "example.com"
-    Kind      string = "Foo"
-    Version   string = "v1alpha1"
-    Plural    string = "foos"
-    Singluar  string = "foo"
-    ShortName string = "foo"
-    Name      string = Plural + "." + GroupName
-)
-
-// +genclient
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // Foo is a specification for a Foo resource
 type Foo struct {
@@ -79,8 +63,6 @@ type FooSpec struct {
 type FooStatus struct {
     AvailableReplicas int32 \`json:"availableReplicas"\`
 }
-
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // FooList is a list of Foo resources
 type FooList struct {
@@ -109,8 +91,8 @@ var (
 
 // SchemeGroupVersion is group version used to register these objects.
 var SchemeGroupVersion = schema.GroupVersion{
-    Group:   GroupName,
-    Version: Version,
+    Group:   "example.com",
+    Version: "v1alpha1",
 }
 
 func Resource(resource string) schema.GroupResource {
@@ -139,6 +121,29 @@ codeGeneratorDir=~/repos/kubernetes/code-generator
 if [ ! -d "$codeGeneratorDir" ] ; then
     git clone https://github.com/kubernetes/code-generator.git $codeGeneratorDir
 fi
+
+# add comment tag
+
+cat <<EOF > tmpfile
+// +k8s:deepcopy-gen=package
+// +groupName=example.com
+
+EOF
+
+gsed -i $'/^package v1alpha1$/{e cat tmpfile\n}' pkg/apis/example.com/v1alpha1/doc.go # add before
+
+cat <<EOF > tmpfile
+// +genclient
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+EOF
+gsed -i $'/^\/\/ Foo is a specification for a Foo resource$/{e cat tmpfile\n}' $FOO_TYPES_FILE # add before
+
+cat <<EOF > tmpfile
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+EOF
+gsed -i $'/^\/\/ FooList is a list of Foo resources$/{e cat tmpfile\n}' $FOO_TYPES_FILE # add before
 
 "${codeGeneratorDir}"/generate-groups.sh all ${MODULE_NAME}/pkg/generated ${MODULE_NAME}/pkg/apis example.com:v1alpha1 --go-header-file "${codeGeneratorDir}"/hack/boilerplate.go.txt --trim-path-prefix $MODULE_NAME
 TITLE_AND_MESSAGE="2. Generate codes"

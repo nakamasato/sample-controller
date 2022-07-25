@@ -2,17 +2,6 @@ package v1alpha1
 
 import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-// These const variables are used in our custom controller.
-const (
-	GroupName string = "example.com"
-	Kind      string = "Foo"
-	Version   string = "v1alpha1"
-	Plural    string = "foos"
-	Singluar  string = "foo"
-	ShortName string = "foo"
-	Name      string = Plural + "." + GroupName
-)
-
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 

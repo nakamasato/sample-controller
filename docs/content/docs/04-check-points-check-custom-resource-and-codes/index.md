@@ -1,12 +1,12 @@
 ---
 title: '4. Checkpoint'
-date: 2022-07-25T21:45:15+0900
+date: 2022-07-26T08:53:12+0900
 draft: false
 weight: 6
 summary: Check the behavior at this point.
 ---
 
-## [4. Checkpoint: Check custom resource and codes](https://github.com/nakamasato/sample-controller/commit/b03070aea45fb75b4f7e141f080d40a1e4766f6e)
+## [4. Checkpoint: Check custom resource and codes](https://github.com/nakamasato/sample-controller/commit/60900b430119759def40c391b6e1e181d60af1a0)
 
 What to check:
 - [x] Create CRD
