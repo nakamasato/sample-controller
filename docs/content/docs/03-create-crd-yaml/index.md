@@ -1,12 +1,12 @@
 ---
 title: '3. Create CRD yaml file'
-date: 2022-07-25T05:52:52+0900
+date: 2022-07-25T09:44:32+0900
 draft: false
 weight: 5
 summary: Create CustomResourceDefinition yaml file manually.
 ---
 
-## [3. Create CRD yaml file](https://github.com/nakamasato/sample-controller/commit/56e98acc8a5098d5e7a7958a190749bf28b108b6)
+## [3. Create CRD yaml file](https://github.com/nakamasato/sample-controller/commit/d0a54eee0eae91eb032dbc201ff70116e07c18a7)
 
 `config/crd/foos.yaml`:
 ```yaml
