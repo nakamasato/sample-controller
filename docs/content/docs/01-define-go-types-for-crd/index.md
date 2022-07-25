@@ -1,12 +1,12 @@
 ---
 title: '1. Define Go types for CRD'
-date: 2022-07-25T21:44:49+0900
+date: 2022-07-26T08:45:43+0900
 draft: false
 weight: 3
 summary: Define Go types for Custom Resource Definition `Foo`.
 ---
 
-## [1. Define Go types for CRD](https://github.com/nakamasato/sample-controller/commit/69e38e0e07697459d647eb781847fef65f3ec99b)
+## [1. Define Go types for CRD](https://github.com/nakamasato/sample-controller/commit/a562c01cc786df046d8a8dca249f9fa9b1dc49ac)
 
 1. Create a directory.
 
@@ -17,9 +17,6 @@ summary: Define Go types for Custom Resource Definition `Foo`.
 1. Create `pkg/apis/example.com/v1alpha1/doc.go`.
 
     ```go
-    // +k8s:deepcopy-gen=package
-    // +groupName=example.com
-
     package v1alpha1
     ```
 1. Create `pkg/apis/example.com/v1alpha1/types.go`.
@@ -38,9 +35,6 @@ summary: Define Go types for Custom Resource Definition `Foo`.
         ShortName string = "foo"
         Name      string = Plural + "." + GroupName
     )
-
-    // +genclient
-    // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
     // Foo is a specification for a Foo resource
     type Foo struct {
@@ -61,8 +55,6 @@ summary: Define Go types for Custom Resource Definition `Foo`.
     type FooStatus struct {
         AvailableReplicas int32 `json:"availableReplicas"`
     }
-
-    // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
     // FooList is a list of Foo resources
     type FooList struct {

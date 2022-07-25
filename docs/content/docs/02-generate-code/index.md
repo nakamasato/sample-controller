@@ -1,12 +1,23 @@
 ---
 title: '2. Generate codes'
-date: 2022-07-25T21:45:08+0900
+date: 2022-07-26T08:46:03+0900
 draft: false
 weight: 4
 summary: Generate Go codes with code-generator.
 ---
 
-## [2. Generate codes](https://github.com/nakamasato/sample-controller/commit/52daa808dc8caf1b0ce899f91f89e35a7700ac73)
+## [2. Generate codes](https://github.com/nakamasato/sample-controller/commit/3ee58b37c48920d2b3348fb3a3daaab386e69af7)
+
+### 2.1. Overview
+
+[code-generator](https://github.com/kubernetes/code-generator) is Golang code-generators used to implement Kubernetes-style API types (generate deepcopy, clientset, informer, lister)
+
+1. **DeepCopy** is necessary to implement runtime.Object interface.
+1. **Clientset** is to access a custom resource in Kubernetes API
+1. **Lister** is to list custom resources in a in-memory cache.Indexer with List function.
+1. **Informer** is used to capture changes of a target custom resource, which is usually used in a custom controller.
+
+### 2.2. Prepare code-generator
 
 1. Set `codeGeneratorDir` env var for `code-generator`.
 
@@ -43,6 +54,48 @@ summary: Generate Go codes with code-generator.
 
     </details>
 
+
+### 2.3. Add markers
+
+1. Mark the package `pkg/api/doc.go`.
+
+    ```diff
+    +// +k8s:deepcopy-gen=package
+    +// +groupName=example.com
+
+     package v1alpha1
+    ```
+
+    1. `// +k8s:deepcopy-gen=package`: generate DeepCopy for the entire package
+    1. `// +groupName=example.com`: used in the fake client as the full group name (defaults to the package name) ([client-gen](https://github.com/kubernetes/community/blob/master/contributors/devel/sig-api-machinery/generating-clientset.md))
+
+1. Mark the types (`Foo` and `FooList`) in `pkg/api/types.go`.
+
+    ```diff
+    +// +genclient
+    +// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+     // Foo is a specification for a Foo resource
+     type Foo struct {
+     ...
+    ```
+
+    ```diff
+    +// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+     // FooList is a list of Foo resources
+     type FooList struct {
+    ```
+
+    1. `// +genclient`: generate default client verb functions (create, update, delete, get, list, update, patch, watch and depending on the existence of .Status field in the type the client is generated for also updateStatus). (More details: [Generation and release cycle of clientset](https://github.com/kubernetes/community/blob/master/contributors/devel/sig-api-machinery/generating-clientset.md))
+    1. `+k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object`: generate DeepCopyObject with the given interfaces as return types.
+
+1. For more about comment tags.
+    1. [deepcopy-gen](https://pkg.go.dev/k8s.io/gengo/examples/deepcopy-gen)
+    1. [client-gen](https://github.com/kubernetes/community/blob/master/contributors/devel/sig-api-machinery/generating-clientset.md)
+
+### 2.4. Generate codes
+
 1. Generate codes (deepcopy, clientset, listers, and informers).
 
     ※ You need to replace `github.com/nakamasato/sample-controller` with your module name.
@@ -51,20 +104,31 @@ summary: Generate Go codes with code-generator.
     module=github.com/nakamasato/sample-controller; "${codeGeneratorDir}"/generate-groups.sh all ${module}/pkg/generated ${module}/pkg/apis example.com:v1alpha1 --go-header-file "${codeGeneratorDir}"/hack/boilerplate.go.txt --trim-path-prefix $module
     ```
 
-    <details>
 
-    The actually executed commands are the followings:
+    The command above consists of the following commands:
 
-    ```
-    GOBIN="$(go env GOBIN)"
-    gobin="${GOBIN:-$(go env GOPATH)/bin}"
-    ${gobin}/deepcopy-gen --input-dirs github.com/nakamasato/sample-controller/pkg/apis/example.com/v1alpha1 -O zz_generated.deepcopy --go-header-file /Users/m.naka/repos/kubernetes/code-generator/hack/boilerplate.go.txt --trim-path-prefix github.com/nakamasato/sample-controller
-    ${gobin}/client-gen --clientset-name versioned --input-base '' --input github.com/nakamasato/sample-controller/pkg/apis/example.com/v1alpha1 --output-package github.com/nakamasato/sample-controller/pkg/generated/clientset --go-header-file /Users/m.naka/repos/kubernetes/code-generator/hack/boilerplate.go.txt --trim-path-prefix github.com/nakamasato/sample-controller
-    ${gobin}/lister-gen --input-dirs github.com/nakamasato/sample-controller/pkg/apis/example.com/v1alpha1 --output-package github.com/nakamasato/sample-controller/pkg/generated/listers --go-header-file /Users/m.naka/repos/kubernetes/code-generator/hack/boilerplate.go.txt --trim-path-prefix github.com/nakamasato/sample-controller
-    ${gobin}/informer-gen --input-dirs github.com/nakamasato/sample-controller/pkg/apis/example.com/v1alpha1 --versioned-clientset-package github.com/nakamasato/sample-controller/pkg/generated/clientset/versioned --listers-package github.com/nakamasato/sample-controller/pkg/generated/listers --output-package github.com/nakamasato/sample-controller/pkg/generated/informers --go-header-file /Users/m.naka/repos/kubernetes/code-generator/hack/boilerplate.go.txt --trim-path-prefix github.com/nakamasato/sample-controller
-    ```
+    1. Set `gobin`
 
-    </deitals>
+        ```
+        GOBIN="$(go env GOBIN)"
+        gobin="${GOBIN:-$(go env GOPATH)/bin}"
+        ```
+    1. **deepcopy-gen**:
+        ```
+        ${gobin}/deepcopy-gen --input-dirs github.com/nakamasato/sample-controller/pkg/apis/example.com/v1alpha1 -O zz_generated.deepcopy --go-header-file /Users/m.naka/repos/kubernetes/code-generator/hack/boilerplate.go.txt --trim-path-prefix github.com/nakamasato/sample-controller
+        ```
+    1. **client-gen**:
+        ```
+        ${gobin}/client-gen --clientset-name versioned --input-base '' --input github.com/nakamasato/sample-controller/pkg/apis/example.com/v1alpha1 --output-package github.com/nakamasato/sample-controller/pkg/generated/clientset --go-header-file /Users/m.naka/repos/kubernetes/code-generator/hack/boilerplate.go.txt --trim-path-prefix github.com/nakamasato/sample-controller
+        ```
+    1. **lister-gen**:
+        ```
+        ${gobin}/lister-gen --input-dirs github.com/nakamasato/sample-controller/pkg/apis/example.com/v1alpha1 --output-package github.com/nakamasato/sample-controller/pkg/generated/listers --go-header-file /Users/m.naka/repos/kubernetes/code-generator/hack/boilerplate.go.txt --trim-path-prefix github.com/nakamasato/sample-controller
+        ```
+    1. **informer-gen**:
+        ```
+        ${gobin}/informer-gen --input-dirs github.com/nakamasato/sample-controller/pkg/apis/example.com/v1alpha1 --versioned-clientset-package github.com/nakamasato/sample-controller/pkg/generated/clientset/versioned --listers-package github.com/nakamasato/sample-controller/pkg/generated/listers --output-package github.com/nakamasato/sample-controller/pkg/generated/informers --go-header-file /Users/m.naka/repos/kubernetes/code-generator/hack/boilerplate.go.txt --trim-path-prefix github.com/nakamasato/sample-controller
+        ```
 
     The following files are generated:
     - `pkg/apis/example.com/v1alpha1/zz_generated.deepcopy.go`
