@@ -708,8 +708,8 @@ cat <<EOF > tmpfile
 
 EOF
 
-gsed -i $'/log.Printf("deployment %s is valid", deployment.Name)/{e cat tmpfile\n}' $FOO_CONTROLLER_FILE # add before
-gsed -i '/.*log.Printf("deployment %s is valid", deployment.Name)/,/^$/d' $FOO_CONTROLLER_FILE # delete log
+gsed -i $'/klog.Infof("deployment %s is valid", deployment.Name)/{e cat tmpfile\n}' $FOO_CONTROLLER_FILE # add before
+gsed -i '/.*klog.Infof("deployment %s is valid", deployment.Name)/,/^$/d' $FOO_CONTROLLER_FILE # delete log
 cat <<EOF > tmpfile
     AddFunc: controller.enqueueFoo,
     UpdateFunc: func(old, new interface{}) {
