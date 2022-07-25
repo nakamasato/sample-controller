@@ -84,7 +84,7 @@
 <div class="col-12 col-md-9">
 <h1 class=title>5. Implement reconciliation</h1>
 <div class=content>
-<h2 id=51-create-controllerhttpsgithubcomnakamasatosample-controllercommitbf02111b25e06d58ad8177a380336a19c3780f0c><a href=https://github.com/nakamasato/sample-controller/commit/bf02111b25e06d58ad8177a380336a19c3780f0c>5.1. Create Controller</a></h2>
+<h2 id=51-create-controllerhttpsgithubcomnakamasatosample-controllercommit2743c09b96477e337ca310f7d9a065032008caa3><a href=https://github.com/nakamasato/sample-controller/commit/2743c09b96477e337ca310f7d9a065032008caa3>5.1. Create Controller</a></h2>
 <h3 id=511-create-controller>5.1.1. Create controller.</h3>
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kn>package</span> <span class=nx>main</span>
 
@@ -381,7 +381,7 @@
 2022/07/18 07:46:49 failed to get foo resource from lister foo.example.com &#34;foo-sample&#34; not found
 </code></pre></div></li>
 </ol>
-<h2 id=53-enable-to-createdelete-deployment-for-foo-resourcehttpsgithubcomnakamasatosample-controllercommit328581a50dd3a646289bc086538ce6892c90080b><a href=https://github.com/nakamasato/sample-controller/commit/328581a50dd3a646289bc086538ce6892c90080b>5.3. Enable to Create/Delete Deployment for Foo resource</a></h2>
+<h2 id=53-enable-to-createdelete-deployment-for-foo-resourcehttpsgithubcomnakamasatosample-controllercommit8b3fd5a58ce28e520a1a3484463cf9b214f21255><a href=https://github.com/nakamasato/sample-controller/commit/8b3fd5a58ce28e520a1a3484463cf9b214f21255>5.3. Enable to Create/Delete Deployment for Foo resource</a></h2>
 <h3 id=531-overview>5.3.1. Overview</h3>
 <p>In this section, we&rsquo;ll add a logic to create a <code>Deployment</code> for <code>Foo</code> resource.</p>
 <p>The logic to implement is:</p>
@@ -628,7 +628,7 @@ No resources found in default namespace.
 </blockquote>
 </li>
 </ol>
-<h2 id=54-check-and-update-deployment-if-necessaryhttpsgithubcomnakamasatosample-controllercommit8b405a96ab54c85da00bc1b902d76fa89e3584fe><a href=https://github.com/nakamasato/sample-controller/commit/8b405a96ab54c85da00bc1b902d76fa89e3584fe>5.4. Check and update Deployment if necessary</a></h2>
+<h2 id=54-check-and-update-deployment-if-necessaryhttpsgithubcomnakamasatosample-controllercommit58973e14a2bcbacc55ffe114414090e4a2d31cf1><a href=https://github.com/nakamasato/sample-controller/commit/58973e14a2bcbacc55ffe114414090e4a2d31cf1>5.4. Check and update Deployment if necessary</a></h2>
 <h3 id=541-overview>5.4.1. Overview</h3>
 <p>What needs to be done:</p>
 <ul>
@@ -761,7 +761,7 @@ foo-sample   2/2     2            2           3h42m
 kubectl delete deploy foo-sample
 </code></pre></div></li>
 </ol>
-<h2 id=55-update-foo-statushttpsgithubcomnakamasatosample-controllercommit63d7d403ccdf0ed1a8a0dacad5f34b349c35d0d9><a href=https://github.com/nakamasato/sample-controller/commit/63d7d403ccdf0ed1a8a0dacad5f34b349c35d0d9>5.5. Update Foo status</a></h2>
+<h2 id=55-update-foo-statushttpsgithubcomnakamasatosample-controllercommite7aec808937cecd3003ce6efc74f37e66ea0bda4><a href=https://github.com/nakamasato/sample-controller/commit/e7aec808937cecd3003ce6efc74f37e66ea0bda4>5.5. Update Foo status</a></h2>
 <h3 id=551-overview>5.5.1. Overview</h3>
 <ol>
 <li>Enable <code>status</code> subresource in <code>CustomResourceDefinition</code>.</li>
@@ -838,7 +838,7 @@ kubectl delete deploy foo-sample
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>kubectl delete -f config/sample/foo.yaml
 </code></pre></div></li>
 </ol>
-<h2 id=56-capture-the-update-of-deploymenthttpsgithubcomnakamasatosample-controllercommit2f6245d754d9f826919cea02840e8395c88cbf88><a href=https://github.com/nakamasato/sample-controller/commit/2f6245d754d9f826919cea02840e8395c88cbf88>5.6. Capture the update of Deployment</a></h2>
+<h2 id=56-capture-the-update-of-deploymenthttpsgithubcomnakamasatosample-controllercommitc79b2fa08dab5024c260bc482335a7a5a5d81a6b><a href=https://github.com/nakamasato/sample-controller/commit/c79b2fa08dab5024c260bc482335a7a5a5d81a6b>5.6. Capture the update of Deployment</a></h2>
 <h3 id=561-overview>5.6.1. Overview</h3>
 <p>In the previous section, <code>status.availableReplicas</code> is not updated immediately. This is because sample-contrller just monitors our custom resource <code>Foo</code>. In this section, we&rsquo;ll enable to capture changes of Deployments controlled by <code>Foo</code>.</p>
 <h3 id=562-implement>5.6.2. Implement</h3>
@@ -931,7 +931,7 @@ kubectl delete deploy foo-sample
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>kubectl delete -f config/sample/foo.yaml
 </code></pre></div></li>
 </ol>
-<h2 id=57-create-events-for-foo-resourcehttpsgithubcomnakamasatosample-controllercommit98c32e22ea9f204a2728c5e3a732d6226aa576e3><a href=https://github.com/nakamasato/sample-controller/commit/98c32e22ea9f204a2728c5e3a732d6226aa576e3>5.7. Create events for Foo resource</a></h2>
+<h2 id=57-create-events-for-foo-resourcehttpsgithubcomnakamasatosample-controllercommitdd16227cf0c21605d7821860a429dcdf0216c2e5><a href=https://github.com/nakamasato/sample-controller/commit/dd16227cf0c21605d7821860a429dcdf0216c2e5>5.7. Create events for Foo resource</a></h2>
 <h3 id=571-overview>5.7.1. Overview</h3>
 <ol>
 <li>Add <code>record.EventRecorder</code> to <code>Controller</code>.</li>
