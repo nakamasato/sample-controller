@@ -84,7 +84,7 @@
 <div class="col-12 col-md-9">
 <h1 class=title>1. Define Go types for CRD</h1>
 <div class=content>
-<h2 id=1-define-go-types-for-crdhttpsgithubcomnakamasatosample-controllercommit69e38e0e07697459d647eb781847fef65f3ec99b><a href=https://github.com/nakamasato/sample-controller/commit/69e38e0e07697459d647eb781847fef65f3ec99b>1. Define Go types for CRD</a></h2>
+<h2 id=1-define-go-types-for-crdhttpsgithubcomnakamasatosample-controllercommitd307b9ea1062a6f4ac6cd8c7a84d93ed025edbdc><a href=https://github.com/nakamasato/sample-controller/commit/d307b9ea1062a6f4ac6cd8c7a84d93ed025edbdc>1. Define Go types for CRD</a></h2>
 <ol>
 <li>
 <p>Create a directory.</p>
@@ -92,10 +92,7 @@
 </code></pre></div></li>
 <li>
 <p>Create <code>pkg/apis/example.com/v1alpha1/doc.go</code>.</p>
-<div class=highlight><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=c1>// +k8s:deepcopy-gen=package
-</span><span class=c1>// +groupName=example.com
-</span><span class=c1></span>
-<span class=kn>package</span> <span class=nx>v1alpha1</span>
+<div class=highlight><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kn>package</span> <span class=nx>v1alpha1</span>
 </code></pre></div></li>
 <li>
 <p>Create <code>pkg/apis/example.com/v1alpha1/types.go</code>.</p>
@@ -103,20 +100,6 @@
 
 <span class=kn>import</span> <span class=nx>metav1</span> <span class=s>&#34;k8s.io/apimachinery/pkg/apis/meta/v1&#34;</span>
 
-<span class=c1>// These const variables are used in our custom controller.
-</span><span class=c1></span><span class=kd>const</span> <span class=p>(</span>
-    <span class=nx>GroupName</span> <span class=kt>string</span> <span class=p>=</span> <span class=s>&#34;example.com&#34;</span>
-    <span class=nx>Kind</span>      <span class=kt>string</span> <span class=p>=</span> <span class=s>&#34;Foo&#34;</span>
-    <span class=nx>Version</span>   <span class=kt>string</span> <span class=p>=</span> <span class=s>&#34;v1alpha1&#34;</span>
-    <span class=nx>Plural</span>    <span class=kt>string</span> <span class=p>=</span> <span class=s>&#34;foos&#34;</span>
-    <span class=nx>Singluar</span>  <span class=kt>string</span> <span class=p>=</span> <span class=s>&#34;foo&#34;</span>
-    <span class=nx>ShortName</span> <span class=kt>string</span> <span class=p>=</span> <span class=s>&#34;foo&#34;</span>
-    <span class=nx>Name</span>      <span class=kt>string</span> <span class=p>=</span> <span class=nx>Plural</span> <span class=o>+</span> <span class=s>&#34;.&#34;</span> <span class=o>+</span> <span class=nx>GroupName</span>
-<span class=p>)</span>
-
-<span class=c1>// +genclient
-</span><span class=c1>// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-</span><span class=c1></span>
 <span class=c1>// Foo is a specification for a Foo resource
 </span><span class=c1></span><span class=kd>type</span> <span class=nx>Foo</span> <span class=kd>struct</span> <span class=p>{</span>
     <span class=nx>metav1</span><span class=p>.</span><span class=nx>TypeMeta</span>   <span class=s>`json:&#34;,inline&#34;`</span>
@@ -137,8 +120,6 @@
     <span class=nx>AvailableReplicas</span> <span class=kt>int32</span> <span class=s>`json:&#34;availableReplicas&#34;`</span>
 <span class=p>}</span>
 
-<span class=c1>// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-</span><span class=c1></span>
 <span class=c1>// FooList is a list of Foo resources
 </span><span class=c1></span><span class=kd>type</span> <span class=nx>FooList</span> <span class=kd>struct</span> <span class=p>{</span>
     <span class=nx>metav1</span><span class=p>.</span><span class=nx>TypeMeta</span> <span class=s>`json:&#34;,inline&#34;`</span>
@@ -166,8 +147,8 @@
 
 <span class=c1>// SchemeGroupVersion is group version used to register these objects.
 </span><span class=c1></span><span class=kd>var</span> <span class=nx>SchemeGroupVersion</span> <span class=p>=</span> <span class=nx>schema</span><span class=p>.</span><span class=nx>GroupVersion</span><span class=p>{</span>
-    <span class=nx>Group</span><span class=p>:</span>   <span class=nx>GroupName</span><span class=p>,</span>
-    <span class=nx>Version</span><span class=p>:</span> <span class=nx>Version</span><span class=p>,</span>
+    <span class=nx>Group</span><span class=p>:</span>   <span class=s>&#34;example.com&#34;</span><span class=p>,</span>
+    <span class=nx>Version</span><span class=p>:</span> <span class=s>&#34;v1alpha1&#34;</span><span class=p>,</span>
 <span class=p>}</span>
 
 <span class=kd>func</span> <span class=nf>Resource</span><span class=p>(</span><span class=nx>resource</span> <span class=kt>string</span><span class=p>)</span> <span class=nx>schema</span><span class=p>.</span><span class=nx>GroupResource</span> <span class=p>{</span>
