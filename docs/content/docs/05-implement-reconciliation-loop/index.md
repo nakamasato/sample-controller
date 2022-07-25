@@ -546,7 +546,7 @@ The logic to implement is:
     -                       klog.Errorf("failed to get foo resource from lister %s\n", err.Error())
     -                       return err
     -               }
-    -               log.Printf("Got foo %+v\n", foo.Spec)
+    -               klog.Infof("Got foo %+v\n", foo.Spec)
     -
                     // Forget the queue item as it's successfully processed and
                     // the item will not be requeued.
@@ -591,6 +591,7 @@ The logic to implement is:
     ```
     2022/07/18 09:33:31 handleAdd was called
     2022/07/18 09:33:31 deployment foo-sample is valid
+    2022/07/18 09:33:31 Successfully synced 'default/foo-sample'
     ```
 1. Delete `Foo` resource.
     ```
@@ -608,6 +609,8 @@ The logic to implement is:
 
 ## [5.4. Check and update Deployment if necessary](https://github.com/nakamasato/sample-controller/commit/8b405a96ab54c85da00bc1b902d76fa89e3584fe)
 
+### 5.4.1. Overview
+
 What needs to be done:
 - In `syncHandler`
     - [x] Check if the found `Deployment` is managed by the `sample-controller`.
@@ -615,7 +618,8 @@ What needs to be done:
 - In `NewController`
     - [x] Set `UpdateFunc` as an event handler for the informer in order to call `syncHandler` when `Foo` resource is updated.
 
-Steps:
+### 5.4.2. Implement
+
 1. Add constant variable before `type Controller struct`.
     ```go
     const (
@@ -626,7 +630,7 @@ Steps:
     ```
 1. Update `syncHandler`:
 
-    1. Remove log `log.Printf("deployment %s is valid", deployment.Name)`.
+    1. Remove log `klog.Infof("deployment %s is valid", deployment.Name)`.
 
     1. Check if the `Deployment` is managed by the controller.
 
@@ -676,60 +680,84 @@ Steps:
     -       c.enqueueFoo(obj)
     -}
     ```
-1. Test if `sample-controller` updates replicas.
-    1. Apply `Foo` resource.
-        ```
-        kubectl apply -f config/sample/foo.yaml
-        ```
 
-        ```
-        kubectl get deploy
-        NAME         READY   UP-TO-DATE   AVAILABLE   AGE
-        foo-sample   1/1     1            1           3h41m
-        ```
-    1. Increase replica to 2.
-        ```
-        kubectl patch foo foo-sample -p '{"spec":{"replicas": 2}}' --type=merge
-        ```
+### 5.4.3. Run and check: `sample-controller` updates replicas
 
-        logs:
+1. Run the controller.
 
-        ```
-        2022/07/19 09:55:00 Foo foo-sample replicas: 2, deployment replicas: 1
-        ```
+    ```
+    go run .
+    ```
 
-        Replicas of Deployment increased.
-        ```
-        kubectl get deploy
-        NAME         READY   UP-TO-DATE   AVAILABLE   AGE
-        foo-sample   2/2     2            2           3h42m
-        ```
-    1. Delete `Foo` resource.
-        ```
-        kubectl delete -f config/sample/foo.yaml
-        ```
-1. Test if `sample-controller` wouldn't touch `Deployment` that is not managed by the controller.
-    1. Apply `Deployment` with name `foo-sample`.
-        ```
-        kubectl create deployment foo-sample --image=nginx
-        ```
+1. Apply `Foo` resource.
+    ```
+    kubectl apply -f config/sample/foo.yaml
+    ```
 
-    1. Apply `Foo` resource with name `foo-sample`.
-        ```
-        kubectl apply -f config/sample/foo.yaml
-        ```
-    1. Log:
-        ```
-        2022/07/19 09:58:27 Resource "foo-sample" already exists and is not managed by Foo
-        ```
+    ```
+    kubectl get deploy
+    NAME         READY   UP-TO-DATE   AVAILABLE   AGE
+    foo-sample   1/1     1            1           3h41m
+    ```
+1. Increase Foo's replica to 2.
+    ```
+    kubectl patch foo foo-sample -p '{"spec":{"replicas": 2}}' --type=merge
+    ```
 
-    1. Clean up.
-        ```
-        kubectl delete -f config/sample/foo.yaml
-        kubectl delete deploy foo-sample
-        ```
+    logs:
+
+    ```
+    2022/07/19 09:55:00 Foo foo-sample replicas: 2, deployment replicas: 1
+    2022/07/19 09:55:00 Successfully synced 'default/foo-sample'
+    ```
+
+    Replicas of Deployment increased.
+    ```
+    kubectl get deploy
+    NAME         READY   UP-TO-DATE   AVAILABLE   AGE
+    foo-sample   2/2     2            2           3h42m
+    ```
+1. Delete `Foo` resource.
+    ```
+    kubectl delete -f config/sample/foo.yaml
+    ```
+
+### 5.4.4. Run and check: `sample-controller` wouldn't update `Deployment` that is not managed by the controller
+
+1. Run the controller.
+
+    ```
+    go run .
+    ```
+
+1. Apply `Deployment` with name `foo-sample`.
+    ```
+    kubectl create deployment foo-sample --image=nginx
+    ```
+
+1. Apply `Foo` resource with name `foo-sample`.
+    ```
+    kubectl apply -f config/sample/foo.yaml
+    ```
+1. Log:
+    ```
+    2022/07/19 09:58:27 Resource "foo-sample" already exists and is not managed by Foo
+    ```
+
+1. Clean up.
+    ```
+    kubectl delete -f config/sample/foo.yaml
+    kubectl delete deploy foo-sample
+    ```
 
 ## [5.5. Update Foo status](https://github.com/nakamasato/sample-controller/commit/63d7d403ccdf0ed1a8a0dacad5f34b349c35d0d9)
+
+### 5.5.1. Overview
+
+1. Enable `status` subresource in `CustomResourceDefinition`.
+1. Store Deployment's `availableReplicas` in Foo object's status with `UpdateStatus` function.
+
+### 5.5.2. Implement
 
 1. Create `updateFooStatus` function.
 
@@ -767,81 +795,54 @@ Steps:
     }
     ```
 
-1. Add `subresources` to `CustomResourceDefinition`.
+1. Add `subresources` to `CustomResourceDefinition` in `config/crd/foos.yaml`.
 
     ```yaml
           subresources:
             status: {}
-            scale:
-              specReplicasPath: .spec.replicas
-              statusReplicasPath: .status.replicas
-              labelSelectorPath: .status.labelSelector
     ```
 
     For more details, see [subresources](https://kubernetes.io/docs/tasks/extend-kubernetes/custom-resources/custom-resource-definitions/#subresources)
 
-1. Test status
-    1. Apply the changes in CRD.
-        ```
-        kubectl apply -f config/crd/foos.yaml
-        ```
-    1. Run the controller.
-        ```
-        go run .
-        ```
-    1. Apply `Foo`
-        ```
-        kubectl apply -f config/sample/foo.yaml
-        ```
-    1. Check status (not updated immediately -> will be fixed in the next section.)
-        ```
-        kubectl get foo foo-sample -o jsonpath='{.status}'
-        {"availableReplicas":0}%
-        ```
-        Currently, the informer just monitors `Foo` resource, which cannot capture the update of `Deployment.status.availableReplicas`.
+### 5.5.3. Run and check
 
-    1. Check status after a while
-        ```
-        kubectl get foo foo-sample -o jsonpath='{.status}'
-        {"availableReplicas":1}%
-        ```
-1. Test scale
-    1. Scale.
-        ```
-        kubectl scale --replicas=3 foo foo-sample
-        ```
+1. Apply the changes in CRD.
+    ```
+    kubectl apply -f config/crd/foos.yaml
+    ```
+1. Run the controller.
+    ```
+    go run .
+    ```
+1. Apply `Foo`
+    ```
+    kubectl apply -f config/sample/foo.yaml
+    ```
+1. Check status (not updated immediately -> will be fixed in the next section.)
+    ```
+    kubectl get foo foo-sample -o jsonpath='{.status}'
+    {"availableReplicas":0}%
+    ```
+    Currently, the informer just monitors `Foo` resource, which cannot capture the update of `Deployment.status.availableReplicas`.
 
-        ```
-        kubectl get deploy
-        NAME         READY   UP-TO-DATE   AVAILABLE   AGE
-        foo-sample   3/3     3            3           95s
-        ```
-
-        After waiting for a while, status is updated.
-
-        ```
-        kubectl get foo foo-sample -o jsonpath='{.status}'
-        {"availableReplicas":3}%
-        ```
-
-        ```
-        kubectl scale --replicas=1 foo foo-sample
-        ```
-
-        ```
-        kubectl get deploy
-        NAME         READY   UP-TO-DATE   AVAILABLE   AGE
-        foo-sample   1/1     1            1           9m10s
-        ```
+1. Check status after a while
+    ```
+    kubectl get foo foo-sample -o jsonpath='{.status}'
+    {"availableReplicas":1}%
+    ```
 1. Delete `Foo`.
     ```
     kubectl delete -f config/sample/foo.yaml
     ```
 ## [5.6. Capture the update of Deployment](https://github.com/nakamasato/sample-controller/commit/2f6245d754d9f826919cea02840e8395c88cbf88)
 
-In the previous section, `status.availableReplicas` is not updated immediately. This is because we just monitor our custom resource `Foo`. In this section, we'll enable to capture changes of Deployment controlled by our custom resource `Foo`.
+### 5.6.1. Overview
 
-1. Add handleObject function.
+In the previous section, `status.availableReplicas` is not updated immediately. This is because sample-contrller just monitors our custom resource `Foo`. In this section, we'll enable to capture changes of Deployments controlled by `Foo`.
+
+### 5.6.2. Implement
+
+1. Add `handleObject` function.
 
     ```go
     // handleObject will take any resource implementing metav1.Object and attempt
@@ -882,16 +883,7 @@ In the previous section, `status.availableReplicas` is not updated immediately. 
         }
     }
     ```
-    When `Deployment` managed by `Foo` is added/updated/deleted, get the corresponding `Foo` and put the key (`naemspace/name`) to the workqueue.
-
-    Import necessary package.
-    ```go
-    import (
-        ...
-        utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-        ...
-    )
-    ```
+    When `Deployment` managed by `Foo` is added/updated/deleted, get the corresponding `Foo` and put the key (`namespace/name`) to the workqueue.
 
 1. Add event handlers to `deploymentInformer` in `NewController`.
 
@@ -917,26 +909,44 @@ In the previous section, `status.availableReplicas` is not updated immediately. 
             DeleteFunc: controller.handleObject,
         })
     ```
-1. Test the Foo's status after Deployment is updated.
-    1. Run the controller
-        ```
-        go run .
-        ```
-    1. Create Foo resource.
-        ```
-        kubectl apply -f config/sample/foo.yaml
-        ```
-    1. Check Foo's status (will be immediately updated.)
-        ```
-        kubectl get foo foo-sample -o jsonpath='{.status}'
-        {"availableReplicas":1}
-        ```
-    1. Delete `Foo`.
-        ```
-        kubectl delete -f config/sample/foo.yaml
-        ```
+
+### 5.6.3. Run and check
+
+1. Run the controller
+    ```
+    go run .
+    ```
+1. Create Foo resource.
+    ```
+    kubectl apply -f config/sample/foo.yaml
+    ```
+1. Check Foo's status (will be immediately updated.)
+    ```
+    kubectl get foo foo-sample -o jsonpath='{.status}'
+    {"availableReplicas":1}
+    ```
+1. Check again by changing the replicas
+    ```
+    kubectl patch foo foo-sample -p '{"spec":{"replicas": 2}}' --type=merge
+    ```
+1. Check Foo's status (will be immediately updated.)
+    ```
+    kubectl get foo foo-sample -o jsonpath='{.status}'
+    {"availableReplicas":2}
+    ```
+1. Delete `Foo`.
+    ```
+    kubectl delete -f config/sample/foo.yaml
+    ```
 
 ## [5.7. Create events for Foo resource](https://github.com/nakamasato/sample-controller/commit/98c32e22ea9f204a2728c5e3a732d6226aa576e3)
+
+### 5.7.1. Overview
+
+1. Add `record.EventRecorder` to `Controller`.
+1. Emit an event with `c.recorder.Event` in `syncHandler`.
+
+### 5.7.2. Implement
 
 1. Add necessary packages.
     ```diff
@@ -954,13 +964,12 @@ In the previous section, `status.availableReplicas` is not updated immediately. 
     1alpha1"
             clientset "github.com/nakamasato/sample-controller/pkg/generated/clientset/versio
     ned"
-    +       "github.com/nakamasato/sample-controller/pkg/generated/clientset/versioned/scheme
-    "
+    +       "github.com/nakamasato/sample-controller/pkg/generated/clientset/versioned/scheme"
             informers "github.com/nakamasato/sample-controller/pkg/generated/informers/extern
     alversions/example.com/v1alpha1"
             listers "github.com/nakamasato/sample-controller/pkg/generated/listers/example.com/v1alpha1"
     ```
-1. Add eventRecorder to Controller.
+1. Add `eventRecorder` to `Controller`.
     ```diff
      type Controller struct {
     @@ -43,6 +57,10 @@ type Controller struct {
@@ -973,7 +982,7 @@ In the previous section, `status.availableReplicas` is not updated immediately. 
     +       recorder record.EventRecorder
      }
     ```
-1. Initialize `eventBroadcaster`.
+1. Initialize `eventBroadcaster` in `NewController`.
     ```diff
      func NewController(
     @@ -50,6 +68,11 @@ func NewController(
@@ -1032,22 +1041,25 @@ In the previous section, `status.availableReplicas` is not updated immediately. 
             return nil
      }
     ```
-1. Test event.
-    1. Run the controller.
-        ```
-        go run .
-        ```
-    1. Apply `Foo`.
-        ```
-         kubectl apply -f config/sample/foo.yaml
-        ```
-    1. Check `event`.
-        ```
-        kubectl get event --field-selector involvedObject.kind=Foo
-        LAST SEEN   TYPE     REASON   OBJECT           MESSAGE
-        22s         Normal   Synced   foo/foo-sample   Foo synced successfully
-        ```
-    1. Delete `Foo`.
-        ```
-        kubectl delete -f config/sample/foo.yaml
-        ```
+
+1. Run `go mod tidy`.
+### 5.7.3 Run and check
+
+1. Run the controller.
+    ```
+    go run .
+    ```
+1. Apply `Foo`.
+    ```
+    kubectl apply -f config/sample/foo.yaml
+    ```
+1. Check `event`.
+    ```
+    kubectl get event --field-selector involvedObject.kind=Foo
+    LAST SEEN   TYPE     REASON   OBJECT           MESSAGE
+    22s         Normal   Synced   foo/foo-sample   Foo synced successfully
+    ```
+1. Delete `Foo`.
+    ```
+    kubectl delete -f config/sample/foo.yaml
+    ```
