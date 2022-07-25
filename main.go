@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"log"
 	"path/filepath"
 	"time"
 
@@ -10,13 +9,14 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
+	"k8s.io/klog/v2"
 
-	clientset "github.com/nakamasato/sample-controller/pkg/client/clientset/versioned"
-	informers "github.com/nakamasato/sample-controller/pkg/client/informers/externalversions"
-	"github.com/nakamasato/sample-controller/pkg/controller"
+	clientset "github.com/nakamasato/sample-controller/pkg/generated/clientset/versioned"
+	informers "github.com/nakamasato/sample-controller/pkg/generated/informers/externalversions"
 )
 
 func main() {
+	klog.InitFlags(nil)
 	var kubeconfig *string
 
 	if home := homedir.HomeDir(); home != "" {
@@ -28,31 +28,31 @@ func main() {
 
 	config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
 	if err != nil {
-		log.Printf("Building config from flags, %s", err.Error())
+		klog.Fatalf("Error building kubeconfig: %s", err.Error())
 	}
 
 	kubeClient, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		log.Printf("getting kubernetes client set %s\n", err.Error())
+		klog.Errorf("getting kubernetes client set %s\n", err.Error())
 	}
 
 	exampleClient, err := clientset.NewForConfig(config)
 	if err != nil {
-		log.Printf("getting client set %s\n", err.Error())
+		klog.Fatalf("Error building kubernetes clientset: %s", err.Error())
 	}
 
 	kubeInformerFactory := kubeinformers.NewSharedInformerFactory(kubeClient, time.Second*30)
 	exampleInformerFactory := informers.NewSharedInformerFactory(exampleClient, time.Second*30)
-	ch := make(chan struct{})
-	controller := controller.NewController(
+	stopCh := make(chan struct{})
+	controller := NewController(
 		kubeClient,
 		exampleClient,
 		kubeInformerFactory.Apps().V1().Deployments(),
 		exampleInformerFactory.Example().V1alpha1().Foos(),
 	)
-	kubeInformerFactory.Start(ch)
-	exampleInformerFactory.Start(ch)
-	if err = controller.Run(ch); err != nil {
-		log.Printf("error occurred when running controller %s\n", err.Error())
+	kubeInformerFactory.Start(stopCh)
+	exampleInformerFactory.Start(stopCh)
+	if err = controller.Run(stopCh); err != nil {
+		klog.Fatalf("error occurred when running controller %s\n", err.Error())
 	}
 }

@@ -1,16 +1,15 @@
-package controller
+package main
 
 import (
 	"context"
 	"fmt"
-	"log"
 	"time"
 
 	samplev1alpha1 "github.com/nakamasato/sample-controller/pkg/apis/example.com/v1alpha1"
-	clientset "github.com/nakamasato/sample-controller/pkg/client/clientset/versioned"
-	"github.com/nakamasato/sample-controller/pkg/client/clientset/versioned/scheme"
-	informers "github.com/nakamasato/sample-controller/pkg/client/informers/externalversions/example.com/v1alpha1"
-	listers "github.com/nakamasato/sample-controller/pkg/client/listers/example.com/v1alpha1"
+	clientset "github.com/nakamasato/sample-controller/pkg/generated/clientset/versioned"
+	"github.com/nakamasato/sample-controller/pkg/generated/clientset/versioned/scheme"
+	informers "github.com/nakamasato/sample-controller/pkg/generated/informers/externalversions/example.com/v1alpha1"
+	listers "github.com/nakamasato/sample-controller/pkg/generated/listers/example.com/v1alpha1"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -24,6 +23,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
+	"k8s.io/klog/v2"
 )
 
 const controllerAgentName = "sample-controller"
@@ -93,7 +93,6 @@ func NewController(
 			},
 		},
 	)
-
 	// Set up an event handler for when Deployment resources change. This
 	// handler will lookup the owner of the given Deployment, and if it is
 	// owned by a Foo resource then the handler will enqueue that Foo resource for
@@ -118,9 +117,10 @@ func NewController(
 	return controller
 }
 
-func (c *Controller) Run(stopCh <-chan struct{}) error {
+func (c *Controller) Run(stopCh chan struct{}) error {
+	defer c.workqueue.ShutDown()
 	if ok := cache.WaitForCacheSync(stopCh, c.foosSynced); !ok {
-		log.Printf("cache is not synced")
+		klog.Info("cache is not synced")
 	}
 
 	go wait.Until(c.worker, time.Second, stopCh)
@@ -151,7 +151,7 @@ func (c *Controller) processNextItem() bool {
 			// Forget here else we'd go into a loop of attempting to
 			// process a work item that is invalid.
 			c.workqueue.Forget(obj)
-			log.Printf("expected string in workqueue but got %#v", obj)
+			klog.Errorf("expected string in workqueue but got %#v", obj)
 			return nil
 		}
 
@@ -164,7 +164,7 @@ func (c *Controller) processNextItem() bool {
 		// Forget the queue item as it's successfully processed and
 		// the item will not be requeued.
 		c.workqueue.Forget(obj)
-		log.Printf("Successfully synced '%s'", key)
+		klog.Infof("Successfully synced '%s'", key)
 		return nil
 	}(obj)
 
@@ -182,7 +182,7 @@ func (c *Controller) enqueueFoo(obj interface{}) {
 	var key string
 	var err error
 	if key, err = cache.MetaNamespaceKeyFunc(obj); err != nil {
-		log.Printf("failed to get key from the cache %s\n", err.Error())
+		klog.Errorf("failed to get key from the cache %s\n", err.Error())
 		return
 	}
 	c.workqueue.Add(key)
@@ -191,13 +191,13 @@ func (c *Controller) enqueueFoo(obj interface{}) {
 func (c *Controller) syncHandler(key string) error {
 	ns, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
-		log.Printf("failed to split key into namespace and name %s\n", err.Error())
+		klog.Errorf("failed to split key into namespace and name %s\n", err.Error())
 		return err
 	}
 
 	foo, err := c.foosLister.Foos(ns).Get(name)
 	if err != nil {
-		log.Printf("failed to get foo resource from lister %s\n", err.Error())
+		klog.Errorf("failed to get foo resource from lister %s\n", err.Error())
 		if errors.IsNotFound(err) {
 			return nil
 		}
@@ -206,7 +206,7 @@ func (c *Controller) syncHandler(key string) error {
 
 	deploymentName := foo.Spec.DeploymentName
 	if deploymentName == "" {
-		log.Printf("deploymentName must be specified %s\n", key)
+		klog.Errorf("deploymentName must be specified %s\n", key)
 		return nil
 	}
 	deployment, err := c.deploymentsLister.Deployments(foo.Namespace).Get(deploymentName)
@@ -223,7 +223,7 @@ func (c *Controller) syncHandler(key string) error {
 	if !metav1.IsControlledBy(deployment, foo) {
 		msg := fmt.Sprintf(MessageResourceExists, deployment.Name)
 		c.recorder.Event(foo, corev1.EventTypeWarning, ErrResourceExists, msg)
-		log.Println(msg)
+		klog.Info(msg)
 		return fmt.Errorf("%s", msg)
 	}
 
@@ -231,7 +231,7 @@ func (c *Controller) syncHandler(key string) error {
 	// number does not equal the current desired replicas on the Deployment, we
 	// should update the Deployment resource.
 	if foo.Spec.Replicas != nil && *foo.Spec.Replicas != *deployment.Spec.Replicas {
-		log.Printf("Foo %s replicas: %d, deployment replicas: %d\n", name, *foo.Spec.Replicas, *deployment.Spec.Replicas)
+		klog.Infof("Foo %s replicas: %d, deployment replicas: %d\n", name, *foo.Spec.Replicas, *deployment.Spec.Replicas)
 		deployment, err = c.kubeclientset.AppsV1().Deployments(foo.Namespace).Update(context.TODO(), newDeployment(foo), metav1.UpdateOptions{})
 	}
 
@@ -246,6 +246,7 @@ func (c *Controller) syncHandler(key string) error {
 	// current state of the world
 	err = c.updateFooStatus(foo, deployment)
 	if err != nil {
+		klog.Errorf("failed to update Foo status for %s", foo.Name)
 		return err
 	}
 
@@ -317,9 +318,9 @@ func (c *Controller) handleObject(obj interface{}) {
 		if !ok {
 			return
 		}
-		log.Printf("Recovered deleted object '%s' from tombstone", object.GetName())
+		klog.Infof("Recovered deleted object '%s' from tombstone", object.GetName())
 	}
-	log.Printf("Processing object: %s", object.GetName())
+	klog.Infof("Processing object: %s", object.GetName())
 	if ownerRef := metav1.GetControllerOf(object); ownerRef != nil {
 		// If this object is not owned by a Foo, we should not do anything more
 		// with it.
@@ -329,7 +330,7 @@ func (c *Controller) handleObject(obj interface{}) {
 
 		foo, err := c.foosLister.Foos(object.GetNamespace()).Get(ownerRef.Name)
 		if err != nil {
-			log.Printf("ignoring orphaned object '%s' of foo '%s'", object.GetSelfLink(), ownerRef.Name)
+			klog.Errorf("ignoring orphaned object '%s' of foo '%s'", object.GetSelfLink(), ownerRef.Name)
 			return
 		}
 

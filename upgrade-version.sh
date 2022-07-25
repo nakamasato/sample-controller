@@ -5,7 +5,7 @@ set -ue
 MODULE_NAME=github.com/nakamasato/sample-controller
 REPO_URL=https://$MODULE_NAME
 DATE_FORMAT="%Y-%m-%dT%H:%M:%S%z"
-FOO_CONTROLLER_FILE=pkg/controller/foo.go
+FOO_CONTROLLER_FILE=controller.go
 FOO_CRD_FILE=config/crd/foos.yaml
 MAIN_GO_FILE=main.go
 
@@ -14,14 +14,13 @@ MAIN_GO_FILE=main.go
 # git reset origin/main --hard # TODO: confirm this will blow up all the uncommited changes
 
 # Delete files
-for f in go.mod go.sum $MAIN_GO_FILE config/**/*.yaml;do
+for f in go.mod go.sum $MAIN_GO_FILE $FOO_CONTROLLER_FILE config/**/*.yaml;do
     if [ -f $f ];then
         rm $f
         git add $f
     fi
 done
-rm -rf pkg
-git add pkg
+if [ -d pkg ]; then rm -rf pkg;git add pkg; fi
 git commit -m "Remove files"
 
 # 0. Init Go module
@@ -141,7 +140,7 @@ if [ ! -d "$codeGeneratorDir" ] ; then
     git clone https://github.com/kubernetes/code-generator.git $codeGeneratorDir
 fi
 
-"${codeGeneratorDir}"/generate-groups.sh all ${MODULE_NAME}/pkg/client ${MODULE_NAME}/pkg/apis example.com:v1alpha1 --go-header-file "${codeGeneratorDir}"/hack/boilerplate.go.txt --trim-path-prefix $MODULE_NAME
+"${codeGeneratorDir}"/generate-groups.sh all ${MODULE_NAME}/pkg/generated ${MODULE_NAME}/pkg/apis example.com:v1alpha1 --go-header-file "${codeGeneratorDir}"/hack/boilerplate.go.txt --trim-path-prefix $MODULE_NAME
 TITLE_AND_MESSAGE="2. Generate codes"
 git add pkg && git commit -m "$TITLE_AND_MESSAGE"
 commit_hash=$(git rev-parse HEAD)
@@ -205,18 +204,18 @@ package main
 import (
     "context"
     "flag"
-    "fmt"
-    "log"
     "path/filepath"
 
     "k8s.io/client-go/tools/clientcmd"
     "k8s.io/client-go/util/homedir"
+    "k8s.io/klog/v2"
 
-    client "$MODULE_NAME/pkg/client/clientset/versioned"
+    client "$MODULE_NAME/pkg/generated/clientset/versioned"
     metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func main() {
+    klog.InitFlags(nil)
     var kubeconfig *string
 
     if home := homedir.HomeDir(); home != "" {
@@ -228,21 +227,22 @@ func main() {
 
     config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
     if err != nil {
-        log.Printf("Building config from flags, %s", err.Error())
+        klog.Fatalf("Error building kubeconfig: %s", err.Error())
     }
 
     clientset, err := client.NewForConfig(config)
     if err != nil {
-        log.Printf("getting client set %s\n", err.Error())
+        klog.Fatalf("Error building kubernetes clientset: %s", err.Error())
     }
-    fmt.Println(clientset)
+    klog.Info(clientset)
 
     foos, err := clientset.ExampleV1alpha1().Foos("").List(context.Background(), metav1.ListOptions{})
     if err != nil {
-        log.Printf("listing foos %s\n", err.Error())
+        klog.Fatalf("listing foos %s %s", err.Error())
     }
-    fmt.Printf("length of foos is %d\n", len(foos.Items))
+    klog.Infof("length of foos is %d", len(foos.Items))
 }
+
 EOF
 go mod tidy
 go fmt ./...
@@ -277,21 +277,20 @@ You can check the behavior at this point:
 gsed -i "s/date:.*/date: $(date +"$DATE_FORMAT")/" docs/content/docs/05-implement-reconciliation-loop/index.md
 
 # 5.1. Create controller
-mkdir -p pkg/controller
 cat <<EOF >> $FOO_CONTROLLER_FILE
-package controller
+package main
 
 import (
-	"log"
 	"time"
 
-	clientset "$MODULE_NAME/pkg/client/clientset/versioned"
-	informers "$MODULE_NAME/pkg/client/informers/externalversions/example.com/v1alpha1"
-	listers "$MODULE_NAME/pkg/client/listers/example.com/v1alpha1"
+	clientset "$MODULE_NAME/pkg/generated/clientset/versioned"
+	informers "$MODULE_NAME/pkg/generated/informers/externalversions/example.com/v1alpha1"
+	listers "$MODULE_NAME/pkg/generated/listers/example.com/v1alpha1"
 
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
+    "k8s.io/klog/v2"
 )
 
 type Controller struct {
@@ -307,31 +306,31 @@ type Controller struct {
 
 func NewController(sampleclientset clientset.Interface, fooInformer informers.FooInformer) *Controller {
 	controller := &Controller{
-        sampleclientset: sampleclientset,
-        foosSynced:      fooInformer.Informer().HasSynced,
-        foosLister:      fooInformer.Lister(),
-        workqueue:       workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "foo"),
+		sampleclientset: sampleclientset,
+		foosSynced:      fooInformer.Informer().HasSynced,
+		foosLister:      fooInformer.Lister(),
+		workqueue:       workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "foo"),
 	}
 
 	fooInformer.Informer().AddEventHandler(
-        cache.ResourceEventHandlerFuncs{
-            AddFunc:    controller.handleAdd,
-            DeleteFunc: controller.handleDelete,
-        },
+		cache.ResourceEventHandlerFuncs{
+			AddFunc:    controller.handleAdd,
+			DeleteFunc: controller.handleDelete,
+		},
 	)
-
 	return controller
 }
 
-func (c *Controller) Run(stopCh <-chan struct{}) error {
-	if ok := cache.WaitForCacheSync(stopCh, c.foosSynced); !ok {
-        log.Printf("cache is not synced")
-	}
+func (c *Controller) Run(stopCh chan struct{}) error {
+	defer c.workqueue.ShutDown()
+    if ok := cache.WaitForCacheSync(stopCh, c.foosSynced); !ok {
+        klog.Info("cache is not synced")
+    }
 
-	go wait.Until(c.worker, time.Second, stopCh)
+    go wait.Until(c.worker, time.Second, stopCh)
 
-	<-stopCh
-	return nil
+    <-stopCh
+    return nil
 }
 
 func (c *Controller) worker() {
@@ -343,60 +342,61 @@ func (c *Controller) processNextItem() bool {
 }
 
 func (c *Controller) handleAdd(obj interface{}) {
-	log.Println("handleAdd was called")
+	klog.Info("handleAdd was called")
 	c.workqueue.Add(obj)
 }
 
 func (c *Controller) handleDelete(obj interface{}) {
-	log.Println("handleDelete was called")
+	klog.Info("handleDelete was called")
 	c.workqueue.Add(obj)
 }
+
 EOF
 
 cat<<EOF > $MAIN_GO_FILE
 package main
 
 import (
-	"flag"
-	"log"
-	"path/filepath"
-	"time"
+    "flag"
+    "path/filepath"
+    "time"
 
-	"k8s.io/client-go/tools/clientcmd"
-	"k8s.io/client-go/util/homedir"
+    "k8s.io/client-go/tools/clientcmd"
+    "k8s.io/client-go/util/homedir"
+    "k8s.io/klog/v2"
 
-	clientset "github.com/nakamasato/sample-controller/pkg/client/clientset/versioned"
-	informers "github.com/nakamasato/sample-controller/pkg/client/informers/externalversions"
-	"github.com/nakamasato/sample-controller/pkg/controller"
+    clientset "$MODULE_NAME/pkg/generated/clientset/versioned"
+    informers "$MODULE_NAME/pkg/generated/informers/externalversions"
 )
 
 func main() {
-	var kubeconfig *string
+    klog.InitFlags(nil)
+    var kubeconfig *string
 
-	if home := homedir.HomeDir(); home != "" {
-		kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional)")
-	} else {
-		kubeconfig = flag.String("kubeconfig", "", "absolute path to kubeconfig file")
-	}
-	flag.Parse()
+    if home := homedir.HomeDir(); home != "" {
+        kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional)")
+    } else {
+        kubeconfig = flag.String("kubeconfig", "", "absolute path to kubeconfig file")
+    }
+    flag.Parse()
 
-	config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
-	if err != nil {
-		log.Printf("Building config from flags, %s", err.Error())
-	}
+    config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
+    if err != nil {
+        klog.Fatalf("Error building kubeconfig: %s", err.Error())
+    }
 
-	exampleClient, err := clientset.NewForConfig(config)
-	if err != nil {
-		log.Printf("getting client set %s\n", err.Error())
-	}
+    exampleClient, err := clientset.NewForConfig(config)
+    if err != nil {
+        klog.Fatalf("Error building kubernetes clientset: %s", err.Error())
+    }
 
-	exampleInformerFactory := informers.NewSharedInformerFactory(exampleClient, time.Second*30)
-	ch := make(chan struct{})
-	controller := controller.NewController(exampleClient, exampleInformerFactory.Example().V1alpha1().Foos())
-	exampleInformerFactory.Start(ch)
-	if err = controller.Run(ch); err != nil {
-		log.Printf("error occurred when running controller %s\n", err.Error())
-	}
+    exampleInformerFactory := informers.NewSharedInformerFactory(exampleClient, time.Second*30)
+    stopCh := make(chan struct{})
+    controller := NewController(exampleClient, exampleInformerFactory.Example().V1alpha1().Foos())
+    exampleInformerFactory.Start(stopCh)
+    if err = controller.Run(stopCh); err != nil {
+        klog.Fatalf("error occurred when running controller %s\n", err.Error())
+    }
 }
 EOF
 
@@ -420,7 +420,7 @@ func (c *Controller) enqueueFoo(obj interface{}) {
     var key string
     var err error
     if key, err = cache.MetaNamespaceKeyFunc(obj); err != nil {
-        log.Printf("failed to get key from the cache %s\n", err.Error())
+        klog.Errorf("failed to get key from the cache %s\n", err.Error())
         return
     }
     c.workqueue.Add(key)
@@ -446,28 +446,28 @@ func (c *Controller) processNextItem() bool {
             // Forget here else we'd go into a loop of attempting to
             // process a work item that is invalid.
             c.workqueue.Forget(obj)
-            log.Printf("expected string in workqueue but got %#v", obj)
+            klog.Errorf("expected string in workqueue but got %#v", obj)
             return nil
         }
 
         ns, name, err := cache.SplitMetaNamespaceKey(key)
         if err != nil {
-            log.Printf("failed to split key into namespace and name %s\n", err.Error())
+            klog.Errorf("failed to split key into namespace and name %s\n", err.Error())
             return err
         }
 
         // temporary main logic
         foo, err := c.foosLister.Foos(ns).Get(name)
         if err != nil {
-            log.Printf("failed to get foo resource from lister %s\n", err.Error())
+            klog.Errorf("failed to get foo resource from lister %s\n", err.Error())
             return err
         }
-        log.Printf("Got foo %+v\n", foo.Spec)
+        klog.Infof("Got foo %+v\n", foo.Spec)
 
         // Forget the queue item as it's successfully processed and
         // the item will not be requeued.
         c.workqueue.Forget(obj)
-        log.Printf("Successfully synced '%s'", key)
+        klog.Infof("Successfully synced '%s'", key)
         return nil
     }(obj)
 
@@ -541,24 +541,23 @@ gsed -i $'/clientcmd"$/{e cat tmpfile\n}' $MAIN_GO_FILE # add imports before cli
 cat <<EOF > tmpfile
 	kubeClient, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		log.Printf("getting kubernetes client set %s\n", err.Error())
+		klog.Errorf("getting kubernetes client set %s\n", err.Error())
 	}
 
 EOF
 gsed -i $'/exampleClient, err :=/{e cat tmpfile\n}' $MAIN_GO_FILE # add before example, err := xxx
-gsed -i 's/(exampleClient, 20*time.Minute)/(exampleClient, time.Second*30)/g' $MAIN_GO_FILE
 echo 'kubeInformerFactory := kubeinformers.NewSharedInformerFactory(kubeClient, time.Second*30)' > tmpfile
 gsed -i $'/exampleInformerFactory :=/{e cat tmpfile\n}' $MAIN_GO_FILE # add before exampleInformerFactory :=
 cat <<EOF > tmpfile
-	controller := controller.NewController(
+	controller := NewController(
 		kubeClient,
 		exampleClient,
 		kubeInformerFactory.Apps().V1().Deployments(),
 		exampleInformerFactory.Example().V1alpha1().Foos(),
 	)
-  kubeInformerFactory.Start(ch)
+  kubeInformerFactory.Start(stopCh)
 EOF
-gsed -i 's/.*controller := controller.NewController(exampleClient.*/cat tmpfile/e' $MAIN_GO_FILE # replace controller := xxx
+gsed -i 's/.*controller := NewController(exampleClient.*/cat tmpfile/e' $MAIN_GO_FILE # replace controller := xxx
 
 
 gsed -i "/ns, name, err/,/^$/d" $FOO_CONTROLLER_FILE # remove ns, name, err := xxx if err != nil {}
@@ -579,38 +578,38 @@ gsed -i "/func.*handleDelete/,/^$/d" $FOO_CONTROLLER_FILE # delete handleDelete
 cat <<EOF > tmpfile
 
 func (c *Controller) syncHandler(key string) error {
-	ns, name, err := cache.SplitMetaNamespaceKey(key)
-	if err != nil {
-      log.Printf("failed to split key into namespace and name %s\n", err.Error())
-      return err
-	}
+    ns, name, err := cache.SplitMetaNamespaceKey(key)
+    if err != nil {
+        klog.Errorf("failed to split key into namespace and name %s\n", err.Error())
+        return err
+    }
 
-	foo, err := c.foosLister.Foos(ns).Get(name)
-	if err != nil {
-      log.Printf("failed to get foo resource from lister %s\n", err.Error())
-      if errors.IsNotFound(err) {
-          return nil
-      }
-      return err
-	}
+    foo, err := c.foosLister.Foos(ns).Get(name)
+    if err != nil {
+        klog.Errorf("failed to get foo resource from lister %s\n", err.Error())
+        if errors.IsNotFound(err) {
+            return nil
+        }
+        return err
+    }
 
-	deploymentName := foo.Spec.DeploymentName
-	if deploymentName == "" {
-      log.Printf("deploymentName must be specified %s\n", key)
-      return nil
-	}
-	deployment, err := c.deploymentsLister.Deployments(foo.Namespace).Get(deploymentName)
-	if errors.IsNotFound(err) {
-      deployment, err = c.kubeclientset.AppsV1().Deployments(foo.Namespace).Create(context.TODO(), newDeployment(foo), metav1.CreateOptions{})
-	}
+    deploymentName := foo.Spec.DeploymentName
+    if deploymentName == "" {
+        klog.Errorf("deploymentName must be specified %s\n", key)
+        return nil
+    }
+    deployment, err := c.deploymentsLister.Deployments(foo.Namespace).Get(deploymentName)
+    if errors.IsNotFound(err) {
+        deployment, err = c.kubeclientset.AppsV1().Deployments(foo.Namespace).Create(context.TODO(), newDeployment(foo), metav1.CreateOptions{})
+    }
 
-	if err != nil {
-      return err
-	}
+    if err != nil {
+        return err
+    }
 
-	log.Printf("deployment %s is valid", deployment.Name)
+    klog.Infof("deployment %s is valid", deployment.Name)
 
-	return nil
+    return nil
 }
 
 func newDeployment(foo *samplev1alpha1.Foo) *appsv1.Deployment {
@@ -661,7 +660,7 @@ cat <<EOF > tmpfile
 EOF
 gsed -i '/"k8s.io\/apimachinery\/pkg\/util\/wait"/r tmpfile' $FOO_CONTROLLER_FILE # add after
 cat <<EOF > tmpfile
-    samplev1alpha1 "github.com/nakamasato/sample-controller/pkg/apis/example.com/v1alpha1"
+    samplev1alpha1 "$MODULE_NAME/pkg/apis/example.com/v1alpha1"
 EOF
 gsed -i '/clientset "github.com/r tmpfile' $FOO_CONTROLLER_FILE # add after
 
@@ -688,7 +687,7 @@ cat <<EOF > tmpfile
     // a warning to the event recorder and return error msg.
     if !metav1.IsControlledBy(deployment, foo) {
         msg := fmt.Sprintf(MessageResourceExists, deployment.Name)
-        log.Println(msg)
+        klog.Info(msg)
         return fmt.Errorf("%s", msg)
     }
 
@@ -696,7 +695,7 @@ cat <<EOF > tmpfile
     // number does not equal the current desired replicas on the Deployment, we
     // should update the Deployment resource.
     if foo.Spec.Replicas != nil && *foo.Spec.Replicas != *deployment.Spec.Replicas {
-        log.Printf("Foo %s replicas: %d, deployment replicas: %d\n", name, *foo.Spec.Replicas, *deployment.Spec.Replicas)
+        klog.Infof("Foo %s replicas: %d, deployment replicas: %d\n", name, *foo.Spec.Replicas, *deployment.Spec.Replicas)
         deployment, err = c.kubeclientset.AppsV1().Deployments(foo.Namespace).Update(context.TODO(), newDeployment(foo), metav1.UpdateOptions{})
     }
 
@@ -709,8 +708,8 @@ cat <<EOF > tmpfile
 
 EOF
 
-gsed -i $'/log.Printf("deployment %s is valid", deployment.Name)/{e cat tmpfile\n}' $FOO_CONTROLLER_FILE # add before
-gsed -i '/.*log.Printf("deployment %s is valid", deployment.Name)/,/^$/d' $FOO_CONTROLLER_FILE # delete log
+gsed -i $'/klog.Infof("deployment %s is valid", deployment.Name)/{e cat tmpfile\n}' $FOO_CONTROLLER_FILE # add before
+gsed -i '/.*klog.Infof("deployment %s is valid", deployment.Name)/,/^$/d' $FOO_CONTROLLER_FILE # delete log
 cat <<EOF > tmpfile
     AddFunc: controller.enqueueFoo,
     UpdateFunc: func(old, new interface{}) {
@@ -757,12 +756,13 @@ gsed -i '/\/\/ temporary network failure, or any other transient reason/,/}/c \
 	// current state of the world\
 	err = c.updateFooStatus(foo, deployment)\
 	if err != nil {\
+        klog.Errorf("failed to update Foo status for %s", foo.Name)\
 		return err\
 	}\
 ' $FOO_CONTROLLER_FILE
 
 # add subresources to crd
-yq -i '.spec.versions[0].subresources |= {"status": {}, "scale": {"specReplicasPath": ".spec.replicas", "statusReplicasPath": ".status.replicas", "labelSelectorPath": ".status.labelSelector"}}' $FOO_CRD_FILE
+yq -i '.spec.versions[0].subresources |= {"status": {}}' $FOO_CRD_FILE
 go fmt ./...
 TITLE_AND_MESSAGE="5.5. Update Foo status"
 git add $FOO_CRD_FILE $FOO_CONTROLLER_FILE && git commit -m "$TITLE_AND_MESSAGE"
@@ -790,9 +790,9 @@ cat <<EOF >> $FOO_CONTROLLER_FILE
             if !ok {
                 return
             }
-            log.Printf("Recovered deleted object '%s' from tombstone", object.GetName())
+            klog.Infof("Recovered deleted object '%s' from tombstone", object.GetName())
         }
-        log.Printf("Processing object: %s", object.GetName())
+        klog.Infof("Processing object: %s", object.GetName())
         if ownerRef := metav1.GetControllerOf(object); ownerRef != nil {
             // If this object is not owned by a Foo, we should not do anything more
             // with it.
@@ -802,7 +802,7 @@ cat <<EOF >> $FOO_CONTROLLER_FILE
 
             foo, err := c.foosLister.Foos(object.GetNamespace()).Get(ownerRef.Name)
             if err != nil {
-                log.Printf("ignoring orphaned object '%s' of foo '%s'", object.GetSelfLink(), ownerRef.Name)
+                klog.Errorf("ignoring orphaned object '%s' of foo '%s'", object.GetSelfLink(), ownerRef.Name)
                 return
             }
 
@@ -864,7 +864,7 @@ gsed -i '/.*workqueue:.*workqueue.NewNamedRateLimitingQueue(workqueue.DefaultCon
 # import necessary packages
 gsed -i '/.*appsinformers "k8s.io\/client-go\/informers\/apps\/v1"/a typedcorev1 "k8s.io\/client-go\/kubernetes\/typed\/core\/v1"' $FOO_CONTROLLER_FILE # add typedcorev1 after *appsinformers "k8s.io\/client-go\/informers\/apps\/v1"
 gsed -i '/.*appsinformers "k8s.io\/client-go\/informers\/apps\/v1"/a "k8s.io\/client-go\/tools\/record"' $FOO_CONTROLLER_FILE # add client-go/tools/record after *appsinformers "k8s.io\/client-go\/informers\/apps\/v1"
-gsed -i '/.*informers "github.com/a "github.com\/nakamasato\/sample-controller\/pkg\/client\/clientset\/versioned\/scheme"' $FOO_CONTROLLER_FILE # add "github.com/nakamasato/sample-controller/pkg/client/clientset/versioned/scheme" after informers "github.com/nakamasato/sample-controller/pkg/client/informers/externalversions/example.com/v1alpha1"
+gsed -i '/.*informers "github.com/a "github.com\/nakamasato\/sample-controller\/pkg\/generated\/clientset\/versioned\/scheme"' $FOO_CONTROLLER_FILE # add "$MODULE_NAME/pkg/generated/clientset/versioned/scheme" after informers "$MODULE_NAME/pkg/generated/informers/externalversions/example.com/v1alpha1"
 go mod tidy
 
 # add constants
@@ -899,6 +899,7 @@ gsed -i '/msg := fmt.Sprintf(MessageResourceExists, deployment.Name)/a c.recorde
 gsed -i '/err = c.updateFooStatus(foo, deployment)/,/^}/c \
 	err = c.updateFooStatus(foo, deployment)\
 	if err != nil {\
+		klog.Errorf("failed to update Foo status for %s", foo.Name)\
 		return err\
 	}\
 \

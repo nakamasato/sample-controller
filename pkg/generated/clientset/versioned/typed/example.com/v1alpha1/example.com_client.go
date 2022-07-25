@@ -22,7 +22,7 @@ import (
 	"net/http"
 
 	v1alpha1 "github.com/nakamasato/sample-controller/pkg/apis/example.com/v1alpha1"
-	"github.com/nakamasato/sample-controller/pkg/client/clientset/versioned/scheme"
+	"github.com/nakamasato/sample-controller/pkg/generated/clientset/versioned/scheme"
 	rest "k8s.io/client-go/rest"
 )
 

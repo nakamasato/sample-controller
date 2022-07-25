@@ -1,12 +1,12 @@
 ---
 title: '4. Checkpoint'
-date: 2022-07-22T07:39:49+0900
+date: 2022-07-25T09:58:52+0900
 draft: false
 weight: 6
 summary: Check the behavior at this point.
 ---
 
-## [4. Checkpoint: Check custom resource and codes](https://github.com/nakamasato/sample-controller/commit/2eb6a438249217e0bd2e80cd6053d6fe7f6b3599)
+## [4. Checkpoint: Check custom resource and codes](https://github.com/nakamasato/sample-controller/commit/4f5a6c0fa2502ea7704c5d4e22cc6c84493593c6)
 
 What to check:
 - [x] Create CRD
@@ -25,18 +25,18 @@ Steps:
     import (
         "context"
         "flag"
-        "fmt"
-        "log"
         "path/filepath"
 
         "k8s.io/client-go/tools/clientcmd"
         "k8s.io/client-go/util/homedir"
+        "k8s.io/klog/v2"
 
-        client "github.com/nakamasato/sample-controller/pkg/client/clientset/versioned"
+        clientset "github.com/nakamasato/sample-controller/pkg/generated/clientset/versioned"
         metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
     )
 
     func main() {
+        klog.InitFlags(nil)
         var kubeconfig *string
 
         if home := homedir.HomeDir(); home != "" {
@@ -48,20 +48,20 @@ Steps:
 
         config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
         if err != nil {
-            log.Printf("Building config from flags, %s", err.Error())
+            klog.Fatalf("Error building kubeconfig: %s", err.Error())
         }
 
-        clientset, err := client.NewForConfig(config)
+        exampleClient, err := clientset.NewForConfig(config)
         if err != nil {
-            log.Printf("getting client set %s\n", err.Error())
+            klog.Fatalf("Error building kubernetes clientset: %s", err.Error())
         }
-        fmt.Println(clientset)
+        klog.Info(exampleClient)
 
-        foos, err := clientset.ExampleV1alpha1().Foos("").List(context.Background(), metav1.ListOptions{})
+        foos, err := exampleClient.ExampleV1alpha1().Foos("").List(context.Background(), metav1.ListOptions{})
         if err != nil {
-            log.Printf("listing foos %s\n", err.Error())
+            klog.Fatalf("listing foos %s %s", err.Error())
         }
-        fmt.Printf("length of foos is %d\n", len(foos.Items))
+        klog.Infof("length of foos is %d", len(foos.Items))
     }
     ```
 

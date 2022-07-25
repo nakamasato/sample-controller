@@ -19,9 +19,9 @@ limitations under the License.
 package fake
 
 import (
-	clientset "github.com/nakamasato/sample-controller/pkg/client/clientset/versioned"
-	examplev1alpha1 "github.com/nakamasato/sample-controller/pkg/client/clientset/versioned/typed/example.com/v1alpha1"
-	fakeexamplev1alpha1 "github.com/nakamasato/sample-controller/pkg/client/clientset/versioned/typed/example.com/v1alpha1/fake"
+	clientset "github.com/nakamasato/sample-controller/pkg/generated/clientset/versioned"
+	examplev1alpha1 "github.com/nakamasato/sample-controller/pkg/generated/clientset/versioned/typed/example.com/v1alpha1"
+	fakeexamplev1alpha1 "github.com/nakamasato/sample-controller/pkg/generated/clientset/versioned/typed/example.com/v1alpha1/fake"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"

@@ -16,7 +16,7 @@ https://nakamasato.github.io/sample-controller
 ## Quickstart
 
 1. Install CRD. `kubectl apply -f config/crd/foos.yaml`
-1. Start controller. `go run main.go`
+1. Start controller. `go run .`
 1. Create CR. `kubectl apply -f config/sample/foo.yaml`
 1. Check.
 

@@ -23,9 +23,9 @@ import (
 	sync "sync"
 	time "time"
 
-	versioned "github.com/nakamasato/sample-controller/pkg/client/clientset/versioned"
-	examplecom "github.com/nakamasato/sample-controller/pkg/client/informers/externalversions/example.com"
-	internalinterfaces "github.com/nakamasato/sample-controller/pkg/client/informers/externalversions/internalinterfaces"
+	versioned "github.com/nakamasato/sample-controller/pkg/generated/clientset/versioned"
+	examplecom "github.com/nakamasato/sample-controller/pkg/generated/informers/externalversions/example.com"
+	internalinterfaces "github.com/nakamasato/sample-controller/pkg/generated/informers/externalversions/internalinterfaces"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
