@@ -1,12 +1,12 @@
 ---
 title: '1. Define Go types for CRD'
-date: 2022-07-26T08:45:43+0900
+date: 2022-07-26T08:52:45+0900
 draft: false
 weight: 3
 summary: Define Go types for Custom Resource Definition `Foo`.
 ---
 
-## [1. Define Go types for CRD](https://github.com/nakamasato/sample-controller/commit/a562c01cc786df046d8a8dca249f9fa9b1dc49ac)
+## [1. Define Go types for CRD](https://github.com/nakamasato/sample-controller/commit/d307b9ea1062a6f4ac6cd8c7a84d93ed025edbdc)
 
 1. Create a directory.
 
@@ -24,17 +24,6 @@ summary: Define Go types for Custom Resource Definition `Foo`.
     package v1alpha1
 
     import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-    // These const variables are used in our custom controller.
-    const (
-        GroupName string = "example.com"
-        Kind      string = "Foo"
-        Version   string = "v1alpha1"
-        Plural    string = "foos"
-        Singluar  string = "foo"
-        ShortName string = "foo"
-        Name      string = Plural + "." + GroupName
-    )
 
     // Foo is a specification for a Foo resource
     type Foo struct {
@@ -85,8 +74,8 @@ summary: Define Go types for Custom Resource Definition `Foo`.
 
     // SchemeGroupVersion is group version used to register these objects.
     var SchemeGroupVersion = schema.GroupVersion{
-        Group:   GroupName,
-        Version: Version,
+        Group:   "example.com",
+        Version: "v1alpha1",
     }
 
     func Resource(resource string) schema.GroupResource {
