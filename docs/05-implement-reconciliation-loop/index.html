@@ -578,7 +578,7 @@
 </span><span class=gd>-                       klog.Errorf(&#34;failed to get foo resource from lister %s\n&#34;, err.Error())
 </span><span class=gd>-                       return err
 </span><span class=gd>-               }
-</span><span class=gd>-               log.Printf(&#34;Got foo %+v\n&#34;, foo.Spec)
+</span><span class=gd>-               klog.Infof(&#34;Got foo %+v\n&#34;, foo.Spec)
 </span><span class=gd>-
 </span><span class=gd></span>                // Forget the queue item as it&#39;s successfully processed and
                 // the item will not be requeued.
@@ -614,6 +614,7 @@ foo-sample   0/1     1            0           3s
 </code></pre></div><p>Check <code>sample-controller</code>&rsquo;s logs:</p>
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>2022/07/18 09:33:31 handleAdd was called
 2022/07/18 09:33:31 deployment foo-sample is valid
+2022/07/18 09:33:31 Successfully synced &#39;default/foo-sample&#39;
 </code></pre></div></li>
 <li>
 <p>Delete <code>Foo</code> resource.</p>
@@ -628,6 +629,7 @@ No resources found in default namespace.
 </li>
 </ol>
 <h2 id=54-check-and-update-deployment-if-necessaryhttpsgithubcomnakamasatosample-controllercommit8b405a96ab54c85da00bc1b902d76fa89e3584fe><a href=https://github.com/nakamasato/sample-controller/commit/8b405a96ab54c85da00bc1b902d76fa89e3584fe>5.4. Check and update Deployment if necessary</a></h2>
+<h3 id=541-overview>5.4.1. Overview</h3>
 <p>What needs to be done:</p>
 <ul>
 <li>In <code>syncHandler</code>
@@ -642,7 +644,7 @@ No resources found in default namespace.
 </ul>
 </li>
 </ul>
-<p>Steps:</p>
+<h3 id=542-implement>5.4.2. Implement</h3>
 <ol>
 <li>
 <p>Add constant variable before <code>type Controller struct</code>.</p>
@@ -656,7 +658,7 @@ No resources found in default namespace.
 <p>Update <code>syncHandler</code>:</p>
 <ol>
 <li>
-<p>Remove log <code>log.Printf("deployment %s is valid", deployment.Name)</code>.</p>
+<p>Remove log <code>klog.Infof("deployment %s is valid", deployment.Name)</code>.</p>
 </li>
 <li>
 <p>Check if the <code>Deployment</code> is managed by the controller.</p>
@@ -705,9 +707,13 @@ No resources found in default namespace.
 </span><span class=gd>-       c.enqueueFoo(obj)
 </span><span class=gd>-}
 </span></code></pre></div></li>
-<li>
-<p>Test if <code>sample-controller</code> updates replicas.</p>
+</ol>
+<h3 id=543-run-and-check-sample-controller-updates-replicas>5.4.3. Run and check: <code>sample-controller</code> updates replicas</h3>
 <ol>
+<li>
+<p>Run the controller.</p>
+<div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>go run .
+</code></pre></div></li>
 <li>
 <p>Apply <code>Foo</code> resource.</p>
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>kubectl apply -f config/sample/foo.yaml
@@ -716,10 +722,11 @@ NAME         READY   UP-TO-DATE   AVAILABLE   AGE
 foo-sample   1/1     1            1           3h41m
 </code></pre></div></li>
 <li>
-<p>Increase replica to 2.</p>
+<p>Increase Foo&rsquo;s replica to 2.</p>
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>kubectl patch foo foo-sample -p &#39;{&#34;spec&#34;:{&#34;replicas&#34;: 2}}&#39; --type=merge
 </code></pre></div><p>logs:</p>
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>2022/07/19 09:55:00 Foo foo-sample replicas: 2, deployment replicas: 1
+2022/07/19 09:55:00 Successfully synced &#39;default/foo-sample&#39;
 </code></pre></div><p>Replicas of Deployment increased.</p>
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>kubectl get deploy
 NAME         READY   UP-TO-DATE   AVAILABLE   AGE
@@ -730,10 +737,12 @@ foo-sample   2/2     2            2           3h42m
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>kubectl delete -f config/sample/foo.yaml
 </code></pre></div></li>
 </ol>
-</li>
-<li>
-<p>Test if <code>sample-controller</code> wouldn&rsquo;t touch <code>Deployment</code> that is not managed by the controller.</p>
+<h3 id=544-run-and-check-sample-controller-wouldnt-update-deployment-that-is-not-managed-by-the-controller>5.4.4. Run and check: <code>sample-controller</code> wouldn&rsquo;t update <code>Deployment</code> that is not managed by the controller</h3>
 <ol>
+<li>
+<p>Run the controller.</p>
+<div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>go run .
+</code></pre></div></li>
 <li>
 <p>Apply <code>Deployment</code> with name <code>foo-sample</code>.</p>
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>kubectl create deployment foo-sample --image=nginx
@@ -752,9 +761,13 @@ foo-sample   2/2     2            2           3h42m
 kubectl delete deploy foo-sample
 </code></pre></div></li>
 </ol>
-</li>
-</ol>
 <h2 id=55-update-foo-statushttpsgithubcomnakamasatosample-controllercommit63d7d403ccdf0ed1a8a0dacad5f34b349c35d0d9><a href=https://github.com/nakamasato/sample-controller/commit/63d7d403ccdf0ed1a8a0dacad5f34b349c35d0d9>5.5. Update Foo status</a></h2>
+<h3 id=551-overview>5.5.1. Overview</h3>
+<ol>
+<li>Enable <code>status</code> subresource in <code>CustomResourceDefinition</code>.</li>
+<li>Store Deployment&rsquo;s <code>availableReplicas</code> in Foo object&rsquo;s status with <code>UpdateStatus</code> function.</li>
+</ol>
+<h3 id=552-implement>5.5.2. Implement</h3>
 <ol>
 <li>
 <p>Create <code>updateFooStatus</code> function.</p>
@@ -789,17 +802,13 @@ kubectl delete deploy foo-sample
 <span class=p>}</span>
 </code></pre></div></li>
 <li>
-<p>Add <code>subresources</code> to <code>CustomResourceDefinition</code>.</p>
+<p>Add <code>subresources</code> to <code>CustomResourceDefinition</code> in <code>config/crd/foos.yaml</code>.</p>
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=w>      </span><span class=nt>subresources</span><span class=p>:</span><span class=w>
 </span><span class=w>        </span><span class=nt>status</span><span class=p>:</span><span class=w> </span>{}<span class=w>
-</span><span class=w>        </span><span class=nt>scale</span><span class=p>:</span><span class=w>
-</span><span class=w>          </span><span class=nt>specReplicasPath</span><span class=p>:</span><span class=w> </span><span class=l>.spec.replicas</span><span class=w>
-</span><span class=w>          </span><span class=nt>statusReplicasPath</span><span class=p>:</span><span class=w> </span><span class=l>.status.replicas</span><span class=w>
-</span><span class=w>          </span><span class=nt>labelSelectorPath</span><span class=p>:</span><span class=w> </span><span class=l>.status.labelSelector</span><span class=w>
 </span></code></pre></div><p>For more details, see <a href=https://kubernetes.io/docs/tasks/extend-kubernetes/custom-resources/custom-resource-definitions/#subresources>subresources</a></p>
 </li>
-<li>
-<p>Test status</p>
+</ol>
+<h3 id=553-run-and-check>5.5.3. Run and check</h3>
 <ol>
 <li>
 <p>Apply the changes in CRD.</p>
@@ -824,37 +833,18 @@ kubectl delete deploy foo-sample
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>kubectl get foo foo-sample -o jsonpath=&#39;{.status}&#39;
 {&#34;availableReplicas&#34;:1}%
 </code></pre></div></li>
-</ol>
-</li>
-<li>
-<p>Test scale</p>
-<ol>
-<li>
-<p>Scale.</p>
-<div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>kubectl scale --replicas=3 foo foo-sample
-</code></pre></div><div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>kubectl get deploy
-NAME         READY   UP-TO-DATE   AVAILABLE   AGE
-foo-sample   3/3     3            3           95s
-</code></pre></div><p>After waiting for a while, status is updated.</p>
-<div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>kubectl get foo foo-sample -o jsonpath=&#39;{.status}&#39;
-{&#34;availableReplicas&#34;:3}%
-</code></pre></div><div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>kubectl scale --replicas=1 foo foo-sample
-</code></pre></div><div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>kubectl get deploy
-NAME         READY   UP-TO-DATE   AVAILABLE   AGE
-foo-sample   1/1     1            1           9m10s
-</code></pre></div></li>
-</ol>
-</li>
 <li>
 <p>Delete <code>Foo</code>.</p>
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>kubectl delete -f config/sample/foo.yaml
 </code></pre></div></li>
 </ol>
 <h2 id=56-capture-the-update-of-deploymenthttpsgithubcomnakamasatosample-controllercommit2f6245d754d9f826919cea02840e8395c88cbf88><a href=https://github.com/nakamasato/sample-controller/commit/2f6245d754d9f826919cea02840e8395c88cbf88>5.6. Capture the update of Deployment</a></h2>
-<p>In the previous section, <code>status.availableReplicas</code> is not updated immediately. This is because we just monitor our custom resource <code>Foo</code>. In this section, we&rsquo;ll enable to capture changes of Deployment controlled by our custom resource <code>Foo</code>.</p>
+<h3 id=561-overview>5.6.1. Overview</h3>
+<p>In the previous section, <code>status.availableReplicas</code> is not updated immediately. This is because sample-contrller just monitors our custom resource <code>Foo</code>. In this section, we&rsquo;ll enable to capture changes of Deployments controlled by <code>Foo</code>.</p>
+<h3 id=562-implement>5.6.2. Implement</h3>
 <ol>
 <li>
-<p>Add handleObject function.</p>
+<p>Add <code>handleObject</code> function.</p>
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=c1>// handleObject will take any resource implementing metav1.Object and attempt
 </span><span class=c1>// to find the Foo resource that &#39;owns&#39; it. It does this by looking at the
 </span><span class=c1>// objects metadata.ownerReferences field for an appropriate OwnerReference.
@@ -892,14 +882,8 @@ foo-sample   1/1     1            1           9m10s
         <span class=k>return</span>
     <span class=p>}</span>
 <span class=p>}</span>
-</code></pre></div><p>When <code>Deployment</code> managed by <code>Foo</code> is added/updated/deleted, get the corresponding <code>Foo</code> and put the key (<code>naemspace/name</code>) to the workqueue.</p>
-<p>Import necessary package.</p>
-<div class=highlight><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kn>import</span> <span class=p>(</span>
-    <span class=o>...</span>
-    <span class=nx>utilruntime</span> <span class=s>&#34;k8s.io/apimachinery/pkg/util/runtime&#34;</span>
-    <span class=o>...</span>
-<span class=p>)</span>
-</code></pre></div></li>
+</code></pre></div><p>When <code>Deployment</code> managed by <code>Foo</code> is added/updated/deleted, get the corresponding <code>Foo</code> and put the key (<code>namespace/name</code>) to the workqueue.</p>
+</li>
 <li>
 <p>Add event handlers to <code>deploymentInformer</code> in <code>NewController</code>.</p>
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-go data-lang=go>    <span class=c1>// Set up an event handler for when Deployment resources change. This
@@ -923,8 +907,8 @@ foo-sample   1/1     1            1           9m10s
         <span class=nx>DeleteFunc</span><span class=p>:</span> <span class=nx>controller</span><span class=p>.</span><span class=nx>handleObject</span><span class=p>,</span>
     <span class=p>})</span>
 </code></pre></div></li>
-<li>
-<p>Test the Foo&rsquo;s status after Deployment is updated.</p>
+</ol>
+<h3 id=563-run-and-check>5.6.3. Run and check</h3>
 <ol>
 <li>Run the controller
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>go run .
@@ -936,15 +920,27 @@ foo-sample   1/1     1            1           9m10s
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>kubectl get foo foo-sample -o jsonpath=&#39;{.status}&#39;
 {&#34;availableReplicas&#34;:1}
 </code></pre></div></li>
+<li>Check again by changing the replicas
+<div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>kubectl patch foo foo-sample -p &#39;{&#34;spec&#34;:{&#34;replicas&#34;: 2}}&#39; --type=merge
+</code></pre></div></li>
+<li>Check Foo&rsquo;s status (will be immediately updated.)
+<div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>kubectl get foo foo-sample -o jsonpath=&#39;{.status}&#39;
+{&#34;availableReplicas&#34;:2}
+</code></pre></div></li>
 <li>Delete <code>Foo</code>.
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>kubectl delete -f config/sample/foo.yaml
 </code></pre></div></li>
 </ol>
-</li>
-</ol>
 <h2 id=57-create-events-for-foo-resourcehttpsgithubcomnakamasatosample-controllercommit98c32e22ea9f204a2728c5e3a732d6226aa576e3><a href=https://github.com/nakamasato/sample-controller/commit/98c32e22ea9f204a2728c5e3a732d6226aa576e3>5.7. Create events for Foo resource</a></h2>
+<h3 id=571-overview>5.7.1. Overview</h3>
 <ol>
-<li>Add necessary packages.
+<li>Add <code>record.EventRecorder</code> to <code>Controller</code>.</li>
+<li>Emit an event with <code>c.recorder.Event</code> in <code>syncHandler</code>.</li>
+</ol>
+<h3 id=572-implement>5.7.2. Implement</h3>
+<ol>
+<li>
+<p>Add necessary packages.</p>
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-diff data-lang=diff><span class=gu>@@ -13,20 +13,34 @@ import (
 </span><span class=gu></span>        &#34;k8s.io/apimachinery/pkg/util/wait&#34;
         appsinformers &#34;k8s.io/client-go/informers/apps/v1&#34;
@@ -959,13 +955,13 @@ foo-sample   1/1     1            1           9m10s
 1alpha1&#34;
         clientset &#34;github.com/nakamasato/sample-controller/pkg/generated/clientset/versio
 ned&#34;
-<span class=gi>+       &#34;github.com/nakamasato/sample-controller/pkg/generated/clientset/versioned/scheme
-</span><span class=gi></span>&#34;
-        informers &#34;github.com/nakamasato/sample-controller/pkg/generated/informers/extern
+<span class=gi>+       &#34;github.com/nakamasato/sample-controller/pkg/generated/clientset/versioned/scheme&#34;
+</span><span class=gi></span>        informers &#34;github.com/nakamasato/sample-controller/pkg/generated/informers/extern
 alversions/example.com/v1alpha1&#34;
         listers &#34;github.com/nakamasato/sample-controller/pkg/generated/listers/example.com/v1alpha1&#34;
 </code></pre></div></li>
-<li>Add eventRecorder to Controller.
+<li>
+<p>Add <code>eventRecorder</code> to <code>Controller</code>.</p>
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-diff data-lang=diff> type Controller struct {
 <span class=gu>@@ -43,6 +57,10 @@ type Controller struct {
 </span><span class=gu></span>
@@ -977,7 +973,8 @@ alversions/example.com/v1alpha1&#34;
 </span><span class=gi>+       recorder record.EventRecorder
 </span><span class=gi></span> }
 </code></pre></div></li>
-<li>Initialize <code>eventBroadcaster</code>.
+<li>
+<p>Initialize <code>eventBroadcaster</code> in <code>NewController</code>.</p>
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-diff data-lang=diff> func NewController(
 <span class=gu>@@ -50,6 +68,11 @@ func NewController(
 </span><span class=gu></span>        sampleclientset clientset.Interface,
@@ -998,7 +995,8 @@ alversions/example.com/v1alpha1&#34;
 <span class=gi>+               recorder:          recorder,
 </span><span class=gi></span>        }
 </code></pre></div></li>
-<li>Define constants.
+<li>
+<p>Define constants.</p>
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-diff data-lang=diff><span class=gi>+ const controllerAgentName = &#34;sample-controller&#34;
 </span><span class=gi></span>
  const (
@@ -1016,7 +1014,8 @@ alversions/example.com/v1alpha1&#34;
 </span><span class=gi>+       MessageResourceSynced = &#34;Foo synced successfully&#34;
 </span><span class=gi></span> )
 </code></pre></div></li>
-<li>Record events in <code>syncHandler</code>.
+<li>
+<p>Record events in <code>syncHandler</code>.</p>
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-diff data-lang=diff><span class=gu>@@ -199,6 +223,7 @@ func (c *Controller) syncHandler(key string) error {
 </span><span class=gu></span>        // a warning to the event recorder and return error msg.
         if !metav1.IsControlledBy(deployment, foo) {
@@ -1033,13 +1032,17 @@ alversions/example.com/v1alpha1&#34;
 </span><span class=gi></span>        return nil
  }
 </code></pre></div></li>
-<li>Test event.
+<li>
+<p>Run <code>go mod tidy</code>.</p>
+</li>
+</ol>
+<h3 id=573-run-and-check>5.7.3 Run and check</h3>
 <ol>
 <li>Run the controller.
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>go run .
 </code></pre></div></li>
 <li>Apply <code>Foo</code>.
-<div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback> kubectl apply -f config/sample/foo.yaml
+<div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>kubectl apply -f config/sample/foo.yaml
 </code></pre></div></li>
 <li>Check <code>event</code>.
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>kubectl get event --field-selector involvedObject.kind=Foo
@@ -1049,8 +1052,6 @@ LAST SEEN   TYPE     REASON   OBJECT           MESSAGE
 <li>Delete <code>Foo</code>.
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>kubectl delete -f config/sample/foo.yaml
 </code></pre></div></li>
-</ol>
-</li>
 </ol>
 </div>
 </div>
