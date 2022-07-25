@@ -15,7 +15,14 @@ jobs:
     if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v3
-      - run: ./tools/publish-release.sh # currently only support patch version release
+
+      - name: git config
+        run: |
+          git config --global user.email "release@github.com"
+          git config --global user.name "GitHub Actions"
+
+      - name: release patch version
+        run: ./tools/publish-release.sh # currently only support patch version release
         if: inputs.version_type == 'patch'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
