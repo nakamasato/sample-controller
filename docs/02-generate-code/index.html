@@ -88,9 +88,9 @@
 <h3 id=21-overview>2.1. Overview</h3>
 <p><a href=https://github.com/kubernetes/code-generator>code-generator</a> is Golang code-generators used to implement Kubernetes-style API types (generate deepcopy, clientset, informer, lister)</p>
 <ol>
-<li><strong>DeepCopy</strong> is necessary to implement runtime.Object interface.</li>
-<li><strong>Clientset</strong> is to access a custom resource in Kubernetes API</li>
-<li><strong>Lister</strong> is to list custom resources in a in-memory cache.Indexer with List function.</li>
+<li><strong>DeepCopy</strong> is necessary to implement <a href=https://pkg.go.dev/k8s.io/apimachinery/pkg/runtime#Object>runtime.Object</a> interface.</li>
+<li><strong>Clientset</strong> is to access a (custom) resource in Kubernetes API.</li>
+<li><strong>Lister</strong> is to list custom resources in a in-memory <code>cache.Indexer</code> with List function.</li>
 <li><strong>Informer</strong> is used to capture changes of a target custom resource, which is usually used in a custom controller.</li>
 </ol>
 <h3 id=22-prepare-code-generator>2.2. Prepare code-generator</h3>
@@ -255,7 +255,18 @@ gobin=&#34;${GOBIN:-$(go env GOPATH)/bin}&#34;
 
 21 directories, 29 files
 </code></pre></div>
-</li>
+<p>As is mentioned in the previous section, <code>AddToScheme</code> is called in <code>pkg/generated/clientset/versioned/scheme/register.go</code> to register our new api version <code>example.com/v1alpha1</code>, which includes <code>Foo</code> kind.</p>
+<div class=highlight><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kd>var</span> <span class=nx>localSchemeBuilder</span> <span class=p>=</span> <span class=nx>runtime</span><span class=p>.</span><span class=nx>SchemeBuilder</span><span class=p>{</span>
+    <span class=nx>examplev1alpha1</span><span class=p>.</span><span class=nx>AddToScheme</span><span class=p>,</span>
+<span class=p>}</span>
+<span class=o>...</span>
+<span class=kd>var</span> <span class=nx>AddToScheme</span> <span class=p>=</span> <span class=nx>localSchemeBuilder</span><span class=p>.</span><span class=nx>AddToScheme</span>
+
+<span class=kd>func</span> <span class=nf>init</span><span class=p>()</span> <span class=p>{</span>
+    <span class=nx>v1</span><span class=p>.</span><span class=nf>AddToGroupVersion</span><span class=p>(</span><span class=nx>Scheme</span><span class=p>,</span> <span class=nx>schema</span><span class=p>.</span><span class=nx>GroupVersion</span><span class=p>{</span><span class=nx>Version</span><span class=p>:</span> <span class=s>&#34;v1&#34;</span><span class=p>})</span>
+    <span class=nx>utilruntime</span><span class=p>.</span><span class=nf>Must</span><span class=p>(</span><span class=nf>AddToScheme</span><span class=p>(</span><span class=nx>Scheme</span><span class=p>))</span>
+<span class=p>}</span>
+</code></pre></div></li>
 <li>
 <p>Run <code>go mod tidy</code>.</p>
 </li>

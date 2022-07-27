@@ -163,7 +163,11 @@
     <span class=nx>metav1</span><span class=p>.</span><span class=nf>AddToGroupVersion</span><span class=p>(</span><span class=nx>scheme</span><span class=p>,</span> <span class=nx>SchemeGroupVersion</span><span class=p>)</span>
     <span class=k>return</span> <span class=kc>nil</span>
 <span class=p>}</span>
-</code></pre></div></li>
+</code></pre></div><ul>
+<li>clientset, which we&rsquo;ll generate in the next section, will uses <code>AddToScheme</code> to register our custom resource <code>Foo</code>.</li>
+<li><code>Scheme</code> defines methods for serializing and deserializing API objects, a type registry for converting group, version, and kind information to and from Go schemas, and mappings between Go schemas of different versions.</li>
+</ul>
+</li>
 <li>
 <p>Run <code>go mod tidy</code>.</p>
 <blockquote>
