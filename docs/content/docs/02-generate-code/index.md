@@ -12,9 +12,9 @@ summary: Generate Go codes with code-generator.
 
 [code-generator](https://github.com/kubernetes/code-generator) is Golang code-generators used to implement Kubernetes-style API types (generate deepcopy, clientset, informer, lister)
 
-1. **DeepCopy** is necessary to implement runtime.Object interface.
-1. **Clientset** is to access a custom resource in Kubernetes API
-1. **Lister** is to list custom resources in a in-memory cache.Indexer with List function.
+1. **DeepCopy** is necessary to implement [runtime.Object](https://pkg.go.dev/k8s.io/apimachinery/pkg/runtime#Object) interface.
+1. **Clientset** is to access a (custom) resource in Kubernetes API.
+1. **Lister** is to list custom resources in a in-memory `cache.Indexer` with List function.
 1. **Informer** is used to capture changes of a target custom resource, which is usually used in a custom controller.
 
 ### 2.2. Prepare code-generator
@@ -196,6 +196,21 @@ summary: Generate Go codes with code-generator.
     21 directories, 29 files
     ```
 
-    <details>
+    </details>
+
+    As is mentioned in the previous section, `AddToScheme` is called in `pkg/generated/clientset/versioned/scheme/register.go` to register our new api version `example.com/v1alpha1`, which includes `Foo` kind.
+
+    ```go
+    var localSchemeBuilder = runtime.SchemeBuilder{
+        examplev1alpha1.AddToScheme,
+    }
+    ...
+    var AddToScheme = localSchemeBuilder.AddToScheme
+
+    func init() {
+        v1.AddToGroupVersion(Scheme, schema.GroupVersion{Version: "v1"})
+        utilruntime.Must(AddToScheme(Scheme))
+    }
+    ```
 
 1. Run `go mod tidy`.
