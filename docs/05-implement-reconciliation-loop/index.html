@@ -84,8 +84,9 @@
 <div class="col-12 col-md-9">
 <h1 class=title>5. Implement reconciliation</h1>
 <div class=content>
-<h2 id=51-create-controllerhttpsgithubcomnakamasatosample-controllercommit5a1d00d85508e44e8fe9d7baf0266c12c7313ab9><a href=https://github.com/nakamasato/sample-controller/commit/5a1d00d85508e44e8fe9d7baf0266c12c7313ab9>5.1. Create Controller</a></h2>
-<h3 id=511-create-controller>5.1.1. Create controller.</h3>
+<h2 id=51-create-controllerhttpsgithubcomnakamasatosample-controllercommit11857a6c335c86fdf3bd62408e7284f0095bbc1b><a href=https://github.com/nakamasato/sample-controller/commit/11857a6c335c86fdf3bd62408e7284f0095bbc1b>5.1. Create Controller</a></h2>
+<h3 id=511-overview>5.1.1. Overview</h3>
+<div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback></code></pre></div><h3 id=511-create-controller>5.1.1. Create controller.</h3>
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kn>package</span> <span class=nx>main</span>
 
 <span class=kn>import</span> <span class=p>(</span>
@@ -196,7 +197,7 @@
 </span><span class=gu></span>        if err != nil {
                 klog.Fatalf(&#34;getting client set %s\n&#34;, err.Error())
         }
-<span class=gd>-       fmt.Println(exampleClient)
+<span class=gd>-       klog.Info(exampleClient)
 </span><span class=gd>-       foos, err := exampleClient.ExampleV1alpha1().Foos(&#34;&#34;).List(context.Background(), metav1.ListOptions{})
 </span><span class=gd>-       if err != nil {
 </span><span class=gd>-               klog.Fatalf(&#34;listing foos %s\n&#34;, err.Error())
@@ -381,7 +382,7 @@
 2022/07/18 07:46:49 failed to get foo resource from lister foo.example.com &#34;foo-sample&#34; not found
 </code></pre></div></li>
 </ol>
-<h2 id=53-enable-to-createdelete-deployment-for-foo-resourcehttpsgithubcomnakamasatosample-controllercommite5d16b4938ef18803ec5bc99fd08abdd80e56e96><a href=https://github.com/nakamasato/sample-controller/commit/e5d16b4938ef18803ec5bc99fd08abdd80e56e96>5.3. Enable to Create/Delete Deployment for Foo resource</a></h2>
+<h2 id=53-enable-to-createdelete-deployment-for-foo-resourcehttpsgithubcomnakamasatosample-controllercommitfdc84eed385446bc61f45f63471417e25f63bda8><a href=https://github.com/nakamasato/sample-controller/commit/fdc84eed385446bc61f45f63471417e25f63bda8>5.3. Enable to Create/Delete Deployment for Foo resource</a></h2>
 <h3 id=531-overview>5.3.1. Overview</h3>
 <p>In this section, we&rsquo;ll add a logic to create a <code>Deployment</code> for <code>Foo</code> resource.</p>
 <p>The logic to implement is:</p>
@@ -628,7 +629,7 @@ No resources found in default namespace.
 </blockquote>
 </li>
 </ol>
-<h2 id=54-check-and-update-deployment-if-necessaryhttpsgithubcomnakamasatosample-controllercommit5670181b3f65a54454709b9797759e483b0ffcf8><a href=https://github.com/nakamasato/sample-controller/commit/5670181b3f65a54454709b9797759e483b0ffcf8>5.4. Check and update Deployment if necessary</a></h2>
+<h2 id=54-check-and-update-deployment-if-necessaryhttpsgithubcomnakamasatosample-controllercommit3c448e019e9c1847bcf1aa6bdc1edb93077880f5><a href=https://github.com/nakamasato/sample-controller/commit/3c448e019e9c1847bcf1aa6bdc1edb93077880f5>5.4. Check and update Deployment if necessary</a></h2>
 <h3 id=541-overview>5.4.1. Overview</h3>
 <p>What needs to be done:</p>
 <ul>
@@ -761,7 +762,7 @@ foo-sample   2/2     2            2           3h42m
 kubectl delete deploy foo-sample
 </code></pre></div></li>
 </ol>
-<h2 id=55-update-foo-statushttpsgithubcomnakamasatosample-controllercommit73a1127743481e83c82cd8bd24275fb01e3b3046><a href=https://github.com/nakamasato/sample-controller/commit/73a1127743481e83c82cd8bd24275fb01e3b3046>5.5. Update Foo status</a></h2>
+<h2 id=55-update-foo-statushttpsgithubcomnakamasatosample-controllercommit5c3431a9de6bc14592386a50136c9b62ec649dba><a href=https://github.com/nakamasato/sample-controller/commit/5c3431a9de6bc14592386a50136c9b62ec649dba>5.5. Update Foo status</a></h2>
 <h3 id=551-overview>5.5.1. Overview</h3>
 <ol>
 <li>Enable <code>status</code> subresource in <code>CustomResourceDefinition</code>.</li>
@@ -838,7 +839,7 @@ kubectl delete deploy foo-sample
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>kubectl delete -f config/sample/foo.yaml
 </code></pre></div></li>
 </ol>
-<h2 id=56-capture-the-update-of-deploymenthttpsgithubcomnakamasatosample-controllercommita4e8c51a786ac40165989a48078775e62033443f><a href=https://github.com/nakamasato/sample-controller/commit/a4e8c51a786ac40165989a48078775e62033443f>5.6. Capture the update of Deployment</a></h2>
+<h2 id=56-capture-the-update-of-deploymenthttpsgithubcomnakamasatosample-controllercommit1bf27b82aff2877cb455f781552fc03ff906fd2f><a href=https://github.com/nakamasato/sample-controller/commit/1bf27b82aff2877cb455f781552fc03ff906fd2f>5.6. Capture the update of Deployment</a></h2>
 <h3 id=561-overview>5.6.1. Overview</h3>
 <p>In the previous section, <code>status.availableReplicas</code> is not updated immediately. This is because sample-contrller just monitors our custom resource <code>Foo</code>. In this section, we&rsquo;ll enable to capture changes of Deployments controlled by <code>Foo</code>.</p>
 <h3 id=562-implement>5.6.2. Implement</h3>
@@ -931,7 +932,7 @@ kubectl delete deploy foo-sample
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>kubectl delete -f config/sample/foo.yaml
 </code></pre></div></li>
 </ol>
-<h2 id=57-create-events-for-foo-resourcehttpsgithubcomnakamasatosample-controllercommitaeef86743465c68d24633bc9dda7b96d9437e1e8><a href=https://github.com/nakamasato/sample-controller/commit/aeef86743465c68d24633bc9dda7b96d9437e1e8>5.7. Create events for Foo resource</a></h2>
+<h2 id=57-create-events-for-foo-resourcehttpsgithubcomnakamasatosample-controllercommit782fc219a3f96ea9cb5dc09df55cb32a2f107814><a href=https://github.com/nakamasato/sample-controller/commit/782fc219a3f96ea9cb5dc09df55cb32a2f107814>5.7. Create events for Foo resource</a></h2>
 <h3 id=571-overview>5.7.1. Overview</h3>
 <ol>
 <li>Add <code>record.EventRecorder</code> to <code>Controller</code>.</li>

@@ -84,17 +84,83 @@
 <div class="col-12 col-md-9">
 <h1 class=title>4. Checkpoint</h1>
 <div class=content>
-<h2 id=4-checkpoint-check-custom-resource-and-codeshttpsgithubcomnakamasatosample-controllercommit60900b430119759def40c391b6e1e181d60af1a0><a href=https://github.com/nakamasato/sample-controller/commit/60900b430119759def40c391b6e1e181d60af1a0>4. Checkpoint: Check custom resource and codes</a></h2>
-<p>What to check:</p>
+<h2 id=4-checkpoint-check-custom-resource-and-codeshttpsgithubcomnakamasatosample-controllercommit48454d52dbacd904282c9aef7962c0bacd25d123><a href=https://github.com/nakamasato/sample-controller/commit/48454d52dbacd904282c9aef7962c0bacd25d123>4. Checkpoint: Check custom resource and codes</a></h2>
+<h3 id=41-overview>4.1. Overview</h3>
+<p><img src=overview.drawio.svg alt></p>
 <ul>
-<li><input checked disabled type=checkbox> Create CRD</li>
-<li><input checked disabled type=checkbox> Create CR</li>
-<li><input checked disabled type=checkbox> Read the CR from <code>sample-controller</code></li>
+<li><input checked disabled type=checkbox> Create <code>CustomResourceDefinition</code> <code>foos.example.com</code>.</li>
+<li><input checked disabled type=checkbox> Create <code>Foo</code> object.</li>
+<li><input checked disabled type=checkbox> Read the <code>Foo</code> object from <code>main.go</code>.</li>
 </ul>
-<p>Steps:</p>
+<h3 id=42-implement>4.2. Implement</h3>
 <ol>
 <li>
-<p>Create <code>main.go</code> to retrieve custom resource <code>Foo</code>.</p>
+<p>Create main.go.</p>
+<div class=highlight><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kn>package</span> <span class=nx>main</span>
+
+<span class=kd>func</span> <span class=nf>main</span><span class=p>()</span> <span class=p>{</span>
+
+<span class=p>}</span>
+</code></pre></div></li>
+<li>
+<p>Init <a href=https://pkg.go.dev/k8s.io/klog/v2>k8s.io/klog/v2</a></p>
+<div class=highlight><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kn>import</span> <span class=p>(</span>
+    <span class=s>&#34;k8s.io/klog/v2&#34;</span>
+<span class=p>)</span>
+</code></pre></div><div class=highlight><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=nx>klog</span><span class=p>.</span><span class=nf>InitFlags</span><span class=p>(</span><span class=kc>nil</span><span class=p>)</span>
+</code></pre></div></li>
+<li>
+<p>Set <code>kubeconfig</code> from <a href=https://pkg.go.dev/flag>flag</a>.</p>
+<p>If home is detected, use <code>~/.kube/config</code> as default, otherwise, <code>-kubeconfig</code> argument is required.</p>
+<div class=highlight><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kn>import</span> <span class=p>(</span>
+    <span class=s>&#34;flag&#34;</span>
+    <span class=s>&#34;path/filepath&#34;</span>
+    <span class=o>...</span>
+    <span class=s>&#34;k8s.io/client-go/util/homedir&#34;</span>
+<span class=p>)</span>
+</code></pre></div><div class=highlight><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kd>var</span> <span class=nx>kubeconfig</span> <span class=o>*</span><span class=kt>string</span>
+<span class=k>if</span> <span class=nx>home</span> <span class=o>:=</span> <span class=nx>homedir</span><span class=p>.</span><span class=nf>HomeDir</span><span class=p>();</span> <span class=nx>home</span> <span class=o>!=</span> <span class=s>&#34;&#34;</span> <span class=p>{</span>
+    <span class=nx>kubeconfig</span> <span class=p>=</span> <span class=nx>flag</span><span class=p>.</span><span class=nf>String</span><span class=p>(</span><span class=s>&#34;kubeconfig&#34;</span><span class=p>,</span> <span class=nx>filepath</span><span class=p>.</span><span class=nf>Join</span><span class=p>(</span><span class=nx>home</span><span class=p>,</span> <span class=s>&#34;.kube&#34;</span><span class=p>,</span> <span class=s>&#34;config&#34;</span><span class=p>),</span> <span class=s>&#34;(optional)&#34;</span><span class=p>)</span>
+<span class=p>}</span> <span class=k>else</span> <span class=p>{</span>
+    <span class=nx>kubeconfig</span> <span class=p>=</span> <span class=nx>flag</span><span class=p>.</span><span class=nf>String</span><span class=p>(</span><span class=s>&#34;kubeconfig&#34;</span><span class=p>,</span> <span class=s>&#34;&#34;</span><span class=p>,</span> <span class=s>&#34;absolute path to kubeconfig file&#34;</span><span class=p>)</span>
+<span class=p>}</span>
+<span class=nx>flag</span><span class=p>.</span><span class=nf>Parse</span><span class=p>()</span>
+</code></pre></div></li>
+<li>
+<p>Set config for Kubernetes client with <a href=https://pkg.go.dev/k8s.io/client-go/tools/clientcmd>client-go/tools/clientcmd</a></p>
+<p>config is *<a href=https://pkg.go.dev/k8s.io/client-go@v0.24.3/rest#Config>restclient.Config</a></p>
+<div class=highlight><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kn>import</span> <span class=p>(</span>
+    <span class=o>...</span>
+    <span class=s>&#34;k8s.io/client-go/tools/clientcmd&#34;</span>
+<span class=p>)</span>
+</code></pre></div><div class=highlight><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=nx>config</span><span class=p>,</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>clientcmd</span><span class=p>.</span><span class=nf>BuildConfigFromFlags</span><span class=p>(</span><span class=s>&#34;&#34;</span><span class=p>,</span> <span class=o>*</span><span class=nx>kubeconfig</span><span class=p>)</span>
+<span class=k>if</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
+    <span class=nx>klog</span><span class=p>.</span><span class=nf>Fatalf</span><span class=p>(</span><span class=s>&#34;Error building kubeconfig: %s&#34;</span><span class=p>,</span> <span class=nx>err</span><span class=p>.</span><span class=nf>Error</span><span class=p>())</span>
+<span class=p>}</span>
+</code></pre></div></li>
+<li>
+<p>Initialize clientset for our custom resource.</p>
+<div class=highlight><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kn>import</span> <span class=p>(</span>
+    <span class=nx>clientset</span> <span class=s>&#34;github.com/nakamasato/sample-controller/pkg/generated/clientset/versioned&#34;</span>
+<span class=p>)</span>
+</code></pre></div><div class=highlight><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=nx>exampleClient</span><span class=p>,</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>clientset</span><span class=p>.</span><span class=nf>NewForConfig</span><span class=p>(</span><span class=nx>config</span><span class=p>)</span>
+<span class=k>if</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
+    <span class=nx>klog</span><span class=p>.</span><span class=nf>Fatalf</span><span class=p>(</span><span class=s>&#34;Error building example clientset: %s&#34;</span><span class=p>,</span> <span class=nx>err</span><span class=p>.</span><span class=nf>Error</span><span class=p>())</span>
+<span class=p>}</span>
+</code></pre></div></li>
+<li>
+<p>List the custom resource <code>Foo</code>.</p>
+<div class=highlight><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kn>import</span> <span class=p>(</span>
+    <span class=nx>metav1</span> <span class=s>&#34;k8s.io/apimachinery/pkg/apis/meta/v1&#34;</span>
+<span class=p>)</span>
+</code></pre></div><div class=highlight><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=nx>foos</span><span class=p>,</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>exampleClient</span><span class=p>.</span><span class=nf>ExampleV1alpha1</span><span class=p>().</span><span class=nf>Foos</span><span class=p>(</span><span class=s>&#34;&#34;</span><span class=p>).</span><span class=nf>List</span><span class=p>(</span><span class=nx>context</span><span class=p>.</span><span class=nf>Background</span><span class=p>(),</span> <span class=nx>metav1</span><span class=p>.</span><span class=nx>ListOptions</span><span class=p>{})</span>
+<span class=k>if</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
+    <span class=nx>klog</span><span class=p>.</span><span class=nf>Fatalf</span><span class=p>(</span><span class=s>&#34;listing foos %s %s&#34;</span><span class=p>,</span> <span class=nx>err</span><span class=p>.</span><span class=nf>Error</span><span class=p>())</span>
+<span class=p>}</span>
+<span class=nx>klog</span><span class=p>.</span><span class=nf>Infof</span><span class=p>(</span><span class=s>&#34;length of foos is %d&#34;</span><span class=p>,</span> <span class=nb>len</span><span class=p>(</span><span class=nx>foos</span><span class=p>.</span><span class=nx>Items</span><span class=p>))</span>
+</code></pre></div></li>
+</ol>
+<p>Final <code>main.go</code>:</p>
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kn>package</span> <span class=nx>main</span>
 
 <span class=kn>import</span> <span class=p>(</span>
@@ -112,8 +178,8 @@
 
 <span class=kd>func</span> <span class=nf>main</span><span class=p>()</span> <span class=p>{</span>
     <span class=nx>klog</span><span class=p>.</span><span class=nf>InitFlags</span><span class=p>(</span><span class=kc>nil</span><span class=p>)</span>
-    <span class=kd>var</span> <span class=nx>kubeconfig</span> <span class=o>*</span><span class=kt>string</span>
 
+    <span class=kd>var</span> <span class=nx>kubeconfig</span> <span class=o>*</span><span class=kt>string</span>
     <span class=k>if</span> <span class=nx>home</span> <span class=o>:=</span> <span class=nx>homedir</span><span class=p>.</span><span class=nf>HomeDir</span><span class=p>();</span> <span class=nx>home</span> <span class=o>!=</span> <span class=s>&#34;&#34;</span> <span class=p>{</span>
         <span class=nx>kubeconfig</span> <span class=p>=</span> <span class=nx>flag</span><span class=p>.</span><span class=nf>String</span><span class=p>(</span><span class=s>&#34;kubeconfig&#34;</span><span class=p>,</span> <span class=nx>filepath</span><span class=p>.</span><span class=nf>Join</span><span class=p>(</span><span class=nx>home</span><span class=p>,</span> <span class=s>&#34;.kube&#34;</span><span class=p>,</span> <span class=s>&#34;config&#34;</span><span class=p>),</span> <span class=s>&#34;(optional)&#34;</span><span class=p>)</span>
     <span class=p>}</span> <span class=k>else</span> <span class=p>{</span>
@@ -128,9 +194,8 @@
 
     <span class=nx>exampleClient</span><span class=p>,</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>clientset</span><span class=p>.</span><span class=nf>NewForConfig</span><span class=p>(</span><span class=nx>config</span><span class=p>)</span>
     <span class=k>if</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
-        <span class=nx>klog</span><span class=p>.</span><span class=nf>Fatalf</span><span class=p>(</span><span class=s>&#34;Error building kubernetes clientset: %s&#34;</span><span class=p>,</span> <span class=nx>err</span><span class=p>.</span><span class=nf>Error</span><span class=p>())</span>
+        <span class=nx>klog</span><span class=p>.</span><span class=nf>Fatalf</span><span class=p>(</span><span class=s>&#34;Error building example clientset: %s&#34;</span><span class=p>,</span> <span class=nx>err</span><span class=p>.</span><span class=nf>Error</span><span class=p>())</span>
     <span class=p>}</span>
-    <span class=nx>klog</span><span class=p>.</span><span class=nf>Info</span><span class=p>(</span><span class=nx>exampleClient</span><span class=p>)</span>
 
     <span class=nx>foos</span><span class=p>,</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>exampleClient</span><span class=p>.</span><span class=nf>ExampleV1alpha1</span><span class=p>().</span><span class=nf>Foos</span><span class=p>(</span><span class=s>&#34;&#34;</span><span class=p>).</span><span class=nf>List</span><span class=p>(</span><span class=nx>context</span><span class=p>.</span><span class=nf>Background</span><span class=p>(),</span> <span class=nx>metav1</span><span class=p>.</span><span class=nx>ListOptions</span><span class=p>{})</span>
     <span class=k>if</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
@@ -138,16 +203,13 @@
     <span class=p>}</span>
     <span class=nx>klog</span><span class=p>.</span><span class=nf>Infof</span><span class=p>(</span><span class=s>&#34;length of foos is %d&#34;</span><span class=p>,</span> <span class=nb>len</span><span class=p>(</span><span class=nx>foos</span><span class=p>.</span><span class=nx>Items</span><span class=p>))</span>
 <span class=p>}</span>
-</code></pre></div>
-</li>
+</code></pre></div><h3 id=43-run-and-check>4.3. Run and check</h3>
+<ol>
 <li>
 <p>Build <code>sample-controller</code></p>
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>go mod tidy
 go build
 </code></pre></div></li>
-<li>
-<p>Test <code>sample-controller</code> (<code>main.go</code>).</p>
-<ol>
 <li>
 <p>Register the CRD.</p>
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>kubectl apply -f config/crd/foos.yaml
@@ -156,32 +218,28 @@ go build
 <p>Run sample-controller.</p>
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>./sample-controller
 </code></pre></div><p>Result: no <code>Foo</code> exists</p>
-<div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>&amp;{0xc000498d20 0xc00048c480}
-length of foos is 0
+<div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>length of foos is 0
 </code></pre></div></li>
 <li>
 <p>Create sample foo (custom resource) with <code>config/sample/foo.yaml</code>.</p>
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>example.com/v1alpha1</span><span class=w>
 </span><span class=w></span><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>Foo</span><span class=w>
 </span><span class=w></span><span class=nt>metadata</span><span class=p>:</span><span class=w>
-</span><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>foo-sample</span><span class=w>
+</span><span class=w>    </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>foo-sample</span><span class=w>
 </span><span class=w></span><span class=nt>spec</span><span class=p>:</span><span class=w>
-</span><span class=w>  </span><span class=nt>deploymentName</span><span class=p>:</span><span class=w> </span><span class=l>foo-sample</span><span class=w>
-</span><span class=w>  </span><span class=nt>replicas</span><span class=p>:</span><span class=w> </span><span class=m>1</span><span class=w>
+</span><span class=w>    </span><span class=nt>deploymentName</span><span class=p>:</span><span class=w> </span><span class=l>foo-sample</span><span class=w>
+</span><span class=w>    </span><span class=nt>replicas</span><span class=p>:</span><span class=w> </span><span class=m>1</span><span class=w>
 </span></code></pre></div><div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>kubectl apply -f config/sample/foo.yaml
 </code></pre></div></li>
 <li>
 <p>Run the controller again.</p>
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>./sample-controller
-&amp;{0xc000496d20 0xc00048a480}
 length of foos is 1
 </code></pre></div></li>
 <li>
-<p>Clean up foo (custom resource).</p>
+<p>Clean up Foo (custom resource).</p>
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>kubectl delete -f config/sample/foo.yaml
 </code></pre></div></li>
-</ol>
-</li>
 </ol>
 </div>
 </div>
