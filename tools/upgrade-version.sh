@@ -221,8 +221,8 @@ import (
 
 func main() {
     klog.InitFlags(nil)
-    var kubeconfig *string
 
+    var kubeconfig *string
     if home := homedir.HomeDir(); home != "" {
         kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional)")
     } else {
@@ -237,9 +237,8 @@ func main() {
 
     clientset, err := client.NewForConfig(config)
     if err != nil {
-        klog.Fatalf("Error building kubernetes clientset: %s", err.Error())
+        klog.Fatalf("Error building example clientset: %s", err.Error())
     }
-    klog.Info(clientset)
 
     foos, err := clientset.ExampleV1alpha1().Foos("").List(context.Background(), metav1.ListOptions{})
     if err != nil {
