@@ -1,12 +1,12 @@
 ---
 title: '5. Implement reconciliation'
-date: 2022-08-02T07:57:15+0900
+date: 2022-08-02T08:13:51+0900
 draft: false
 weight: 7
 summary: Implement controller.
 ---
 
-## [5.1. Create Controller](https://github.com/nakamasato/sample-controller/commit/679dfa0d57b3f87ccfccb1537442fb4ec9673acc)
+## [5.1. Create Controller](https://github.com/nakamasato/sample-controller/commit/6a7df061f16a2c55c6241288ed5b0860095d24fd)
 
 
 ### 5.1.1. Overview
@@ -37,63 +37,65 @@ summary: Implement controller.
 package main
 
 import (
-    "time"
+	"time"
 
-    clientset "github.com/nakamasato/sample-controller/pkg/generated/clientset/versioned"
-    informers "github.com/nakamasato/sample-controller/pkg/generated/informers/externalversions/example.com/v1alpha1"
+	clientset "github.com/nakamasato/sample-controller/pkg/generated/clientset/versioned"
+	informers "github.com/nakamasato/sample-controller/pkg/generated/informers/externalversions/example.com/v1alpha1"
+	listers "github.com/nakamasato/sample-controller/pkg/generated/listers/example.com/v1alpha1"
 
-    "k8s.io/apimachinery/pkg/util/wait"
-    "k8s.io/client-go/tools/cache"
-    "k8s.io/klog/v2"
+	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/util/workqueue"
+	"k8s.io/klog/v2"
 )
 
 type Controller struct {
-    // sampleclientset is a clientset for our own API group
-    sampleclientset clientset.Interface
+	// sampleclientset is a clientset for our own API group
+	sampleclientset clientset.Interface
 
-    foosSynced cache.InformerSynced // cache is synced for foo
+	foosSynced cache.InformerSynced // cache is synced for foo
 }
 
 func NewController(sampleclientset clientset.Interface, fooInformer informers.FooInformer) *Controller {
-    controller := &Controller{
-        sampleclientset: sampleclientset,
-        foosSynced:      fooInformer.Informer().HasSynced,
-    }
+	controller := &Controller{
+		sampleclientset: sampleclientset,
+		foosSynced:      fooInformer.Informer().HasSynced,
+	}
 
-    fooInformer.Informer().AddEventHandler(
-        cache.ResourceEventHandlerFuncs{
-            AddFunc:    controller.handleAdd,
-            DeleteFunc: controller.handleDelete,
-        },
-    )
-    return controller
+	fooInformer.Informer().AddEventHandler(
+		cache.ResourceEventHandlerFuncs{
+			AddFunc:    controller.handleAdd,
+			DeleteFunc: controller.handleDelete,
+		},
+	)
+	return controller
 }
 
 func (c *Controller) Run(stopCh chan struct{}) error {
-    if ok := cache.WaitForCacheSync(stopCh, c.foosSynced); !ok {
-        klog.Info("cache is not synced")
-    }
+	if ok := cache.WaitForCacheSync(stopCh, c.foosSynced); !ok {
+		klog.Info("cache is not synced")
+	}
 
-    go wait.Until(c.worker, time.Second, stopCh)
+	go wait.Until(c.worker, time.Second, stopCh)
 
-    <-stopCh
-    return nil
+	<-stopCh
+	return nil
 }
 
 func (c *Controller) worker() {
-    c.processNextItem()
+	c.processNextItem()
 }
 
 func (c *Controller) processNextItem() bool {
-    return true
+	return true
 }
 
 func (c *Controller) handleAdd(obj interface{}) {
-    klog.Info("handleAdd was called")
+	klog.Info("handleAdd is called")
 }
 
 func (c *Controller) handleDelete(obj interface{}) {
-    klog.Info("handleDelete was called")
+	klog.Info("handleDelete is called")
 }
 ```
 
@@ -105,30 +107,35 @@ main.go:
         "flag"
         "path/filepath"
 +       "time"
+
         "k8s.io/client-go/tools/clientcmd"
         "k8s.io/client-go/util/homedir"
         "k8s.io/klog/v2"
-
 -       metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+        clientset "github.com/nakamasato/sample-controller/pkg/generated/clientset/versioned"
 +       informers "github.com/nakamasato/sample-controller/pkg/generated/informers/externalversions"
  )
  func main() {
-@@ -29,15 +29,16 @@ func main() {
-        if err != nil {
-                klog.Fatalf("getting client set %s\n", err.Error())
+@@ -34,9 +34,11 @@ func main() {
+                klog.Fatalf("Error building example clientset: %s", err.Error())
         }
--       klog.Info(exampleClient)
--       foos, err := exampleClient.ExampleV1alpha1().Foos("").List(context.Background(), metav1.ListOptions{})
+
+-       foos, err := exampleClient.ExampleV1alpha1().Foos("").List(context
+.Background(), metav1.ListOptions{})
 -       if err != nil {
--               klog.Fatalf("listing foos %s\n", err.Error())
-+       exampleInformerFactory := informers.NewSharedInformerFactory(exampleClient, time.Second*30)
+-               klog.Fatalf("listing foos %s", err.Error())
++       exampleInformerFactory := informers.NewSharedInformerFactory(examp
+leClient, time.Second*30)
 +       stopCh := make(chan struct{})
-+       controller := NewController(exampleClient, exampleInformerFactory.Example().V1alpha1().Foos())
++       controller := NewController(exampleClient, exampleInformerFactory.
+Example().V1alpha1().Foos())
 +       exampleInformerFactory.Start(stopCh)
 +       if err = controller.Run(stopCh); err != nil {
-+               klog.Fatalf("error occurred when running controller %s\n", err.Error())
++               klog.Fatalf("error occurred when running controller %s\n",
+ err.Error())
         }
--       klog.Infof("length of foos is %d\n", len(foos.Items))
+-       klog.Infof("length of foos is %d", len(foos.Items))
  }
 ```
 At the line of `exampleInformerFactory := informers.NewSharedInformerFactory(exampleClient, time.Second*30)`, the second argument specifies ***ResyncPeriod***, which defines the interval of ***resync*** (*The resync operation consists of delivering to the handler an update notification for every object in the informer's local cache*). For more detail, please read [NewSharedIndexInformer](https://pkg.go.dev/k8s.io/client-go@v0.23.1/tools/cache#NewSharedIndexInformer)
@@ -139,46 +146,46 @@ At the line of `exampleInformerFactory := informers.NewSharedInformerFactory(exa
 package main
 
 import (
-    "flag"
-    "path/filepath"
-    "time"
+	"flag"
+	"path/filepath"
+	"time"
 
-    "k8s.io/client-go/tools/clientcmd"
-    "k8s.io/client-go/util/homedir"
-    "k8s.io/klog/v2"
+	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/util/homedir"
+	"k8s.io/klog/v2"
 
-    clientset "github.com/nakamasato/sample-controller/pkg/generated/clientset/versioned"
-    informers "github.com/nakamasato/sample-controller/pkg/generated/informers/externalversions"
+	clientset "github.com/nakamasato/sample-controller/pkg/generated/clientset/versioned"
+	informers "github.com/nakamasato/sample-controller/pkg/generated/informers/externalversions"
 )
 
 func main() {
-    klog.InitFlags(nil)
-    var kubeconfig *string
+	klog.InitFlags(nil)
 
-    if home := homedir.HomeDir(); home != "" {
-        kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional)")
-    } else {
-        kubeconfig = flag.String("kubeconfig", "", "absolute path to kubeconfig file")
-    }
-    flag.Parse()
+	var kubeconfig *string
+	if home := homedir.HomeDir(); home != "" {
+		kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional)")
+	} else {
+		kubeconfig = flag.String("kubeconfig", "", "absolute path to kubeconfig file")
+	}
+	flag.Parse()
 
-    config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
-    if err != nil {
-        klog.Fatalf("Error building kubeconfig: %s", err.Error())
-    }
+	config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
+	if err != nil {
+		klog.Fatalf("Error building kubeconfig: %s", err.Error())
+	}
 
-    exampleClient, err := clientset.NewForConfig(config)
-    if err != nil {
-        klog.Fatalf("Error building example clientset: %s", err.Error())
-    }
+	exampleClient, err := clientset.NewForConfig(config)
+	if err != nil {
+		klog.Fatalf("Error building example clientset: %s", err.Error())
+	}
 
-    exampleInformerFactory := informers.NewSharedInformerFactory(exampleClient, time.Second*30)
-    stopCh := make(chan struct{})
-    controller := NewController(exampleClient, exampleInformerFactory.Example().V1alpha1().Foos())
-    exampleInformerFactory.Start(stopCh)
-    if err = controller.Run(stopCh); err != nil {
-        klog.Fatalf("error occurred when running controller %s\n", err.Error())
-    }
+	exampleInformerFactory := informers.NewSharedInformerFactory(exampleClient, time.Second*30)
+	stopCh := make(chan struct{})
+	controller := NewController(exampleClient, exampleInformerFactory.Example().V1alpha1().Foos())
+	exampleInformerFactory.Start(stopCh)
+	if err = controller.Run(stopCh); err != nil {
+		klog.Fatalf("error occurred when running controller %s\n", err.Error())
+	}
 }
 ```
 
@@ -205,11 +212,11 @@ func main() {
 1. Check the controller logs.
 
     ```
-    2022/07/18 06:36:35 handleAdd was called
-    2022/07/18 06:36:40 handleDelete was called
+    2022/07/18 06:36:35 handleAdd is called
+    2022/07/18 06:36:40 handleDelete is called
     ```
 
-## [5.2. Fetch Foo object](https://github.com/nakamasato/sample-controller/commit/81f932f26a258d70b2a7bcef80c316c679a8526b)
+## [5.2. Fetch Foo object](https://github.com/nakamasato/sample-controller/commit/b50387be4b9429b898ce5b6316b4f0564bfac630)
 
 ### 5.2.1. Overview
 
@@ -227,12 +234,12 @@ Implement the following logic:
 
     ```go
     func (c *Controller) handleAdd(obj interface{}) {
-        klog.Info("handleAdd was called")
+        klog.Info("handleAdd is called")
         c.enqueueFoo(obj)
     }
 
     func (c *Controller) handleDelete(obj interface{}) {
-        klog.Info("handleDelete was called")
+        klog.Info("handleDelete is called")
         c.enqueueFoo(obj)
     }
 
@@ -325,14 +332,14 @@ Implement the following logic:
 1. Check the controller logs.
 
     ```
-    2022/07/18 07:46:42 handleAdd was called
+    2022/07/18 07:46:42 handleAdd is called
     2022/07/18 07:46:42 Got foo {DeploymentName:foo-sample Replicas:0x1400030194c}
     2022/07/18 07:46:42 Successfully synced 'default/foo-sample'
-    2022/07/18 07:46:49 handleDelete was called
+    2022/07/18 07:46:49 handleDelete is called
     2022/07/18 07:46:49 failed to get foo resource from lister foo.example.com "foo-sample" not found
     ```
 
-## [5.3. Create/Delete Deployment for Foo resource](https://github.com/nakamasato/sample-controller/commit/b3544217c8e49bcf76f44535e84c3372e430a3f1)
+## [5.3. Create/Delete Deployment for Foo resource](https://github.com/nakamasato/sample-controller/commit/778e7edadfdba4f5a833e057afbe719e9fe1d37a)
 
 ### 5.3.1. Overview
 
@@ -565,7 +572,7 @@ The logic to implement is:
     ```
     ```diff
     -func (c *Controller) handleDelete(obj interface{}) {
-    -       klog.Info("handleDelete was called")
+    -       klog.Info("handleDelete is called")
     -       c.enqueueFoo(obj)
     -}
     ```
@@ -589,7 +596,7 @@ The logic to implement is:
     ```
     Check `sample-controller`'s logs:
     ```
-    2022/07/18 09:33:31 handleAdd was called
+    2022/07/18 09:33:31 handleAdd is called
     2022/07/18 09:33:31 deployment foo-sample is valid
     2022/07/18 09:33:31 Successfully synced 'default/foo-sample'
     ```
@@ -607,7 +614,7 @@ The logic to implement is:
 
     > Kubernetes checks for and deletes objects that no longer have owner references, like the pods left behind when you delete a ReplicaSet. When you delete an object, you can control whether Kubernetes deletes the object's dependents automatically, in a process called cascading deletion.
 
-## [5.4. Check and update Deployment if necessary](https://github.com/nakamasato/sample-controller/commit/9a0821fc6e0e12a2928d52ae752ec2cc1c8d2670)
+## [5.4. Check and update Deployment if necessary](https://github.com/nakamasato/sample-controller/commit/f2916efb4981d6d837f07a5844c021e0cb8e6dcb)
 
 ### 5.4.1. Overview
 
@@ -678,7 +685,7 @@ What needs to be done:
 1. Remove unused `handleAdd` function.
     ```diff
     -func (c *Controller) handleAdd(obj interface{}) {
-    -       klog.Info("handleAdd was called")
+    -       klog.Info("handleAdd is called")
     -       c.enqueueFoo(obj)
     -}
     ```
@@ -752,7 +759,7 @@ What needs to be done:
     kubectl delete deploy foo-sample
     ```
 
-## [5.5. Update Foo status](https://github.com/nakamasato/sample-controller/commit/f77402416173106225c6e3d1cd51673c94bcc887)
+## [5.5. Update Foo status](https://github.com/nakamasato/sample-controller/commit/76226c87c0d54ca1df219e3287cf1085df45ba37)
 
 ### 5.5.1. Overview
 
@@ -838,7 +845,7 @@ What needs to be done:
     ```
     kubectl delete -f config/sample/foo.yaml
     ```
-## [5.6. Capture the update of Deployment](https://github.com/nakamasato/sample-controller/commit/607cd6e84ba009f2552af677f2c0d084434f10dd)
+## [5.6. Capture the update of Deployment](https://github.com/nakamasato/sample-controller/commit/a573a62b3ffa37d10b028307464ed12a93ff5ca2)
 
 ### 5.6.1. Overview
 
@@ -945,7 +952,7 @@ In the previous section, `status.availableReplicas` is not updated immediately. 
     kubectl delete -f config/sample/foo.yaml
     ```
 
-## [5.7. Create events for Foo resource](https://github.com/nakamasato/sample-controller/commit/aa162fd74e31ed6569364eefe8aca3e02f3435f3)
+## [5.7. Create events for Foo resource](https://github.com/nakamasato/sample-controller/commit/d91161fee71ad3cdd4de9f86c2c4ec9d84fef7d6)
 
 ### 5.7.1. Overview
 
