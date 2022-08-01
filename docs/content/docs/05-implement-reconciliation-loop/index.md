@@ -1,12 +1,12 @@
 ---
 title: '5. Implement reconciliation'
-date: 2022-08-02T08:20:09+0900
+date: 2022-08-02T08:46:19+0900
 draft: false
 weight: 7
 summary: Implement controller.
 ---
 
-## [5.1. Create Controller](https://github.com/nakamasato/sample-controller/commit/edf924c0e5362a6b123255ed3b2444c3c7a5dfc1)
+## [5.1. Create Controller](https://github.com/nakamasato/sample-controller/commit/0965d46a825c4de22b6285d8c4fabd3780554e4f)
 
 
 ### 5.1.1. Overview
@@ -28,8 +28,8 @@ summary: Implement controller.
     1. Return the controller.
 1. Define `Run`, which will be called in `main.go`.
     1. Wait until the cache is synced.
-    1. Run `c.worker` repeatedly every second until the stop channel is closed.
-1. Define `worker`: just call `processNextItem`.
+    1. Run `c.runWorker` repeatedly every second until the stop channel is closed.
+1. Define `runWorker`: just call `processNextItem`.
 1. Define `processNextItem`: always return true for now.
 
 
@@ -73,16 +73,16 @@ func NewController(sampleclientset clientset.Interface, fooInformer informers.Fo
 
 func (c *Controller) Run(stopCh chan struct{}) error {
 	if ok := cache.WaitForCacheSync(stopCh, c.foosSynced); !ok {
-		klog.Info("cache is not synced")
+		return fmt.Errorf("failed to wait for caches to sync")
 	}
 
-	go wait.Until(c.worker, time.Second, stopCh)
+	go wait.Until(c.runWorker, time.Second, stopCh)
 
 	<-stopCh
 	return nil
 }
 
-func (c *Controller) worker() {
+func (c *Controller) runWorker() {
 	c.processNextItem()
 }
 
@@ -216,7 +216,7 @@ func main() {
     2022/07/18 06:36:40 handleDelete is called
     ```
 
-## [5.2. Fetch Foo object](https://github.com/nakamasato/sample-controller/commit/b14496842a78815887ea452da2605886460e37e8)
+## [5.2. Fetch Foo object](https://github.com/nakamasato/sample-controller/commit/00b8e53a9b3418284b1fdaf8933865abaf5bb686)
 
 ### 5.2.1. Overview
 
@@ -339,7 +339,7 @@ Implement the following logic:
     2022/07/18 07:46:49 failed to get foo resource from lister foo.example.com "foo-sample" not found
     ```
 
-## [5.3. Create/Delete Deployment for Foo resource](https://github.com/nakamasato/sample-controller/commit/588ba9446c83447dd96eee1df1867ac65edcf004)
+## [5.3. Create/Delete Deployment for Foo resource](https://github.com/nakamasato/sample-controller/commit/5207f0360ec0309319bcd303fb9b3c8f58e3d43e)
 
 ### 5.3.1. Overview
 
@@ -614,7 +614,7 @@ The logic to implement is:
 
     > Kubernetes checks for and deletes objects that no longer have owner references, like the pods left behind when you delete a ReplicaSet. When you delete an object, you can control whether Kubernetes deletes the object's dependents automatically, in a process called cascading deletion.
 
-## [5.4. Check and update Deployment if necessary](https://github.com/nakamasato/sample-controller/commit/10a8a9465946a7f52bf85c93a10d9f6b360aa936)
+## [5.4. Check and update Deployment if necessary](https://github.com/nakamasato/sample-controller/commit/8f3890a15462b0f05293903e553d0d194336f1d7)
 
 ### 5.4.1. Overview
 
@@ -759,7 +759,7 @@ What needs to be done:
     kubectl delete deploy foo-sample
     ```
 
-## [5.5. Update Foo status](https://github.com/nakamasato/sample-controller/commit/482148b52626126959fc86a4910936e376035fa4)
+## [5.5. Update Foo status](https://github.com/nakamasato/sample-controller/commit/09985f4ead8078e7295dd563f2710a131c33d6e1)
 
 ### 5.5.1. Overview
 
@@ -845,7 +845,7 @@ What needs to be done:
     ```
     kubectl delete -f config/sample/foo.yaml
     ```
-## [5.6. Capture the update of Deployment](https://github.com/nakamasato/sample-controller/commit/6b6b095167cf495e89389dc453903e92dd899832)
+## [5.6. Capture the update of Deployment](https://github.com/nakamasato/sample-controller/commit/0bb323c7a0ad68c6924f4df18f3899ccb790c4fd)
 
 ### 5.6.1. Overview
 
@@ -952,7 +952,7 @@ In the previous section, `status.availableReplicas` is not updated immediately. 
     kubectl delete -f config/sample/foo.yaml
     ```
 
-## [5.7. Create events for Foo resource](https://github.com/nakamasato/sample-controller/commit/ec6cd772c588198c4f77358a582ccaa42a6a12c0)
+## [5.7. Create events for Foo resource](https://github.com/nakamasato/sample-controller/commit/b80dca8f48f3292a53212902040c5a8fdabe5cbf)
 
 ### 5.7.1. Overview
 
