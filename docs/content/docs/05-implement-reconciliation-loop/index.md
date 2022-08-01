@@ -1,12 +1,12 @@
 ---
 title: '5. Implement reconciliation'
-date: 2022-08-02T08:13:51+0900
+date: 2022-08-02T08:20:09+0900
 draft: false
 weight: 7
 summary: Implement controller.
 ---
 
-## [5.1. Create Controller](https://github.com/nakamasato/sample-controller/commit/6a7df061f16a2c55c6241288ed5b0860095d24fd)
+## [5.1. Create Controller](https://github.com/nakamasato/sample-controller/commit/edf924c0e5362a6b123255ed3b2444c3c7a5dfc1)
 
 
 ### 5.1.1. Overview
@@ -19,12 +19,12 @@ summary: Implement controller.
     ```go
     type Controller struct {
         sampleclientset clientset.Interface
-        fooSynced cache.InformerSynced
+        fooSynced cache.InformerSynced // a function that can be used to determine if an informer has synced
     }
     ```
 1. Define `NewController` function
     1. Create `Controller` with the arguments `sampleclientset` and `fooInformer`, which will be passed in `main.go`.
-    1. Add event handlers for `addFunc` and `DeleteFunc` to the informer.
+    1. Add event handlers for `AddFunc` and `DeleteFunc` to the informer.
     1. Return the controller.
 1. Define `Run`, which will be called in `main.go`.
     1. Wait until the cache is synced.
@@ -216,7 +216,7 @@ func main() {
     2022/07/18 06:36:40 handleDelete is called
     ```
 
-## [5.2. Fetch Foo object](https://github.com/nakamasato/sample-controller/commit/b50387be4b9429b898ce5b6316b4f0564bfac630)
+## [5.2. Fetch Foo object](https://github.com/nakamasato/sample-controller/commit/b14496842a78815887ea452da2605886460e37e8)
 
 ### 5.2.1. Overview
 
@@ -339,7 +339,7 @@ Implement the following logic:
     2022/07/18 07:46:49 failed to get foo resource from lister foo.example.com "foo-sample" not found
     ```
 
-## [5.3. Create/Delete Deployment for Foo resource](https://github.com/nakamasato/sample-controller/commit/778e7edadfdba4f5a833e057afbe719e9fe1d37a)
+## [5.3. Create/Delete Deployment for Foo resource](https://github.com/nakamasato/sample-controller/commit/588ba9446c83447dd96eee1df1867ac65edcf004)
 
 ### 5.3.1. Overview
 
@@ -614,7 +614,7 @@ The logic to implement is:
 
     > Kubernetes checks for and deletes objects that no longer have owner references, like the pods left behind when you delete a ReplicaSet. When you delete an object, you can control whether Kubernetes deletes the object's dependents automatically, in a process called cascading deletion.
 
-## [5.4. Check and update Deployment if necessary](https://github.com/nakamasato/sample-controller/commit/f2916efb4981d6d837f07a5844c021e0cb8e6dcb)
+## [5.4. Check and update Deployment if necessary](https://github.com/nakamasato/sample-controller/commit/10a8a9465946a7f52bf85c93a10d9f6b360aa936)
 
 ### 5.4.1. Overview
 
@@ -759,7 +759,7 @@ What needs to be done:
     kubectl delete deploy foo-sample
     ```
 
-## [5.5. Update Foo status](https://github.com/nakamasato/sample-controller/commit/76226c87c0d54ca1df219e3287cf1085df45ba37)
+## [5.5. Update Foo status](https://github.com/nakamasato/sample-controller/commit/482148b52626126959fc86a4910936e376035fa4)
 
 ### 5.5.1. Overview
 
@@ -845,7 +845,7 @@ What needs to be done:
     ```
     kubectl delete -f config/sample/foo.yaml
     ```
-## [5.6. Capture the update of Deployment](https://github.com/nakamasato/sample-controller/commit/a573a62b3ffa37d10b028307464ed12a93ff5ca2)
+## [5.6. Capture the update of Deployment](https://github.com/nakamasato/sample-controller/commit/6b6b095167cf495e89389dc453903e92dd899832)
 
 ### 5.6.1. Overview
 
@@ -952,7 +952,7 @@ In the previous section, `status.availableReplicas` is not updated immediately. 
     kubectl delete -f config/sample/foo.yaml
     ```
 
-## [5.7. Create events for Foo resource](https://github.com/nakamasato/sample-controller/commit/d91161fee71ad3cdd4de9f86c2c4ec9d84fef7d6)
+## [5.7. Create events for Foo resource](https://github.com/nakamasato/sample-controller/commit/ec6cd772c588198c4f77358a582ccaa42a6a12c0)
 
 ### 5.7.1. Overview
 
