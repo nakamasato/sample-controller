@@ -1,71 +1,165 @@
 ---
 title: '4. Checkpoint'
-date: 2022-07-26T08:53:12+0900
+date: 2022-08-02T05:55:14+0900
 draft: false
 weight: 6
 summary: Check the behavior at this point.
 ---
 
-## [4. Checkpoint: Check custom resource and codes](https://github.com/nakamasato/sample-controller/commit/60900b430119759def40c391b6e1e181d60af1a0)
+## [4. Checkpoint: Check custom resource and codes](https://github.com/nakamasato/sample-controller/commit/35eecdc0329333bae80a2213523ae730c3e9aafb)
 
-What to check:
-- [x] Create CRD
-- [x] Create CR
-- [x] Read the CR from `sample-controller`
+### 4.1. Overview
 
-Steps:
+![](overview.drawio.svg)
 
-1. Create `main.go` to retrieve custom resource `Foo`.
+1. Create `CustomResourceDefinition` `foos.example.com`.
+1. Create `Foo` object.
+1. Read the `Foo` object from `main.go`.
 
-    <details><summary>main.go</summary>
+### 4.2. Implement
+
+1. Create main.go.
 
     ```go
     package main
 
-    import (
-        "context"
-        "flag"
-        "path/filepath"
-
-        "k8s.io/client-go/tools/clientcmd"
-        "k8s.io/client-go/util/homedir"
-        "k8s.io/klog/v2"
-
-        clientset "github.com/nakamasato/sample-controller/pkg/generated/clientset/versioned"
-        metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-    )
-
     func main() {
-        klog.InitFlags(nil)
-        var kubeconfig *string
 
-        if home := homedir.HomeDir(); home != "" {
-            kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional)")
-        } else {
-            kubeconfig = flag.String("kubeconfig", "", "absolute path to kubeconfig file")
-        }
-        flag.Parse()
-
-        config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
-        if err != nil {
-            klog.Fatalf("Error building kubeconfig: %s", err.Error())
-        }
-
-        exampleClient, err := clientset.NewForConfig(config)
-        if err != nil {
-            klog.Fatalf("Error building kubernetes clientset: %s", err.Error())
-        }
-        klog.Info(exampleClient)
-
-        foos, err := exampleClient.ExampleV1alpha1().Foos("").List(context.Background(), metav1.ListOptions{})
-        if err != nil {
-            klog.Fatalf("listing foos %s %s", err.Error())
-        }
-        klog.Infof("length of foos is %d", len(foos.Items))
     }
     ```
 
-    </details>
+1. Init [k8s.io/klog/v2](https://pkg.go.dev/k8s.io/klog/v2)
+    ```go
+    import (
+        "k8s.io/klog/v2"
+    )
+    ```
+
+    ```go
+    klog.InitFlags(nil)
+    ```
+
+1. Set `kubeconfig` from [flag](https://pkg.go.dev/flag).
+
+    If home is detected, use `~/.kube/config` as default, otherwise, `-kubeconfig` argument is required.
+
+    ```go
+    import (
+        "flag"
+        "path/filepath"
+        ...
+        "k8s.io/client-go/util/homedir"
+    )
+    ```
+
+    ```go
+    var kubeconfig *string
+    if home := homedir.HomeDir(); home != "" {
+        kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional)")
+    } else {
+        kubeconfig = flag.String("kubeconfig", "", "absolute path to kubeconfig file")
+    }
+    flag.Parse()
+    ```
+
+1. Set config for Kubernetes client with [client-go/tools/clientcmd](https://pkg.go.dev/k8s.io/client-go/tools/clientcmd)
+
+    config is *[restclient.Config](https://pkg.go.dev/k8s.io/client-go@v0.24.3/rest#Config)
+
+    ```go
+    import (
+        ...
+        "k8s.io/client-go/tools/clientcmd"
+    )
+    ```
+
+    ```go
+    config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
+    if err != nil {
+        klog.Fatalf("Error building kubeconfig: %s", err.Error())
+    }
+    ```
+
+1. Initialize clientset for our custom resource.
+
+    ```go
+    import (
+        clientset "github.com/nakamasato/sample-controller/pkg/generated/clientset/versioned"
+    )
+    ```
+
+    ```go
+    exampleClient, err := clientset.NewForConfig(config)
+    if err != nil {
+        klog.Fatalf("Error building example clientset: %s", err.Error())
+    }
+    ```
+
+1. List the custom resource `Foo`.
+
+    ```go
+    import (
+        "context"
+        metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+    )
+    ```
+
+    ```go
+    foos, err := exampleClient.ExampleV1alpha1().Foos("").List(context.Background(), metav1.ListOptions{})
+    if err != nil {
+        klog.Fatalf("listing foos %s %s", err.Error())
+    }
+    klog.Infof("length of foos is %d", len(foos.Items))
+    ```
+
+Final `main.go`:
+
+```go
+package main
+
+import (
+    "context"
+    "flag"
+    "path/filepath"
+
+    "k8s.io/client-go/tools/clientcmd"
+    "k8s.io/client-go/util/homedir"
+    "k8s.io/klog/v2"
+
+    clientset "github.com/nakamasato/sample-controller/pkg/generated/clientset/versioned"
+    metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
+func main() {
+    klog.InitFlags(nil)
+
+    var kubeconfig *string
+    if home := homedir.HomeDir(); home != "" {
+        kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional)")
+    } else {
+        kubeconfig = flag.String("kubeconfig", "", "absolute path to kubeconfig file")
+    }
+    flag.Parse()
+
+    config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
+    if err != nil {
+        klog.Fatalf("Error building kubeconfig: %s", err.Error())
+    }
+
+    exampleClient, err := clientset.NewForConfig(config)
+    if err != nil {
+        klog.Fatalf("Error building example clientset: %s", err.Error())
+    }
+
+    foos, err := exampleClient.ExampleV1alpha1().Foos("").List(context.Background(), metav1.ListOptions{})
+    if err != nil {
+        klog.Fatalf("listing foos %s %s", err.Error())
+    }
+    klog.Infof("length of foos is %d", len(foos.Items))
+}
+```
+
+### 4.3. Run and check
 
 1. Build `sample-controller`
 
@@ -74,52 +168,48 @@ Steps:
     go build
     ```
 
-1. Test `sample-controller` (`main.go`).
+1. Register the CRD.
 
-    1. Register the CRD.
+    ```
+    kubectl apply -f config/crd/foos.yaml
+    ```
+1. Run sample-controller.
 
-        ```
-        kubectl apply -f config/crd/foos.yaml
-        ```
-    1. Run sample-controller.
+    ```
+    ./sample-controller
+    ```
 
-        ```
-        ./sample-controller
-        ```
+    Result: no `Foo` exists
 
-        Result: no `Foo` exists
+    ```
+    length of foos is 0
+    ```
 
-        ```
-        &{0xc000498d20 0xc00048c480}
-        length of foos is 0
-        ```
+1. Create sample foo (custom resource) with `config/sample/foo.yaml`.
 
-    1. Create sample foo (custom resource) with `config/sample/foo.yaml`.
+    ```yaml
+    apiVersion: example.com/v1alpha1
+    kind: Foo
+    metadata:
+        name: foo-sample
+    spec:
+        deploymentName: foo-sample
+        replicas: 1
+    ```
 
-        ```yaml
-        apiVersion: example.com/v1alpha1
-        kind: Foo
-        metadata:
-          name: foo-sample
-        spec:
-          deploymentName: foo-sample
-          replicas: 1
-        ```
+    ```
+    kubectl apply -f config/sample/foo.yaml
+    ```
 
-        ```
-        kubectl apply -f config/sample/foo.yaml
-        ```
+1. Run the controller again.
 
-    1. Run the controller again.
+    ```
+    ./sample-controller
+    length of foos is 1
+    ```
 
-        ```
-        ./sample-controller
-        &{0xc000496d20 0xc00048a480}
-        length of foos is 1
-        ```
+1. Clean up Foo (custom resource).
 
-    1. Clean up foo (custom resource).
-
-        ```
-        kubectl delete -f config/sample/foo.yaml
-        ```
+    ```
+    kubectl delete -f config/sample/foo.yaml
+    ```

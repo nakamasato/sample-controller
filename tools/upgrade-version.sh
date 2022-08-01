@@ -146,6 +146,8 @@ EOF
 gsed -i $'/^\/\/ FooList is a list of Foo resources$/{e cat tmpfile\n}' $FOO_TYPES_FILE # add before
 
 "${codeGeneratorDir}"/generate-groups.sh all ${MODULE_NAME}/pkg/generated ${MODULE_NAME}/pkg/apis example.com:v1alpha1 --go-header-file "${codeGeneratorDir}"/hack/boilerplate.go.txt --trim-path-prefix $MODULE_NAME
+go mod tidy
+go vet ./...
 TITLE_AND_MESSAGE="2. Generate codes"
 git add pkg && git commit -m "$TITLE_AND_MESSAGE"
 commit_hash=$(git rev-parse HEAD)
@@ -221,8 +223,8 @@ import (
 
 func main() {
     klog.InitFlags(nil)
-    var kubeconfig *string
 
+    var kubeconfig *string
     if home := homedir.HomeDir(); home != "" {
         kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional)")
     } else {
@@ -237,9 +239,8 @@ func main() {
 
     clientset, err := client.NewForConfig(config)
     if err != nil {
-        klog.Fatalf("Error building kubernetes clientset: %s", err.Error())
+        klog.Fatalf("Error building example clientset: %s", err.Error())
     }
-    klog.Info(clientset)
 
     foos, err := clientset.ExampleV1alpha1().Foos("").List(context.Background(), metav1.ListOptions{})
     if err != nil {
@@ -250,6 +251,7 @@ func main() {
 
 EOF
 go mod tidy
+go vet ./...
 go fmt ./...
 
 cat <<EOF >> config/sample/foo.yaml
@@ -302,19 +304,13 @@ type Controller struct {
 	// sampleclientset is a clientset for our own API group
 	sampleclientset clientset.Interface
 
-	foosLister listers.FooLister    // lister for foo
 	foosSynced cache.InformerSynced // cache is synced for foo
-
-	// queue
-	workqueue workqueue.RateLimitingInterface
 }
 
 func NewController(sampleclientset clientset.Interface, fooInformer informers.FooInformer) *Controller {
 	controller := &Controller{
 		sampleclientset: sampleclientset,
 		foosSynced:      fooInformer.Informer().HasSynced,
-		foosLister:      fooInformer.Lister(),
-		workqueue:       workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "foo"),
 	}
 
 	fooInformer.Informer().AddEventHandler(
@@ -327,7 +323,6 @@ func NewController(sampleclientset clientset.Interface, fooInformer informers.Fo
 }
 
 func (c *Controller) Run(stopCh chan struct{}) error {
-	defer c.workqueue.ShutDown()
     if ok := cache.WaitForCacheSync(stopCh, c.foosSynced); !ok {
         klog.Info("cache is not synced")
     }
@@ -348,12 +343,10 @@ func (c *Controller) processNextItem() bool {
 
 func (c *Controller) handleAdd(obj interface{}) {
 	klog.Info("handleAdd was called")
-	c.workqueue.Add(obj)
 }
 
 func (c *Controller) handleDelete(obj interface{}) {
 	klog.Info("handleDelete was called")
-	c.workqueue.Add(obj)
 }
 
 EOF
@@ -415,7 +408,27 @@ gsed -i "s#\[$TITLE_AND_MESSAGE\].*#[$TITLE_AND_MESSAGE]($REPO_URL/commit/$commi
 
 # 5.2. Fetch Foo object
 
-gsed -i 's/workqueue\.Add/enqueueFoo/g' $FOO_CONTROLLER_FILE
+# add foosLister and workqueue to Controller
+cat <<EOF > tmpfile
+
+// queue
+workqueue workqueue.RateLimitingInterface
+EOF
+gsed -i '/foosSynced cache.InformerSynced/r tmpfile' $FOO_CONTROLLER_FILE # add after
+gsed -i '/foosSynced cache.InformerSynced/i foosLister listers.FooLister' $FOO_CONTROLLER_FILE # add before
+
+# init controller
+cat <<EOF > tmpfile
+		foosLister:      fooInformer.Lister(),
+		workqueue:       workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "foo"),
+EOF
+gsed -i '/foosSynced:.*fooInformer.Informer().HasSynced,/r tmpfile' $FOO_CONTROLLER_FILE # add after
+
+# defer workqueue
+gsed -i '/func (c \*Controller) Run(stopCh chan struct{}) error {/a defer c.workqueue.ShutDown()' $FOO_CONTROLLER_FILE # add after
+
+# define enqueueFoo
+gsed -i '/.*klog.Info("handle.* was called")/a c.enqueueFoo(obj)' $FOO_CONTROLLER_FILE # add after
 cat<<EOF >> $FOO_CONTROLLER_FILE
 
 // enqueueFoo takes a Foo resource and converts it into a namespace/name
@@ -486,12 +499,13 @@ func (c *Controller) processNextItem() bool {
 EOF
 gsed -i $'/^func.*handleAdd(obj interface{}) {$/{e cat tmpfile\n}' $FOO_CONTROLLER_FILE # add before
 go fmt ./...
+go vet ./...
 TITLE_AND_MESSAGE="5.2. Fetch Foo object"
 git add $MAIN_GO_FILE $FOO_CONTROLLER_FILE && git commit -m "$TITLE_AND_MESSAGE"
 commit_hash=$(git rev-parse HEAD)
 gsed -i "s#\[$TITLE_AND_MESSAGE\].*#[$TITLE_AND_MESSAGE]($REPO_URL/commit/$commit_hash)#" docs/content/docs/05-implement-reconciliation-loop/index.md
 
-# 5.3. Enable to Create/Delete Deployment for Foo resource
+# 5.3. Create/Delete Deployment for Foo resource
 
 cat <<EOF > tmpfile
     appsinformers "k8s.io/client-go/informers/apps/v1"
@@ -670,7 +684,8 @@ EOF
 gsed -i '/clientset "github.com/r tmpfile' $FOO_CONTROLLER_FILE # add after
 
 go fmt ./...
-TITLE_AND_MESSAGE="5.3. Enable to Create/Delete Deployment for Foo resource"
+go vet ./...
+TITLE_AND_MESSAGE="5.3. Create/Delete Deployment for Foo resource"
 git add $MAIN_GO_FILE $FOO_CONTROLLER_FILE && git commit -m "$TITLE_AND_MESSAGE"
 commit_hash=$(git rev-parse HEAD)
 gsed -i "s#\[$TITLE_AND_MESSAGE\].*#[$TITLE_AND_MESSAGE]($REPO_URL/commit/$commit_hash)#" docs/content/docs/05-implement-reconciliation-loop/index.md
@@ -724,6 +739,7 @@ EOF
 gsed -i 's/.*AddFunc: controller.handleAdd,/cat tmpfile/e' $FOO_CONTROLLER_FILE # replace with tmpfile
 gsed -i "/^func.*handleAdd(obj interface{}) {$/,/^$/d" $FOO_CONTROLLER_FILE # delete handleAdd function
 go fmt ./...
+go vet ./...
 TITLE_AND_MESSAGE="5.4. Check and update Deployment if necessary"
 git add $MAIN_GO_FILE $FOO_CONTROLLER_FILE && git commit -m "$TITLE_AND_MESSAGE"
 commit_hash=$(git rev-parse HEAD)
@@ -842,6 +858,7 @@ cat <<EOF > tmpfile
 EOF
 gsed -i $'/.*return controller/{e cat tmpfile\n}' $FOO_CONTROLLER_FILE # add before
 go fmt ./...
+go vet ./...
 TITLE_AND_MESSAGE="5.6. Capture the update of Deployment"
 git add $FOO_CONTROLLER_FILE && git commit -m "$TITLE_AND_MESSAGE"
 commit_hash=$(git rev-parse HEAD)
@@ -912,6 +929,7 @@ gsed -i '/err = c.updateFooStatus(foo, deployment)/,/^}/c \
 	return nil\
 }' $FOO_CONTROLLER_FILE
 go fmt ./...
+go vet ./...
 TITLE_AND_MESSAGE="5.7. Create events for Foo resource"
 git add go.mod go.sum $FOO_CONTROLLER_FILE && git commit -m "$TITLE_AND_MESSAGE"
 commit_hash=$(git rev-parse HEAD)

@@ -53,7 +53,7 @@ type Controller struct {
 	deploymentsLister appslisters.DeploymentLister
 	deploymentsSynced cache.InformerSynced
 
-	foosLister listers.FooLister    // lister for foo
+	foosLister listers.FooLister
 	foosSynced cache.InformerSynced // cache is synced for foo
 
 	// queue

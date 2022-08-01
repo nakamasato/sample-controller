@@ -1,16 +1,37 @@
 ---
 title: '5. Implement reconciliation'
-date: 2022-07-26T08:53:12+0900
+date: 2022-08-02T05:55:14+0900
 draft: false
 weight: 7
 summary: Implement controller.
 ---
 
-## [5.1. Create Controller](https://github.com/nakamasato/sample-controller/commit/5a1d00d85508e44e8fe9d7baf0266c12c7313ab9)
+## [5.1. Create Controller](https://github.com/nakamasato/sample-controller/commit/e859b0dd1b9ecc6ec083c576f98d52cf2ebd7548)
 
-### 5.1.1. Create controller.
 
-<details><summary>controller.go</summary>
+### 5.1.1. Overview
+
+![](overview-1.drawio.svg)
+
+### 5.1.1. Implement
+
+1. Define `Controller` struct with `sampleclientset` and `foosSynced`.
+    ```go
+    type Controller struct {
+        sampleclientset clientset.Interface
+        fooSynced cache.InformerSynced
+    }
+    ```
+1. Define `NewController` function
+    1. Create `Controller` with the arguments `sampleclientset` and `fooInformer`, which will be passed in `main.go`.
+    1. Add event handlers for `addFunc` and `DeleteFunc` to the informer.
+    1. Return the controller.
+1. Define `Run`, which will be called in `main.go`.
+    1. Wait until the cache is synced.
+    1. Run `c.worker` repeatedly every second until the stop channel is closed.
+1. Define `worker`: just call `processNextItem`.
+1. Define `processNextItem`: always return true for now.
+
 
 ```go
 package main
@@ -32,19 +53,13 @@ type Controller struct {
     // sampleclientset is a clientset for our own API group
     sampleclientset clientset.Interface
 
-    foosLister listers.FooLister    // lister for foo
     foosSynced cache.InformerSynced // cache is synced for foo
-
-    // queue
-    workqueue workqueue.RateLimitingInterface
 }
 
 func NewController(sampleclientset clientset.Interface, fooInformer informers.FooInformer) *Controller {
     controller := &Controller{
         sampleclientset: sampleclientset,
         foosSynced:      fooInformer.Informer().HasSynced,
-        foosLister:      fooInformer.Lister(),
-        workqueue:       workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "foo"),
     }
 
     fooInformer.Informer().AddEventHandler(
@@ -57,7 +72,6 @@ func NewController(sampleclientset clientset.Interface, fooInformer informers.Fo
 }
 
 func (c *Controller) Run(stopCh chan struct{}) error {
-    defer c.workqueue.ShutDown()
     if ok := cache.WaitForCacheSync(stopCh, c.foosSynced); !ok {
         klog.Info("cache is not synced")
     }
@@ -78,30 +92,14 @@ func (c *Controller) processNextItem() bool {
 
 func (c *Controller) handleAdd(obj interface{}) {
     klog.Info("handleAdd was called")
-    c.workqueue.Add(obj)
 }
 
 func (c *Controller) handleDelete(obj interface{}) {
     klog.Info("handleDelete was called")
-    c.workqueue.Add(obj)
 }
 ```
 
-</details>
-
-What's inside the controller:
-1. Define `Controller` struct with `sampleclientset`, `foosLister`, `foosSynced`, and `workqueue`.
-1. Define `NewController` function
-    1. Create `Controller` with the arguments `sampleclientset` and `fooInformer`, which will be passed in `main.go`.
-    1. Add event handlers for `addFunc` and `DeleteFunc` to the informer.
-    1. Return the controller.
-1. Define `Run`, which will be called in `main.go`.
-    1. Wait until the cache is synced.
-    1. Run `c.worker` repeatedly every second until the stop channel is closed.
-1. Define `worker`: just call `processNextItem`.
-1. Define `processNextItem`: always return true for now.
-
-### 5.1.2. Update `main.go` to initialize a controller and run it.
+main.go:
 
 ```diff
  import (
@@ -121,7 +119,7 @@ What's inside the controller:
         if err != nil {
                 klog.Fatalf("getting client set %s\n", err.Error())
         }
--       fmt.Println(exampleClient)
+-       klog.Info(exampleClient)
 -       foos, err := exampleClient.ExampleV1alpha1().Foos("").List(context.Background(), metav1.ListOptions{})
 -       if err != nil {
 -               klog.Fatalf("listing foos %s\n", err.Error())
@@ -136,6 +134,7 @@ What's inside the controller:
  }
 ```
 At the line of `exampleInformerFactory := informers.NewSharedInformerFactory(exampleClient, time.Second*30)`, the second argument specifies ***ResyncPeriod***, which defines the interval of ***resync*** (*The resync operation consists of delivering to the handler an update notification for every object in the informer's local cache*). For more detail, please read [NewSharedIndexInformer](https://pkg.go.dev/k8s.io/client-go@v0.23.1/tools/cache#NewSharedIndexInformer)
+
 <details><summary>main.go</summary>
 
 ```go
@@ -172,7 +171,7 @@ func main() {
 
     exampleClient, err := clientset.NewForConfig(config)
     if err != nil {
-        klog.Fatalf("Error building kubernetes clientset: %s", err.Error())
+        klog.Fatalf("Error building example clientset: %s", err.Error())
     }
 
     exampleInformerFactory := informers.NewSharedInformerFactory(exampleClient, time.Second*30)
@@ -212,16 +211,17 @@ func main() {
     2022/07/18 06:36:40 handleDelete was called
     ```
 
-## [5.2. Fetch foo object](https://github.com/nakamasato/sample-controller/commit/0d9c689f4ecb707e6c160632ad7a397d89f0c5ab)
-
+## [5.2. Fetch Foo object](https://github.com/nakamasato/sample-controller/commit/7fa269e7f5d45f4a02d990f7bf1cca311af2a1d7)
 
 ### 5.2.1. Overview
 
+![](overview-2.drawio.svg)
+
 Implement the following logic:
-1. Get a workqueue item.
-1. Get the key for the item from the cache.
-1. Split the key into namespace and name.
-1. Get the `Foo` resource with namespace and name from the lister.
+1. Add the key for the triggerred object to `workqueue` in `handleAdd` and `handleUpdate`. (e.g. `Foo` -> `<namespace>/<name>`)
+1. Get a `workqueue` item (`<namespace>/<name>`).
+1. Get the `Foo` resource with namespace and name from the `lister`.
+1. Forget the item from `workqueue`.
 
 ### 5.2.2. Implement
 
@@ -334,15 +334,17 @@ Implement the following logic:
     2022/07/18 07:46:49 failed to get foo resource from lister foo.example.com "foo-sample" not found
     ```
 
-## [5.3. Enable to Create/Delete Deployment for Foo resource](https://github.com/nakamasato/sample-controller/commit/e5d16b4938ef18803ec5bc99fd08abdd80e56e96)
+## [5.3. Create/Delete Deployment for Foo resource](https://github.com/nakamasato/sample-controller/commit/eb05309020ec48bc6beccb56282f9ddf53988a94)
 
 ### 5.3.1. Overview
+
+![](overview-3.drawio.svg)
 
 In this section, we'll add a logic to create a `Deployment` for `Foo` resource.
 
 The logic to implement is:
-1. Add clientset, informer and lister for Deployment to `Controller`.
-1. Initialize clientset and informer in main.go and pass them to a Controller when initializing it.
+1. Add `clientset`, `informer` and `lister` for `Deployment` to `Controller`.
+1. Initialize `clientset` and `informer` in `main.go` and pass them to a Controller when initializing it.
 1. In `syncHandler` func, add a logic to create a Deployment if there doesn't exist a Deployment with name `foo.spec.deploymentName` in the same namespace as Foo object.
 1. Set `OwnerReferences` for a new Deployment in `newDeployment` so that the Deployment will be cleaned up when the owner, `Foo` object, is deleted.
 
@@ -370,7 +372,7 @@ The logic to implement is:
     +       deploymentsLister appslisters.DeploymentLister
     +       deploymentsSynced cache.InformerSynced
     +
-            foosLister listers.FooLister    // lister for foo
+            foosLister listers.FooLister
             foosSynced cache.InformerSynced // cache is synced for foo
 
     @@ -24,12 +39,19 @@ type Controller struct {
@@ -607,9 +609,11 @@ The logic to implement is:
 
     > Kubernetes checks for and deletes objects that no longer have owner references, like the pods left behind when you delete a ReplicaSet. When you delete an object, you can control whether Kubernetes deletes the object's dependents automatically, in a process called cascading deletion.
 
-## [5.4. Check and update Deployment if necessary](https://github.com/nakamasato/sample-controller/commit/5670181b3f65a54454709b9797759e483b0ffcf8)
+## [5.4. Check and update Deployment if necessary](https://github.com/nakamasato/sample-controller/commit/d080bdc0827d1223929807d6b8fd613ab3f22fb1)
 
 ### 5.4.1. Overview
+
+![](overview-4.drawio.svg)
 
 What needs to be done:
 - In `syncHandler`
@@ -750,9 +754,11 @@ What needs to be done:
     kubectl delete deploy foo-sample
     ```
 
-## [5.5. Update Foo status](https://github.com/nakamasato/sample-controller/commit/73a1127743481e83c82cd8bd24275fb01e3b3046)
+## [5.5. Update Foo status](https://github.com/nakamasato/sample-controller/commit/ddec01267b341815b1c8f4dfefad82a4399e9e0b)
 
 ### 5.5.1. Overview
+
+![](overview-5.drawio.svg)
 
 1. Enable `status` subresource in `CustomResourceDefinition`.
 1. Store Deployment's `availableReplicas` in Foo object's status with `UpdateStatus` function.
@@ -834,9 +840,11 @@ What needs to be done:
     ```
     kubectl delete -f config/sample/foo.yaml
     ```
-## [5.6. Capture the update of Deployment](https://github.com/nakamasato/sample-controller/commit/a4e8c51a786ac40165989a48078775e62033443f)
+## [5.6. Capture the update of Deployment](https://github.com/nakamasato/sample-controller/commit/20e4e381154a28f7fcc8ea908ea89129c86db7fc)
 
 ### 5.6.1. Overview
+
+![](overview-6.drawio.svg)
 
 In the previous section, `status.availableReplicas` is not updated immediately. This is because sample-contrller just monitors our custom resource `Foo`. In this section, we'll enable to capture changes of Deployments controlled by `Foo`.
 
@@ -939,7 +947,7 @@ In the previous section, `status.availableReplicas` is not updated immediately. 
     kubectl delete -f config/sample/foo.yaml
     ```
 
-## [5.7. Create events for Foo resource](https://github.com/nakamasato/sample-controller/commit/aeef86743465c68d24633bc9dda7b96d9437e1e8)
+## [5.7. Create events for Foo resource](https://github.com/nakamasato/sample-controller/commit/0fe29e3c0b621ceb30ab364a78a99de0b3316009)
 
 ### 5.7.1. Overview
 
