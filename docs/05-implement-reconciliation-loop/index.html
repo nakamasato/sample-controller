@@ -84,9 +84,29 @@
 <div class="col-12 col-md-9">
 <h1 class=title>5. Implement reconciliation</h1>
 <div class=content>
-<h2 id=51-create-controllerhttpsgithubcomnakamasatosample-controllercommit11857a6c335c86fdf3bd62408e7284f0095bbc1b><a href=https://github.com/nakamasato/sample-controller/commit/11857a6c335c86fdf3bd62408e7284f0095bbc1b>5.1. Create Controller</a></h2>
+<h2 id=51-create-controllerhttpsgithubcomnakamasatosample-controllercommita64324ddbab0b0cb3d6d4cc989a7d91c285a8eea><a href=https://github.com/nakamasato/sample-controller/commit/a64324ddbab0b0cb3d6d4cc989a7d91c285a8eea>5.1. Create Controller</a></h2>
 <h3 id=511-overview>5.1.1. Overview</h3>
-<div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback></code></pre></div><h3 id=511-create-controller>5.1.1. Create controller.</h3>
+<p><img src=overview-1.drawio.svg alt></p>
+<h3 id=511-implement>5.1.1. Implement</h3>
+<ol>
+<li>Define <code>Controller</code> struct with <code>sampleclientset</code> and <code>foosSynced</code>.
+<div class=highlight><pre tabindex=0 class=chroma><code class=language-go data-lang=go></code></pre></div></li>
+<li>Define <code>NewController</code> function
+<ol>
+<li>Create <code>Controller</code> with the arguments <code>sampleclientset</code> and <code>fooInformer</code>, which will be passed in <code>main.go</code>.</li>
+<li>Add event handlers for <code>addFunc</code> and <code>DeleteFunc</code> to the informer.</li>
+<li>Return the controller.</li>
+</ol>
+</li>
+<li>Define <code>Run</code>, which will be called in <code>main.go</code>.
+<ol>
+<li>Wait until the cache is synced.</li>
+<li>Run <code>c.worker</code> repeatedly every second until the stop channel is closed.</li>
+</ol>
+</li>
+<li>Define <code>worker</code>: just call <code>processNextItem</code>.</li>
+<li>Define <code>processNextItem</code>: always return true for now.</li>
+</ol>
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kn>package</span> <span class=nx>main</span>
 
 <span class=kn>import</span> <span class=p>(</span>
@@ -106,19 +126,13 @@
     <span class=c1>// sampleclientset is a clientset for our own API group
 </span><span class=c1></span>    <span class=nx>sampleclientset</span> <span class=nx>clientset</span><span class=p>.</span><span class=nx>Interface</span>
 
-    <span class=nx>foosLister</span> <span class=nx>listers</span><span class=p>.</span><span class=nx>FooLister</span>    <span class=c1>// lister for foo
-</span><span class=c1></span>    <span class=nx>foosSynced</span> <span class=nx>cache</span><span class=p>.</span><span class=nx>InformerSynced</span> <span class=c1>// cache is synced for foo
-</span><span class=c1></span>
-    <span class=c1>// queue
-</span><span class=c1></span>    <span class=nx>workqueue</span> <span class=nx>workqueue</span><span class=p>.</span><span class=nx>RateLimitingInterface</span>
-<span class=p>}</span>
+    <span class=nx>foosSynced</span> <span class=nx>cache</span><span class=p>.</span><span class=nx>InformerSynced</span> <span class=c1>// cache is synced for foo
+</span><span class=c1></span><span class=p>}</span>
 
 <span class=kd>func</span> <span class=nf>NewController</span><span class=p>(</span><span class=nx>sampleclientset</span> <span class=nx>clientset</span><span class=p>.</span><span class=nx>Interface</span><span class=p>,</span> <span class=nx>fooInformer</span> <span class=nx>informers</span><span class=p>.</span><span class=nx>FooInformer</span><span class=p>)</span> <span class=o>*</span><span class=nx>Controller</span> <span class=p>{</span>
     <span class=nx>controller</span> <span class=o>:=</span> <span class=o>&amp;</span><span class=nx>Controller</span><span class=p>{</span>
         <span class=nx>sampleclientset</span><span class=p>:</span> <span class=nx>sampleclientset</span><span class=p>,</span>
         <span class=nx>foosSynced</span><span class=p>:</span>      <span class=nx>fooInformer</span><span class=p>.</span><span class=nf>Informer</span><span class=p>().</span><span class=nx>HasSynced</span><span class=p>,</span>
-        <span class=nx>foosLister</span><span class=p>:</span>      <span class=nx>fooInformer</span><span class=p>.</span><span class=nf>Lister</span><span class=p>(),</span>
-        <span class=nx>workqueue</span><span class=p>:</span>       <span class=nx>workqueue</span><span class=p>.</span><span class=nf>NewNamedRateLimitingQueue</span><span class=p>(</span><span class=nx>workqueue</span><span class=p>.</span><span class=nf>DefaultControllerRateLimiter</span><span class=p>(),</span> <span class=s>&#34;foo&#34;</span><span class=p>),</span>
     <span class=p>}</span>
 
     <span class=nx>fooInformer</span><span class=p>.</span><span class=nf>Informer</span><span class=p>().</span><span class=nf>AddEventHandler</span><span class=p>(</span>
@@ -131,7 +145,6 @@
 <span class=p>}</span>
 
 <span class=kd>func</span> <span class=p>(</span><span class=nx>c</span> <span class=o>*</span><span class=nx>Controller</span><span class=p>)</span> <span class=nf>Run</span><span class=p>(</span><span class=nx>stopCh</span> <span class=kd>chan</span> <span class=kd>struct</span><span class=p>{})</span> <span class=kt>error</span> <span class=p>{</span>
-    <span class=k>defer</span> <span class=nx>c</span><span class=p>.</span><span class=nx>workqueue</span><span class=p>.</span><span class=nf>ShutDown</span><span class=p>()</span>
     <span class=k>if</span> <span class=nx>ok</span> <span class=o>:=</span> <span class=nx>cache</span><span class=p>.</span><span class=nf>WaitForCacheSync</span><span class=p>(</span><span class=nx>stopCh</span><span class=p>,</span> <span class=nx>c</span><span class=p>.</span><span class=nx>foosSynced</span><span class=p>);</span> <span class=p>!</span><span class=nx>ok</span> <span class=p>{</span>
         <span class=nx>klog</span><span class=p>.</span><span class=nf>Info</span><span class=p>(</span><span class=s>&#34;cache is not synced&#34;</span><span class=p>)</span>
     <span class=p>}</span>
@@ -152,34 +165,12 @@
 
 <span class=kd>func</span> <span class=p>(</span><span class=nx>c</span> <span class=o>*</span><span class=nx>Controller</span><span class=p>)</span> <span class=nf>handleAdd</span><span class=p>(</span><span class=nx>obj</span> <span class=kd>interface</span><span class=p>{})</span> <span class=p>{</span>
     <span class=nx>klog</span><span class=p>.</span><span class=nf>Info</span><span class=p>(</span><span class=s>&#34;handleAdd was called&#34;</span><span class=p>)</span>
-    <span class=nx>c</span><span class=p>.</span><span class=nx>workqueue</span><span class=p>.</span><span class=nf>Add</span><span class=p>(</span><span class=nx>obj</span><span class=p>)</span>
 <span class=p>}</span>
 
 <span class=kd>func</span> <span class=p>(</span><span class=nx>c</span> <span class=o>*</span><span class=nx>Controller</span><span class=p>)</span> <span class=nf>handleDelete</span><span class=p>(</span><span class=nx>obj</span> <span class=kd>interface</span><span class=p>{})</span> <span class=p>{</span>
     <span class=nx>klog</span><span class=p>.</span><span class=nf>Info</span><span class=p>(</span><span class=s>&#34;handleDelete was called&#34;</span><span class=p>)</span>
-    <span class=nx>c</span><span class=p>.</span><span class=nx>workqueue</span><span class=p>.</span><span class=nf>Add</span><span class=p>(</span><span class=nx>obj</span><span class=p>)</span>
 <span class=p>}</span>
-</code></pre></div>
-<p>What&rsquo;s inside the controller:</p>
-<ol>
-<li>Define <code>Controller</code> struct with <code>sampleclientset</code>, <code>foosLister</code>, <code>foosSynced</code>, and <code>workqueue</code>.</li>
-<li>Define <code>NewController</code> function
-<ol>
-<li>Create <code>Controller</code> with the arguments <code>sampleclientset</code> and <code>fooInformer</code>, which will be passed in <code>main.go</code>.</li>
-<li>Add event handlers for <code>addFunc</code> and <code>DeleteFunc</code> to the informer.</li>
-<li>Return the controller.</li>
-</ol>
-</li>
-<li>Define <code>Run</code>, which will be called in <code>main.go</code>.
-<ol>
-<li>Wait until the cache is synced.</li>
-<li>Run <code>c.worker</code> repeatedly every second until the stop channel is closed.</li>
-</ol>
-</li>
-<li>Define <code>worker</code>: just call <code>processNextItem</code>.</li>
-<li>Define <code>processNextItem</code>: always return true for now.</li>
-</ol>
-<h3 id=512-update-maingo-to-initialize-a-controller-and-run-it>5.1.2. Update <code>main.go</code> to initialize a controller and run it.</h3>
+</code></pre></div><p>main.go:</p>
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-diff data-lang=diff> import (
 <span class=gd>-       &#34;context&#34;
 </span><span class=gd></span>        &#34;flag&#34;
@@ -244,7 +235,7 @@
 
     <span class=nx>exampleClient</span><span class=p>,</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>clientset</span><span class=p>.</span><span class=nf>NewForConfig</span><span class=p>(</span><span class=nx>config</span><span class=p>)</span>
     <span class=k>if</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
-        <span class=nx>klog</span><span class=p>.</span><span class=nf>Fatalf</span><span class=p>(</span><span class=s>&#34;Error building kubernetes clientset: %s&#34;</span><span class=p>,</span> <span class=nx>err</span><span class=p>.</span><span class=nf>Error</span><span class=p>())</span>
+        <span class=nx>klog</span><span class=p>.</span><span class=nf>Fatalf</span><span class=p>(</span><span class=s>&#34;Error building example clientset: %s&#34;</span><span class=p>,</span> <span class=nx>err</span><span class=p>.</span><span class=nf>Error</span><span class=p>())</span>
     <span class=p>}</span>
 
     <span class=nx>exampleInformerFactory</span> <span class=o>:=</span> <span class=nx>informers</span><span class=p>.</span><span class=nf>NewSharedInformerFactory</span><span class=p>(</span><span class=nx>exampleClient</span><span class=p>,</span> <span class=nx>time</span><span class=p>.</span><span class=nx>Second</span><span class=o>*</span><span class=mi>30</span><span class=p>)</span>
@@ -273,14 +264,15 @@
 2022/07/18 06:36:40 handleDelete was called
 </code></pre></div></li>
 </ol>
-<h2 id=52-fetch-foo-objecthttpsgithubcomnakamasatosample-controllercommit0d9c689f4ecb707e6c160632ad7a397d89f0c5ab><a href=https://github.com/nakamasato/sample-controller/commit/0d9c689f4ecb707e6c160632ad7a397d89f0c5ab>5.2. Fetch foo object</a></h2>
+<h2 id=52-fetch-foo-objecthttpsgithubcomnakamasatosample-controllercommit0dfffbd465510c6ad553b9dacfe01e14e0977493><a href=https://github.com/nakamasato/sample-controller/commit/0dfffbd465510c6ad553b9dacfe01e14e0977493>5.2. Fetch Foo object</a></h2>
 <h3 id=521-overview>5.2.1. Overview</h3>
+<p><img src=overview-2.drawio.svg alt></p>
 <p>Implement the following logic:</p>
 <ol>
-<li>Get a workqueue item.</li>
-<li>Get the key for the item from the cache.</li>
-<li>Split the key into namespace and name.</li>
-<li>Get the <code>Foo</code> resource with namespace and name from the lister.</li>
+<li>Add the key for the triggerred object to <code>workqueue</code> in <code>handleAdd</code> and <code>handleUpdate</code>. (e.g. <code>Foo</code> -> <code>&lt;namespace>/&lt;name></code>)</li>
+<li>Get a <code>workqueue</code> item (<code>&lt;namespace>/&lt;name></code>).</li>
+<li>Get the <code>Foo</code> resource with namespace and name from the <code>lister</code>.</li>
+<li>Forget the item from <code>workqueue</code>.</li>
 </ol>
 <h3 id=522-implement>5.2.2. Implement</h3>
 <ol>
@@ -382,13 +374,14 @@
 2022/07/18 07:46:49 failed to get foo resource from lister foo.example.com &#34;foo-sample&#34; not found
 </code></pre></div></li>
 </ol>
-<h2 id=53-enable-to-createdelete-deployment-for-foo-resourcehttpsgithubcomnakamasatosample-controllercommitfdc84eed385446bc61f45f63471417e25f63bda8><a href=https://github.com/nakamasato/sample-controller/commit/fdc84eed385446bc61f45f63471417e25f63bda8>5.3. Enable to Create/Delete Deployment for Foo resource</a></h2>
+<h2 id=53-createdelete-deployment-for-foo-resourcehttpsgithubcomnakamasatosample-controllercommita28360656f09ca0f03f95d158c8e23adc3be2dab><a href=https://github.com/nakamasato/sample-controller/commit/a28360656f09ca0f03f95d158c8e23adc3be2dab>5.3. Create/Delete Deployment for Foo resource</a></h2>
 <h3 id=531-overview>5.3.1. Overview</h3>
+<p><img src=overview-3.drawio.svg alt></p>
 <p>In this section, we&rsquo;ll add a logic to create a <code>Deployment</code> for <code>Foo</code> resource.</p>
 <p>The logic to implement is:</p>
 <ol>
-<li>Add clientset, informer and lister for Deployment to <code>Controller</code>.</li>
-<li>Initialize clientset and informer in main.go and pass them to a Controller when initializing it.</li>
+<li>Add <code>clientset</code>, <code>informer</code> and <code>lister</code> for <code>Deployment</code> to <code>Controller</code>.</li>
+<li>Initialize <code>clientset</code> and <code>informer</code> in <code>main.go</code> and pass them to a Controller when initializing it.</li>
 <li>In <code>syncHandler</code> func, add a logic to create a Deployment if there doesn&rsquo;t exist a Deployment with name <code>foo.spec.deploymentName</code> in the same namespace as Foo object.</li>
 <li>Set <code>OwnerReferences</code> for a new Deployment in <code>newDeployment</code> so that the Deployment will be cleaned up when the owner, <code>Foo</code> object, is deleted.</li>
 </ol>
@@ -414,7 +407,7 @@
 <span class=gi>+       deploymentsLister appslisters.DeploymentLister
 </span><span class=gi>+       deploymentsSynced cache.InformerSynced
 </span><span class=gi>+
-</span><span class=gi></span>        foosLister listers.FooLister    // lister for foo
+</span><span class=gi></span>        foosLister listers.FooLister
         foosSynced cache.InformerSynced // cache is synced for foo
 
 <span class=gu>@@ -24,12 +39,19 @@ type Controller struct {
@@ -629,8 +622,9 @@ No resources found in default namespace.
 </blockquote>
 </li>
 </ol>
-<h2 id=54-check-and-update-deployment-if-necessaryhttpsgithubcomnakamasatosample-controllercommit3c448e019e9c1847bcf1aa6bdc1edb93077880f5><a href=https://github.com/nakamasato/sample-controller/commit/3c448e019e9c1847bcf1aa6bdc1edb93077880f5>5.4. Check and update Deployment if necessary</a></h2>
+<h2 id=54-check-and-update-deployment-if-necessaryhttpsgithubcomnakamasatosample-controllercommit47692b575eb9650fd34894460ee61146709526ee><a href=https://github.com/nakamasato/sample-controller/commit/47692b575eb9650fd34894460ee61146709526ee>5.4. Check and update Deployment if necessary</a></h2>
 <h3 id=541-overview>5.4.1. Overview</h3>
+<p><img src=overview-4.drawio.svg alt></p>
 <p>What needs to be done:</p>
 <ul>
 <li>In <code>syncHandler</code>
@@ -762,8 +756,9 @@ foo-sample   2/2     2            2           3h42m
 kubectl delete deploy foo-sample
 </code></pre></div></li>
 </ol>
-<h2 id=55-update-foo-statushttpsgithubcomnakamasatosample-controllercommit5c3431a9de6bc14592386a50136c9b62ec649dba><a href=https://github.com/nakamasato/sample-controller/commit/5c3431a9de6bc14592386a50136c9b62ec649dba>5.5. Update Foo status</a></h2>
+<h2 id=55-update-foo-statushttpsgithubcomnakamasatosample-controllercommitf2fd5dc38c49a74c944cb2091d0bad274cd3f985><a href=https://github.com/nakamasato/sample-controller/commit/f2fd5dc38c49a74c944cb2091d0bad274cd3f985>5.5. Update Foo status</a></h2>
 <h3 id=551-overview>5.5.1. Overview</h3>
+<p><img src=overview-5.drawio.svg alt></p>
 <ol>
 <li>Enable <code>status</code> subresource in <code>CustomResourceDefinition</code>.</li>
 <li>Store Deployment&rsquo;s <code>availableReplicas</code> in Foo object&rsquo;s status with <code>UpdateStatus</code> function.</li>
@@ -839,8 +834,9 @@ kubectl delete deploy foo-sample
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>kubectl delete -f config/sample/foo.yaml
 </code></pre></div></li>
 </ol>
-<h2 id=56-capture-the-update-of-deploymenthttpsgithubcomnakamasatosample-controllercommit1bf27b82aff2877cb455f781552fc03ff906fd2f><a href=https://github.com/nakamasato/sample-controller/commit/1bf27b82aff2877cb455f781552fc03ff906fd2f>5.6. Capture the update of Deployment</a></h2>
+<h2 id=56-capture-the-update-of-deploymenthttpsgithubcomnakamasatosample-controllercommitef0df27c4b695f0b959c7bab7a08b666245e6b0f><a href=https://github.com/nakamasato/sample-controller/commit/ef0df27c4b695f0b959c7bab7a08b666245e6b0f>5.6. Capture the update of Deployment</a></h2>
 <h3 id=561-overview>5.6.1. Overview</h3>
+<p><img src=overview-6.drawio.svg alt></p>
 <p>In the previous section, <code>status.availableReplicas</code> is not updated immediately. This is because sample-contrller just monitors our custom resource <code>Foo</code>. In this section, we&rsquo;ll enable to capture changes of Deployments controlled by <code>Foo</code>.</p>
 <h3 id=562-implement>5.6.2. Implement</h3>
 <ol>
@@ -932,7 +928,7 @@ kubectl delete deploy foo-sample
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>kubectl delete -f config/sample/foo.yaml
 </code></pre></div></li>
 </ol>
-<h2 id=57-create-events-for-foo-resourcehttpsgithubcomnakamasatosample-controllercommit782fc219a3f96ea9cb5dc09df55cb32a2f107814><a href=https://github.com/nakamasato/sample-controller/commit/782fc219a3f96ea9cb5dc09df55cb32a2f107814>5.7. Create events for Foo resource</a></h2>
+<h2 id=57-create-events-for-foo-resourcehttpsgithubcomnakamasatosample-controllercommit314072437de8a3ba0afd1c87623ddde3331f3e96><a href=https://github.com/nakamasato/sample-controller/commit/314072437de8a3ba0afd1c87623ddde3331f3e96>5.7. Create events for Foo resource</a></h2>
 <h3 id=571-overview>5.7.1. Overview</h3>
 <ol>
 <li>Add <code>record.EventRecorder</code> to <code>Controller</code>.</li>

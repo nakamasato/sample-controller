@@ -84,14 +84,14 @@
 <div class="col-12 col-md-9">
 <h1 class=title>4. Checkpoint</h1>
 <div class=content>
-<h2 id=4-checkpoint-check-custom-resource-and-codeshttpsgithubcomnakamasatosample-controllercommit48454d52dbacd904282c9aef7962c0bacd25d123><a href=https://github.com/nakamasato/sample-controller/commit/48454d52dbacd904282c9aef7962c0bacd25d123>4. Checkpoint: Check custom resource and codes</a></h2>
+<h2 id=4-checkpoint-check-custom-resource-and-codeshttpsgithubcomnakamasatosample-controllercommit62f778d40959b25bb5bfa1f8f9f2e441b77e8f5d><a href=https://github.com/nakamasato/sample-controller/commit/62f778d40959b25bb5bfa1f8f9f2e441b77e8f5d>4. Checkpoint: Check custom resource and codes</a></h2>
 <h3 id=41-overview>4.1. Overview</h3>
 <p><img src=overview.drawio.svg alt></p>
-<ul>
-<li><input checked disabled type=checkbox> Create <code>CustomResourceDefinition</code> <code>foos.example.com</code>.</li>
-<li><input checked disabled type=checkbox> Create <code>Foo</code> object.</li>
-<li><input checked disabled type=checkbox> Read the <code>Foo</code> object from <code>main.go</code>.</li>
-</ul>
+<ol>
+<li>Create <code>CustomResourceDefinition</code> <code>foos.example.com</code>.</li>
+<li>Create <code>Foo</code> object.</li>
+<li>Read the <code>Foo</code> object from <code>main.go</code>.</li>
+</ol>
 <h3 id=42-implement>4.2. Implement</h3>
 <ol>
 <li>
@@ -151,6 +151,7 @@
 <li>
 <p>List the custom resource <code>Foo</code>.</p>
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kn>import</span> <span class=p>(</span>
+    <span class=s>&#34;context&#34;</span>
     <span class=nx>metav1</span> <span class=s>&#34;k8s.io/apimachinery/pkg/apis/meta/v1&#34;</span>
 <span class=p>)</span>
 </code></pre></div><div class=highlight><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=nx>foos</span><span class=p>,</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>exampleClient</span><span class=p>.</span><span class=nf>ExampleV1alpha1</span><span class=p>().</span><span class=nf>Foos</span><span class=p>(</span><span class=s>&#34;&#34;</span><span class=p>).</span><span class=nf>List</span><span class=p>(</span><span class=nx>context</span><span class=p>.</span><span class=nf>Background</span><span class=p>(),</span> <span class=nx>metav1</span><span class=p>.</span><span class=nx>ListOptions</span><span class=p>{})</span>
