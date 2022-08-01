@@ -147,6 +147,7 @@ gsed -i $'/^\/\/ FooList is a list of Foo resources$/{e cat tmpfile\n}' $FOO_TYP
 
 "${codeGeneratorDir}"/generate-groups.sh all ${MODULE_NAME}/pkg/generated ${MODULE_NAME}/pkg/apis example.com:v1alpha1 --go-header-file "${codeGeneratorDir}"/hack/boilerplate.go.txt --trim-path-prefix $MODULE_NAME
 go mod tidy
+go fmt ./...
 go vet ./...
 TITLE_AND_MESSAGE="2. Generate codes"
 git add pkg && git commit -m "$TITLE_AND_MESSAGE"
@@ -400,7 +401,7 @@ EOF
 
 go mod tidy
 go fmt ./...
-git add pkg go.mod go.sum
+git add pkg go.mod go.sum $FOO_CONTROLLER_FILE $MAIN_GO_FILE
 TITLE_AND_MESSAGE="5.1. Create Controller"
 git commit -m "$TITLE_AND_MESSAGE"
 commit_hash=$(git rev-parse HEAD)
