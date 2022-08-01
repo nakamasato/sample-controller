@@ -369,8 +369,8 @@ import (
 
 func main() {
     klog.InitFlags(nil)
-    var kubeconfig *string
 
+    var kubeconfig *string
     if home := homedir.HomeDir(); home != "" {
         kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional)")
     } else {
