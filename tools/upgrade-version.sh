@@ -146,6 +146,8 @@ EOF
 gsed -i $'/^\/\/ FooList is a list of Foo resources$/{e cat tmpfile\n}' $FOO_TYPES_FILE # add before
 
 "${codeGeneratorDir}"/generate-groups.sh all ${MODULE_NAME}/pkg/generated ${MODULE_NAME}/pkg/apis example.com:v1alpha1 --go-header-file "${codeGeneratorDir}"/hack/boilerplate.go.txt --trim-path-prefix $MODULE_NAME
+go mod tidy
+go vet ./...
 TITLE_AND_MESSAGE="2. Generate codes"
 git add pkg && git commit -m "$TITLE_AND_MESSAGE"
 commit_hash=$(git rev-parse HEAD)
@@ -249,6 +251,7 @@ func main() {
 
 EOF
 go mod tidy
+go vet ./...
 go fmt ./...
 
 cat <<EOF >> config/sample/foo.yaml
@@ -422,7 +425,7 @@ EOF
 gsed -i '/foosSynced:.*fooInformer.Informer().HasSynced,/r tmpfile' $FOO_CONTROLLER_FILE # add after
 
 # defer workqueue
-gsed -i '/func (c \*Controller) Run(stopCh chan struct{}) error {/a defer c.workqueue.ShotDown()' $FOO_CONTROLLER_FILE # add after
+gsed -i '/func (c \*Controller) Run(stopCh chan struct{}) error {/a defer c.workqueue.ShutDown()' $FOO_CONTROLLER_FILE # add after
 
 # define enqueueFoo
 gsed -i '/.*klog.Info("handle.* was called")/a c.enqueueFoo(obj)' $FOO_CONTROLLER_FILE # add after
@@ -496,6 +499,7 @@ func (c *Controller) processNextItem() bool {
 EOF
 gsed -i $'/^func.*handleAdd(obj interface{}) {$/{e cat tmpfile\n}' $FOO_CONTROLLER_FILE # add before
 go fmt ./...
+go vet ./...
 TITLE_AND_MESSAGE="5.2. Fetch Foo object"
 git add $MAIN_GO_FILE $FOO_CONTROLLER_FILE && git commit -m "$TITLE_AND_MESSAGE"
 commit_hash=$(git rev-parse HEAD)
@@ -680,6 +684,7 @@ EOF
 gsed -i '/clientset "github.com/r tmpfile' $FOO_CONTROLLER_FILE # add after
 
 go fmt ./...
+go vet ./...
 TITLE_AND_MESSAGE="5.3. Create/Delete Deployment for Foo resource"
 git add $MAIN_GO_FILE $FOO_CONTROLLER_FILE && git commit -m "$TITLE_AND_MESSAGE"
 commit_hash=$(git rev-parse HEAD)
@@ -734,6 +739,7 @@ EOF
 gsed -i 's/.*AddFunc: controller.handleAdd,/cat tmpfile/e' $FOO_CONTROLLER_FILE # replace with tmpfile
 gsed -i "/^func.*handleAdd(obj interface{}) {$/,/^$/d" $FOO_CONTROLLER_FILE # delete handleAdd function
 go fmt ./...
+go vet ./...
 TITLE_AND_MESSAGE="5.4. Check and update Deployment if necessary"
 git add $MAIN_GO_FILE $FOO_CONTROLLER_FILE && git commit -m "$TITLE_AND_MESSAGE"
 commit_hash=$(git rev-parse HEAD)
@@ -852,6 +858,7 @@ cat <<EOF > tmpfile
 EOF
 gsed -i $'/.*return controller/{e cat tmpfile\n}' $FOO_CONTROLLER_FILE # add before
 go fmt ./...
+go vet ./...
 TITLE_AND_MESSAGE="5.6. Capture the update of Deployment"
 git add $FOO_CONTROLLER_FILE && git commit -m "$TITLE_AND_MESSAGE"
 commit_hash=$(git rev-parse HEAD)
@@ -922,6 +929,7 @@ gsed -i '/err = c.updateFooStatus(foo, deployment)/,/^}/c \
 	return nil\
 }' $FOO_CONTROLLER_FILE
 go fmt ./...
+go vet ./...
 TITLE_AND_MESSAGE="5.7. Create events for Foo resource"
 git add go.mod go.sum $FOO_CONTROLLER_FILE && git commit -m "$TITLE_AND_MESSAGE"
 commit_hash=$(git rev-parse HEAD)
