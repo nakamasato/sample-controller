@@ -12,9 +12,9 @@ summary: Check the behavior at this point.
 
 ![](overview.drawio.svg)
 
-- [x] Create `CustomResourceDefinition` `foos.example.com`.
-- [x] Create `Foo` object.
-- [x] Read the `Foo` object from `main.go`.
+1. Create `CustomResourceDefinition` `foos.example.com`.
+1. Create `Foo` object.
+1. Read the `Foo` object from `main.go`.
 
 ### 4.2. Implement
 
@@ -99,6 +99,7 @@ summary: Check the behavior at this point.
 
     ```go
     import (
+        "context"
         metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
     )
     ```

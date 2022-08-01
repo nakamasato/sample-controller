@@ -301,19 +301,13 @@ type Controller struct {
 	// sampleclientset is a clientset for our own API group
 	sampleclientset clientset.Interface
 
-	foosLister listers.FooLister    // lister for foo
 	foosSynced cache.InformerSynced // cache is synced for foo
-
-	// queue
-	workqueue workqueue.RateLimitingInterface
 }
 
 func NewController(sampleclientset clientset.Interface, fooInformer informers.FooInformer) *Controller {
 	controller := &Controller{
 		sampleclientset: sampleclientset,
 		foosSynced:      fooInformer.Informer().HasSynced,
-		foosLister:      fooInformer.Lister(),
-		workqueue:       workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "foo"),
 	}
 
 	fooInformer.Informer().AddEventHandler(
@@ -326,7 +320,6 @@ func NewController(sampleclientset clientset.Interface, fooInformer informers.Fo
 }
 
 func (c *Controller) Run(stopCh chan struct{}) error {
-	defer c.workqueue.ShutDown()
     if ok := cache.WaitForCacheSync(stopCh, c.foosSynced); !ok {
         klog.Info("cache is not synced")
     }
@@ -347,12 +340,10 @@ func (c *Controller) processNextItem() bool {
 
 func (c *Controller) handleAdd(obj interface{}) {
 	klog.Info("handleAdd was called")
-	c.workqueue.Add(obj)
 }
 
 func (c *Controller) handleDelete(obj interface{}) {
 	klog.Info("handleDelete was called")
-	c.workqueue.Add(obj)
 }
 
 EOF
@@ -414,7 +405,27 @@ gsed -i "s#\[$TITLE_AND_MESSAGE\].*#[$TITLE_AND_MESSAGE]($REPO_URL/commit/$commi
 
 # 5.2. Fetch Foo object
 
-gsed -i 's/workqueue\.Add/enqueueFoo/g' $FOO_CONTROLLER_FILE
+# add foosLister and workqueue to Controller
+cat <<EOF > tmpfile
+
+// queue
+workqueue workqueue.RateLimitingInterface
+EOF
+gsed -i '/foosSynced cache.InformerSynced/r tmpfile' $FOO_CONTROLLER_FILE # add after
+gsed -i '/foosSynced cache.InformerSynced/i foosLister listers.FooLister' $FOO_CONTROLLER_FILE # add before
+
+# init controller
+cat <<EOF > tmpfile
+		foosLister:      fooInformer.Lister(),
+		workqueue:       workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "foo"),
+EOF
+gsed -i '/foosSynced:.*fooInformer.Informer().HasSynced,/r tmpfile' $FOO_CONTROLLER_FILE # add after
+
+# defer workqueue
+gsed -i '/func (c \*Controller) Run(stopCh chan struct{}) error {/a defer c.workqueue.ShotDown()' $FOO_CONTROLLER_FILE # add after
+
+# define enqueueFoo
+gsed -i '/.*klog.Info("handle.* was called")/a c.enqueueFoo(obj)' $FOO_CONTROLLER_FILE # add after
 cat<<EOF >> $FOO_CONTROLLER_FILE
 
 // enqueueFoo takes a Foo resource and converts it into a namespace/name
@@ -490,7 +501,7 @@ git add $MAIN_GO_FILE $FOO_CONTROLLER_FILE && git commit -m "$TITLE_AND_MESSAGE"
 commit_hash=$(git rev-parse HEAD)
 gsed -i "s#\[$TITLE_AND_MESSAGE\].*#[$TITLE_AND_MESSAGE]($REPO_URL/commit/$commit_hash)#" docs/content/docs/05-implement-reconciliation-loop/index.md
 
-# 5.3. Enable to Create/Delete Deployment for Foo resource
+# 5.3. Create/Delete Deployment for Foo resource
 
 cat <<EOF > tmpfile
     appsinformers "k8s.io/client-go/informers/apps/v1"
@@ -669,7 +680,7 @@ EOF
 gsed -i '/clientset "github.com/r tmpfile' $FOO_CONTROLLER_FILE # add after
 
 go fmt ./...
-TITLE_AND_MESSAGE="5.3. Enable to Create/Delete Deployment for Foo resource"
+TITLE_AND_MESSAGE="5.3. Create/Delete Deployment for Foo resource"
 git add $MAIN_GO_FILE $FOO_CONTROLLER_FILE && git commit -m "$TITLE_AND_MESSAGE"
 commit_hash=$(git rev-parse HEAD)
 gsed -i "s#\[$TITLE_AND_MESSAGE\].*#[$TITLE_AND_MESSAGE]($REPO_URL/commit/$commit_hash)#" docs/content/docs/05-implement-reconciliation-loop/index.md
