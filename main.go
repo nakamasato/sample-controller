@@ -17,8 +17,8 @@ import (
 
 func main() {
 	klog.InitFlags(nil)
-	var kubeconfig *string
 
+	var kubeconfig *string
 	if home := homedir.HomeDir(); home != "" {
 		kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional)")
 	} else {
@@ -38,7 +38,7 @@ func main() {
 
 	exampleClient, err := clientset.NewForConfig(config)
 	if err != nil {
-		klog.Fatalf("Error building kubernetes clientset: %s", err.Error())
+		klog.Fatalf("Error building example clientset: %s", err.Error())
 	}
 
 	kubeInformerFactory := kubeinformers.NewSharedInformerFactory(kubeClient, time.Second*30)

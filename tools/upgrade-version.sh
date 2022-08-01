@@ -147,6 +147,7 @@ gsed -i $'/^\/\/ FooList is a list of Foo resources$/{e cat tmpfile\n}' $FOO_TYP
 
 "${codeGeneratorDir}"/generate-groups.sh all ${MODULE_NAME}/pkg/generated ${MODULE_NAME}/pkg/apis example.com:v1alpha1 --go-header-file "${codeGeneratorDir}"/hack/boilerplate.go.txt --trim-path-prefix $MODULE_NAME
 go mod tidy
+go fmt ./...
 go vet ./...
 TITLE_AND_MESSAGE="2. Generate codes"
 git add pkg && git commit -m "$TITLE_AND_MESSAGE"
@@ -209,46 +210,45 @@ cat <<EOF >> $MAIN_GO_FILE
 package main
 
 import (
-    "context"
-    "flag"
-    "path/filepath"
+	"context"
+	"flag"
+	"path/filepath"
 
-    "k8s.io/client-go/tools/clientcmd"
-    "k8s.io/client-go/util/homedir"
-    "k8s.io/klog/v2"
+	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/util/homedir"
+	"k8s.io/klog/v2"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-    client "$MODULE_NAME/pkg/generated/clientset/versioned"
-    metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	clientset "github.com/nakamasato/sample-controller/pkg/generated/clientset/versioned"
 )
 
 func main() {
-    klog.InitFlags(nil)
+	klog.InitFlags(nil)
 
-    var kubeconfig *string
-    if home := homedir.HomeDir(); home != "" {
-        kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional)")
-    } else {
-        kubeconfig = flag.String("kubeconfig", "", "absolute path to kubeconfig file")
-    }
-    flag.Parse()
+	var kubeconfig *string
+	if home := homedir.HomeDir(); home != "" {
+		kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional)")
+	} else {
+		kubeconfig = flag.String("kubeconfig", "", "absolute path to kubeconfig file")
+	}
+	flag.Parse()
 
-    config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
-    if err != nil {
-        klog.Fatalf("Error building kubeconfig: %s", err.Error())
-    }
+	config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
+	if err != nil {
+		klog.Fatalf("Error building kubeconfig: %s", err.Error())
+	}
 
-    clientset, err := client.NewForConfig(config)
-    if err != nil {
-        klog.Fatalf("Error building example clientset: %s", err.Error())
-    }
+	exampleClient, err := clientset.NewForConfig(config)
+	if err != nil {
+		klog.Fatalf("Error building example clientset: %s", err.Error())
+	}
 
-    foos, err := clientset.ExampleV1alpha1().Foos("").List(context.Background(), metav1.ListOptions{})
-    if err != nil {
-        klog.Fatalf("listing foos %s %s", err.Error())
-    }
-    klog.Infof("length of foos is %d", len(foos.Items))
+	foos, err := exampleClient.ExampleV1alpha1().Foos("").List(context.Background(), metav1.ListOptions{})
+	if err != nil {
+		klog.Fatalf("listing foos %s", err.Error())
+	}
+	klog.Infof("length of foos is %d", len(foos.Items))
 }
-
 EOF
 go mod tidy
 go vet ./...
@@ -342,11 +342,11 @@ func (c *Controller) processNextItem() bool {
 }
 
 func (c *Controller) handleAdd(obj interface{}) {
-	klog.Info("handleAdd was called")
+	klog.Info("handleAdd is called")
 }
 
 func (c *Controller) handleDelete(obj interface{}) {
-	klog.Info("handleDelete was called")
+	klog.Info("handleDelete is called")
 }
 
 EOF
@@ -369,8 +369,8 @@ import (
 
 func main() {
     klog.InitFlags(nil)
-    var kubeconfig *string
 
+    var kubeconfig *string
     if home := homedir.HomeDir(); home != "" {
         kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional)")
     } else {
@@ -385,7 +385,7 @@ func main() {
 
     exampleClient, err := clientset.NewForConfig(config)
     if err != nil {
-        klog.Fatalf("Error building kubernetes clientset: %s", err.Error())
+        klog.Fatalf("Error building example clientset: %s", err.Error())
     }
 
     exampleInformerFactory := informers.NewSharedInformerFactory(exampleClient, time.Second*30)
@@ -400,7 +400,7 @@ EOF
 
 go mod tidy
 go fmt ./...
-git add pkg go.mod go.sum
+git add pkg go.mod go.sum $FOO_CONTROLLER_FILE $MAIN_GO_FILE
 TITLE_AND_MESSAGE="5.1. Create Controller"
 git commit -m "$TITLE_AND_MESSAGE"
 commit_hash=$(git rev-parse HEAD)
@@ -428,7 +428,7 @@ gsed -i '/foosSynced:.*fooInformer.Informer().HasSynced,/r tmpfile' $FOO_CONTROL
 gsed -i '/func (c \*Controller) Run(stopCh chan struct{}) error {/a defer c.workqueue.ShutDown()' $FOO_CONTROLLER_FILE # add after
 
 # define enqueueFoo
-gsed -i '/.*klog.Info("handle.* was called")/a c.enqueueFoo(obj)' $FOO_CONTROLLER_FILE # add after
+gsed -i '/.*klog.Info("handle.* is called")/a c.enqueueFoo(obj)' $FOO_CONTROLLER_FILE # add after
 cat<<EOF >> $FOO_CONTROLLER_FILE
 
 // enqueueFoo takes a Foo resource and converts it into a namespace/name
