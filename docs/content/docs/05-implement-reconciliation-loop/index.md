@@ -29,8 +29,7 @@ summary: Implement controller.
 1. Define `Run`, which will be called in `main.go`.
     1. Wait until the cache is synced.
     1. Run `c.runWorker` repeatedly every second until the stop channel is closed.
-1. Define `runWorker`: just call `processNextItem`.
-1. Define `processNextItem`: always return true for now.
+1. Define `runWorker`: do nothing
 
 
 ```go
@@ -83,11 +82,7 @@ func (c *Controller) Run(stopCh chan struct{}) error {
 }
 
 func (c *Controller) runWorker() {
-	c.processNextItem()
-}
-
-func (c *Controller) processNextItem() bool {
-	return true
+	klog.Info("runWorker is called")
 }
 
 func (c *Controller) handleAdd(obj interface{}) {
@@ -256,11 +251,17 @@ Implement the following logic:
         c.workqueue.Add(key)
     }
     ```
-
-1. Update `processNextItem`.
+1. Call `processNextWorkItem` in `runWork`.
+    ```go
+    func (c *Controller) runWorker() {
+        for c.processNextWorkItem() {
+        }
+    }
+    ```
+1. Create `processNextWorkItem` function that processes a queue item from workqueue.
 
     ```go
-    func (c *Controller) processNextItem() bool {
+    func (c *Controller) processNextWorkItem() bool {
         obj, shutdown := c.workqueue.Get()
         if shutdown {
             return false
@@ -530,10 +531,10 @@ The logic to implement is:
     )
     ```
 
-1. Update `processNextItem` to call `syncHandler` for main logic.
+1. Update `processNextWorkItem` to call `syncHandler` for main logic.
 
     ```diff
-    @@ -77,20 +99,12 @@ func (c *Controller) processNextItem() bool {
+    @@ -77,20 +99,12 @@ func (c *Controller) processNextWorkItem() bool {
                             return nil
                     }
 

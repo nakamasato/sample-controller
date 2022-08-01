@@ -288,6 +288,7 @@ cat <<EOF >> $FOO_CONTROLLER_FILE
 package main
 
 import (
+    "fmt"
 	"time"
 
 	clientset "$MODULE_NAME/pkg/generated/clientset/versioned"
@@ -324,21 +325,17 @@ func NewController(sampleclientset clientset.Interface, fooInformer informers.Fo
 
 func (c *Controller) Run(stopCh chan struct{}) error {
     if ok := cache.WaitForCacheSync(stopCh, c.foosSynced); !ok {
-        klog.Info("cache is not synced")
+        return fmt.Errorf("failed to wait for caches to sync")
     }
 
-    go wait.Until(c.worker, time.Second, stopCh)
+    go wait.Until(c.runWorker, time.Second, stopCh)
 
     <-stopCh
     return nil
 }
 
-func (c *Controller) worker() {
-	c.processNextItem()
-}
-
-func (c *Controller) processNextItem() bool {
-	return true
+func (c *Controller) runWorker() {
+	klog.Info("handleAdd is called")
 }
 
 func (c *Controller) handleAdd(obj interface{}) {
@@ -444,9 +441,12 @@ func (c *Controller) enqueueFoo(obj interface{}) {
     c.workqueue.Add(key)
 }
 EOF
-gsed -i "/^func.*processNextItem() bool {$/,/^$/d" $FOO_CONTROLLER_FILE # delete processNextItem func
+
+# update runWorker()
+gsed -i 's/klog.Info("runWorker is called")/for c.processNextWorkItem() {\n}/' $FOO_CONTROLLER_FILE
+gsed -i "/^func.*processNextWorkItem() bool {$/,/^$/d" $FOO_CONTROLLER_FILE # delete processNextWorkItem func
 cat<<EOF > tmpfile
-func (c *Controller) processNextItem() bool {
+func (c *Controller) processNextWorkItem() bool {
     obj, shutdown := c.workqueue.Get()
     if shutdown {
         return false
