@@ -297,7 +297,6 @@ import (
 
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/cache"
-	"k8s.io/client-go/util/workqueue"
     "k8s.io/klog/v2"
 )
 
@@ -405,6 +404,8 @@ gsed -i "s#\[$TITLE_AND_MESSAGE\].*#[$TITLE_AND_MESSAGE]($REPO_URL/commit/$commi
 
 # 5.2. Fetch Foo object
 
+# import     "k8s.io/client-go/util/workqueue"
+gsed -i '/"k8s.io\/client-go\/tools\/cache"/a "k8s.io\/client-go\/util\/workqueue"' $FOO_CONTROLLER_FILE # add after
 # add foosLister and workqueue to Controller
 cat <<EOF > tmpfile
 
