@@ -335,7 +335,7 @@ func (c *Controller) Run(stopCh chan struct{}) error {
 }
 
 func (c *Controller) runWorker() {
-	klog.Info("handleAdd is called")
+	klog.Info("runWorker is called")
 }
 
 func (c *Controller) handleAdd(obj interface{}) {
@@ -444,7 +444,7 @@ EOF
 
 # update runWorker()
 gsed -i 's/klog.Info("runWorker is called")/for c.processNextWorkItem() {\n}/' $FOO_CONTROLLER_FILE
-gsed -i "/^func.*processNextWorkItem() bool {$/,/^$/d" $FOO_CONTROLLER_FILE # delete processNextWorkItem func
+
 cat<<EOF > tmpfile
 func (c *Controller) processNextWorkItem() bool {
     obj, shutdown := c.workqueue.Get()
