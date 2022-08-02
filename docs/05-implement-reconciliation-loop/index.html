@@ -84,7 +84,7 @@
 <div class="col-12 col-md-9">
 <h1 class=title>5. Implement reconciliation</h1>
 <div class=content>
-<h2 id=51-create-controllerhttpsgithubcomnakamasatosample-controllercommitedf924c0e5362a6b123255ed3b2444c3c7a5dfc1><a href=https://github.com/nakamasato/sample-controller/commit/edf924c0e5362a6b123255ed3b2444c3c7a5dfc1>5.1. Create Controller</a></h2>
+<h2 id=51-create-controllerhttpsgithubcomnakamasatosample-controllercommit5cf076bb61bb2394731abb9b2674358d38fb0679><a href=https://github.com/nakamasato/sample-controller/commit/5cf076bb61bb2394731abb9b2674358d38fb0679>5.1. Create Controller</a></h2>
 <h3 id=511-overview>5.1.1. Overview</h3>
 <p><img src=overview-1.drawio.svg alt></p>
 <h3 id=511-implement>5.1.1. Implement</h3>
@@ -105,11 +105,10 @@
 <li>Define <code>Run</code>, which will be called in <code>main.go</code>.
 <ol>
 <li>Wait until the cache is synced.</li>
-<li>Run <code>c.worker</code> repeatedly every second until the stop channel is closed.</li>
+<li>Run <code>c.runWorker</code> repeatedly every second until the stop channel is closed.</li>
 </ol>
 </li>
-<li>Define <code>worker</code>: just call <code>processNextItem</code>.</li>
-<li>Define <code>processNextItem</code>: always return true for now.</li>
+<li>Define <code>runWorker</code>: do nothing</li>
 </ol>
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kn>package</span> <span class=nx>main</span>
 
@@ -150,21 +149,17 @@
 
 <span class=kd>func</span> <span class=p>(</span><span class=nx>c</span> <span class=o>*</span><span class=nx>Controller</span><span class=p>)</span> <span class=nf>Run</span><span class=p>(</span><span class=nx>stopCh</span> <span class=kd>chan</span> <span class=kd>struct</span><span class=p>{})</span> <span class=kt>error</span> <span class=p>{</span>
 	<span class=k>if</span> <span class=nx>ok</span> <span class=o>:=</span> <span class=nx>cache</span><span class=p>.</span><span class=nf>WaitForCacheSync</span><span class=p>(</span><span class=nx>stopCh</span><span class=p>,</span> <span class=nx>c</span><span class=p>.</span><span class=nx>foosSynced</span><span class=p>);</span> <span class=p>!</span><span class=nx>ok</span> <span class=p>{</span>
-		<span class=nx>klog</span><span class=p>.</span><span class=nf>Info</span><span class=p>(</span><span class=s>&#34;cache is not synced&#34;</span><span class=p>)</span>
+		<span class=k>return</span> <span class=nx>fmt</span><span class=p>.</span><span class=nf>Errorf</span><span class=p>(</span><span class=s>&#34;failed to wait for caches to sync&#34;</span><span class=p>)</span>
 	<span class=p>}</span>
 
-	<span class=k>go</span> <span class=nx>wait</span><span class=p>.</span><span class=nf>Until</span><span class=p>(</span><span class=nx>c</span><span class=p>.</span><span class=nx>worker</span><span class=p>,</span> <span class=nx>time</span><span class=p>.</span><span class=nx>Second</span><span class=p>,</span> <span class=nx>stopCh</span><span class=p>)</span>
+	<span class=k>go</span> <span class=nx>wait</span><span class=p>.</span><span class=nf>Until</span><span class=p>(</span><span class=nx>c</span><span class=p>.</span><span class=nx>runWorker</span><span class=p>,</span> <span class=nx>time</span><span class=p>.</span><span class=nx>Second</span><span class=p>,</span> <span class=nx>stopCh</span><span class=p>)</span>
 
 	<span class=o>&lt;-</span><span class=nx>stopCh</span>
 	<span class=k>return</span> <span class=kc>nil</span>
 <span class=p>}</span>
 
-<span class=kd>func</span> <span class=p>(</span><span class=nx>c</span> <span class=o>*</span><span class=nx>Controller</span><span class=p>)</span> <span class=nf>worker</span><span class=p>()</span> <span class=p>{</span>
-	<span class=nx>c</span><span class=p>.</span><span class=nf>processNextItem</span><span class=p>()</span>
-<span class=p>}</span>
-
-<span class=kd>func</span> <span class=p>(</span><span class=nx>c</span> <span class=o>*</span><span class=nx>Controller</span><span class=p>)</span> <span class=nf>processNextItem</span><span class=p>()</span> <span class=kt>bool</span> <span class=p>{</span>
-	<span class=k>return</span> <span class=kc>true</span>
+<span class=kd>func</span> <span class=p>(</span><span class=nx>c</span> <span class=o>*</span><span class=nx>Controller</span><span class=p>)</span> <span class=nf>runWorker</span><span class=p>()</span> <span class=p>{</span>
+	<span class=nx>klog</span><span class=p>.</span><span class=nf>Info</span><span class=p>(</span><span class=s>&#34;runWorker is called&#34;</span><span class=p>)</span>
 <span class=p>}</span>
 
 <span class=kd>func</span> <span class=p>(</span><span class=nx>c</span> <span class=o>*</span><span class=nx>Controller</span><span class=p>)</span> <span class=nf>handleAdd</span><span class=p>(</span><span class=nx>obj</span> <span class=kd>interface</span><span class=p>{})</span> <span class=p>{</span>
@@ -273,7 +268,7 @@
 2022/07/18 06:36:40 handleDelete is called
 </code></pre></div></li>
 </ol>
-<h2 id=52-fetch-foo-objecthttpsgithubcomnakamasatosample-controllercommitb14496842a78815887ea452da2605886460e37e8><a href=https://github.com/nakamasato/sample-controller/commit/b14496842a78815887ea452da2605886460e37e8>5.2. Fetch Foo object</a></h2>
+<h2 id=52-fetch-foo-objecthttpsgithubcomnakamasatosample-controllercommitac231d6311fffbf19a47f06c31393f86a9e386b4><a href=https://github.com/nakamasato/sample-controller/commit/ac231d6311fffbf19a47f06c31393f86a9e386b4>5.2. Fetch Foo object</a></h2>
 <h3 id=521-overview>5.2.1. Overview</h3>
 <p><img src=overview-2.drawio.svg alt></p>
 <p>Implement the following logic:</p>
@@ -311,8 +306,15 @@
 <span class=p>}</span>
 </code></pre></div></li>
 <li>
-<p>Update <code>processNextItem</code>.</p>
-<div class=highlight><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kd>func</span> <span class=p>(</span><span class=nx>c</span> <span class=o>*</span><span class=nx>Controller</span><span class=p>)</span> <span class=nf>processNextItem</span><span class=p>()</span> <span class=kt>bool</span> <span class=p>{</span>
+<p>Call <code>processNextWorkItem</code> in <code>runWork</code>.</p>
+<div class=highlight><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kd>func</span> <span class=p>(</span><span class=nx>c</span> <span class=o>*</span><span class=nx>Controller</span><span class=p>)</span> <span class=nf>runWorker</span><span class=p>()</span> <span class=p>{</span>
+    <span class=k>for</span> <span class=nx>c</span><span class=p>.</span><span class=nf>processNextWorkItem</span><span class=p>()</span> <span class=p>{</span>
+    <span class=p>}</span>
+<span class=p>}</span>
+</code></pre></div></li>
+<li>
+<p>Create <code>processNextWorkItem</code> function that processes a queue item from workqueue.</p>
+<div class=highlight><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kd>func</span> <span class=p>(</span><span class=nx>c</span> <span class=o>*</span><span class=nx>Controller</span><span class=p>)</span> <span class=nf>processNextWorkItem</span><span class=p>()</span> <span class=kt>bool</span> <span class=p>{</span>
     <span class=nx>obj</span><span class=p>,</span> <span class=nx>shutdown</span> <span class=o>:=</span> <span class=nx>c</span><span class=p>.</span><span class=nx>workqueue</span><span class=p>.</span><span class=nf>Get</span><span class=p>()</span>
     <span class=k>if</span> <span class=nx>shutdown</span> <span class=p>{</span>
         <span class=k>return</span> <span class=kc>false</span>
@@ -383,7 +385,7 @@
 2022/07/18 07:46:49 failed to get foo resource from lister foo.example.com &#34;foo-sample&#34; not found
 </code></pre></div></li>
 </ol>
-<h2 id=53-createdelete-deployment-for-foo-resourcehttpsgithubcomnakamasatosample-controllercommit588ba9446c83447dd96eee1df1867ac65edcf004><a href=https://github.com/nakamasato/sample-controller/commit/588ba9446c83447dd96eee1df1867ac65edcf004>5.3. Create/Delete Deployment for Foo resource</a></h2>
+<h2 id=53-createdelete-deployment-for-foo-resourcehttpsgithubcomnakamasatosample-controllercommitefc192910c5363ab977e4921f876fbf2313021a7><a href=https://github.com/nakamasato/sample-controller/commit/efc192910c5363ab977e4921f876fbf2313021a7>5.3. Create/Delete Deployment for Foo resource</a></h2>
 <h3 id=531-overview>5.3.1. Overview</h3>
 <p><img src=overview-3.drawio.svg alt></p>
 <p>In this section, we&rsquo;ll add a logic to create a <code>Deployment</code> for <code>Foo</code> resource.</p>
@@ -560,8 +562,8 @@
 <span class=p>)</span>
 </code></pre></div></li>
 <li>
-<p>Update <code>processNextItem</code> to call <code>syncHandler</code> for main logic.</p>
-<div class=highlight><pre tabindex=0 class=chroma><code class=language-diff data-lang=diff><span class=gu>@@ -77,20 +99,12 @@ func (c *Controller) processNextItem() bool {
+<p>Update <code>processNextWorkItem</code> to call <code>syncHandler</code> for main logic.</p>
+<div class=highlight><pre tabindex=0 class=chroma><code class=language-diff data-lang=diff><span class=gu>@@ -77,20 +99,12 @@ func (c *Controller) processNextWorkItem() bool {
 </span><span class=gu></span>                        return nil
                 }
 
@@ -631,7 +633,7 @@ No resources found in default namespace.
 </blockquote>
 </li>
 </ol>
-<h2 id=54-check-and-update-deployment-if-necessaryhttpsgithubcomnakamasatosample-controllercommit10a8a9465946a7f52bf85c93a10d9f6b360aa936><a href=https://github.com/nakamasato/sample-controller/commit/10a8a9465946a7f52bf85c93a10d9f6b360aa936>5.4. Check and update Deployment if necessary</a></h2>
+<h2 id=54-check-and-update-deployment-if-necessaryhttpsgithubcomnakamasatosample-controllercommit0eb10bc8704da037e2d650b01540fac39292926c><a href=https://github.com/nakamasato/sample-controller/commit/0eb10bc8704da037e2d650b01540fac39292926c>5.4. Check and update Deployment if necessary</a></h2>
 <h3 id=541-overview>5.4.1. Overview</h3>
 <p><img src=overview-4.drawio.svg alt></p>
 <p>What needs to be done:</p>
@@ -765,7 +767,7 @@ foo-sample   2/2     2            2           3h42m
 kubectl delete deploy foo-sample
 </code></pre></div></li>
 </ol>
-<h2 id=55-update-foo-statushttpsgithubcomnakamasatosample-controllercommit482148b52626126959fc86a4910936e376035fa4><a href=https://github.com/nakamasato/sample-controller/commit/482148b52626126959fc86a4910936e376035fa4>5.5. Update Foo status</a></h2>
+<h2 id=55-update-foo-statushttpsgithubcomnakamasatosample-controllercommitffa3c6f4b84104ff254c5ee8c09a888c25329cbd><a href=https://github.com/nakamasato/sample-controller/commit/ffa3c6f4b84104ff254c5ee8c09a888c25329cbd>5.5. Update Foo status</a></h2>
 <h3 id=551-overview>5.5.1. Overview</h3>
 <p><img src=overview-5.drawio.svg alt></p>
 <ol>
@@ -843,7 +845,7 @@ kubectl delete deploy foo-sample
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>kubectl delete -f config/sample/foo.yaml
 </code></pre></div></li>
 </ol>
-<h2 id=56-capture-the-update-of-deploymenthttpsgithubcomnakamasatosample-controllercommit6b6b095167cf495e89389dc453903e92dd899832><a href=https://github.com/nakamasato/sample-controller/commit/6b6b095167cf495e89389dc453903e92dd899832>5.6. Capture the update of Deployment</a></h2>
+<h2 id=56-capture-the-update-of-deploymenthttpsgithubcomnakamasatosample-controllercommitc7e176b9e4762ad23a9bb5d4ae206e00a45c2f0b><a href=https://github.com/nakamasato/sample-controller/commit/c7e176b9e4762ad23a9bb5d4ae206e00a45c2f0b>5.6. Capture the update of Deployment</a></h2>
 <h3 id=561-overview>5.6.1. Overview</h3>
 <p><img src=overview-6.drawio.svg alt></p>
 <p>In the previous section, <code>status.availableReplicas</code> is not updated immediately. This is because sample-contrller just monitors our custom resource <code>Foo</code>. In this section, we&rsquo;ll enable to capture changes of Deployments controlled by <code>Foo</code>.</p>
@@ -937,7 +939,7 @@ kubectl delete deploy foo-sample
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>kubectl delete -f config/sample/foo.yaml
 </code></pre></div></li>
 </ol>
-<h2 id=57-create-events-for-foo-resourcehttpsgithubcomnakamasatosample-controllercommitec6cd772c588198c4f77358a582ccaa42a6a12c0><a href=https://github.com/nakamasato/sample-controller/commit/ec6cd772c588198c4f77358a582ccaa42a6a12c0>5.7. Create events for Foo resource</a></h2>
+<h2 id=57-create-events-for-foo-resourcehttpsgithubcomnakamasatosample-controllercommit5e136598214a40adcb6fac909690b07c0b0124b0><a href=https://github.com/nakamasato/sample-controller/commit/5e136598214a40adcb6fac909690b07c0b0124b0>5.7. Create events for Foo resource</a></h2>
 <h3 id=571-overview>5.7.1. Overview</h3>
 <ol>
 <li>Add <code>record.EventRecorder</code> to <code>Controller</code>.</li>
