@@ -1,12 +1,12 @@
 ---
 title: '5. Implement reconciliation'
-date: 2022-08-02T10:11:13+0900
+date: 2022-08-02T10:17:34+0900
 draft: false
 weight: 7
 summary: Implement controller.
 ---
 
-## [5.1. Create Controller](https://github.com/nakamasato/sample-controller/commit/fd2213b90eb7113639ac64bfe3644b1107502a45)
+## [5.1. Create Controller](https://github.com/nakamasato/sample-controller/commit/f3b920ae8117b7e10772d7cfaafee3495fd276ea)
 
 
 ### 5.1.1. Overview
@@ -127,7 +127,7 @@ leClient, time.Second*30)
 Example().V1alpha1().Foos())
 +       exampleInformerFactory.Start(stopCh)
 +       if err = controller.Run(stopCh); err != nil {
-+               klog.Fatalf("error occurred when running controller %s\n",
++               klog.Fatalf("error occurred when running controller %s",
  err.Error())
         }
 -       klog.Infof("length of foos is %d", len(foos.Items))
@@ -179,7 +179,7 @@ func main() {
 	controller := NewController(exampleClient, exampleInformerFactory.Example().V1alpha1().Foos())
 	exampleInformerFactory.Start(stopCh)
 	if err = controller.Run(stopCh); err != nil {
-		klog.Fatalf("error occurred when running controller %s\n", err.Error())
+		klog.Fatalf("error occurred when running controller %s", err.Error())
 	}
 }
 ```
@@ -211,7 +211,7 @@ func main() {
     2022/07/18 06:36:40 handleDelete is called
     ```
 
-## [5.2. Fetch Foo object](https://github.com/nakamasato/sample-controller/commit/dba973350be9def030199ba6b0bd414ff9110fd4)
+## [5.2. Fetch Foo object](https://github.com/nakamasato/sample-controller/commit/7fcf6245a14fd89c5148dab49e3c9b5a13503578)
 
 ### 5.2.1. Overview
 
@@ -275,7 +275,7 @@ Implement the following logic:
         var key string
         var err error
         if key, err = cache.MetaNamespaceKeyFunc(obj); err != nil {
-            klog.Errorf("failed to get key from the cache %s\n", err.Error())
+            klog.Errorf("failed to get key from the cache %s", err.Error())
             return
         }
         c.workqueue.Add(key)
@@ -308,14 +308,14 @@ Implement the following logic:
 
             ns, name, err := cache.SplitMetaNamespaceKey(key)
             if err != nil {
-                klog.Errorf("failed to split key into namespace and name %s\n", err.Error())
+                klog.Errorf("failed to split key into namespace and name %s", err.Error())
                 return err
             }
 
             // temporary main logic
             foo, err := c.foosLister.Foos(ns).Get(name)
             if err != nil {
-                klog.Errorf("failed to get foo resource from lister %s\n", err.Error())
+                klog.Errorf("failed to get foo resource from lister %s", err.Error())
                 return err
             }
             klog.Infof("Got foo %+v", foo.Spec)
@@ -370,7 +370,7 @@ Implement the following logic:
     2022/07/18 07:46:49 failed to get foo resource from lister foo.example.com "foo-sample" not found
     ```
 
-## [5.3. Create/Delete Deployment for Foo resource](https://github.com/nakamasato/sample-controller/commit/5f011a846db86065fa2658a7caac7b72585fe1cd)
+## [5.3. Create/Delete Deployment for Foo resource](https://github.com/nakamasato/sample-controller/commit/b3a37c47e5cb0e8bf4b82601b4ae8a2d19f618dd)
 
 ### 5.3.1. Overview
 
@@ -452,12 +452,12 @@ The logic to implement is:
         ...
     +       kubeClient, err := kubernetes.NewForConfig(config)
     +       if err != nil {
-    +               klog.Errorf("getting kubernetes client set %s\n", err.Error())
+    +               klog.Errorf("getting kubernetes client set %s", err.Error())
     +       }
     +
             exampleClient, err := clientset.NewForConfig(config)
             if err != nil {
-                    klog.Errorf("getting client set %s\n", err.Error())
+                    klog.Errorf("getting client set %s", err.Error())
             }
 
     +       kubeInformerFactory := kubeinformers.NewSharedInformerFactory(kubeClient, time.Second*30)
@@ -481,13 +481,13 @@ The logic to implement is:
     func (c *Controller) syncHandler(key string) error {
         ns, name, err := cache.SplitMetaNamespaceKey(key)
         if err != nil {
-            klog.Errorf("failed to split key into namespace and name %s\n", err.Error())
+            klog.Errorf("failed to split key into namespace and name %s", err.Error())
             return err
         }
 
         foo, err := c.foosLister.Foos(ns).Get(name)
         if err != nil {
-            klog.Errorf("failed to get foo resource from lister %s\n", err.Error())
+            klog.Errorf("failed to get foo resource from lister %s", err.Error())
             if errors.IsNotFound(err) {
                 return nil
             }
@@ -496,7 +496,7 @@ The logic to implement is:
 
         deploymentName := foo.Spec.DeploymentName
         if deploymentName == "" {
-            klog.Errorf("deploymentName must be specified %s\n", key)
+            klog.Errorf("deploymentName must be specified %s", key)
             return nil
         }
         deployment, err := c.deploymentsLister.Deployments(foo.Namespace).Get(deploymentName)
@@ -570,7 +570,7 @@ The logic to implement is:
 
     -               ns, name, err := cache.SplitMetaNamespaceKey(key)
     -               if err != nil {
-    -                       klog.Errorf("failed to split key into namespace and name %s\n", err.Error())
+    -                       klog.Errorf("failed to split key into namespace and name %s", err.Error())
     -                       return err
     +               if err := c.syncHandler(key); err != nil {
     +                       // Put the item back on the workqueue to handle any transient errors.
@@ -581,10 +581,10 @@ The logic to implement is:
     -               // temporary main logic
     -               foo, err := c.foosLister.Foos(ns).Get(name)
     -               if err != nil {
-    -                       klog.Errorf("failed to get foo resource from lister %s\n", err.Error())
+    -                       klog.Errorf("failed to get foo resource from lister %s", err.Error())
     -                       return err
     -               }
-    -               klog.Infof("Got foo %+v\n", foo.Spec)
+    -               klog.Infof("Got foo %+v", foo.Spec)
     -
                     // Forget the queue item as it's successfully processed and
                     // the item will not be requeued.
@@ -645,7 +645,7 @@ The logic to implement is:
 
     > Kubernetes checks for and deletes objects that no longer have owner references, like the pods left behind when you delete a ReplicaSet. When you delete an object, you can control whether Kubernetes deletes the object's dependents automatically, in a process called cascading deletion.
 
-## [5.4. Check and update Deployment if necessary](https://github.com/nakamasato/sample-controller/commit/60ecacf8c8159d85e010ab295479331d24fee958)
+## [5.4. Check and update Deployment if necessary](https://github.com/nakamasato/sample-controller/commit/951895133561ec67232769ffb6d4c4bb11b0fe48)
 
 ### 5.4.1. Overview
 
@@ -690,7 +690,7 @@ What needs to be done:
             // number does not equal the current desired replicas on the Deployment, we
             // should update the Deployment resource.
             if foo.Spec.Replicas != nil && *foo.Spec.Replicas != *deployment.Spec.Replicas {
-                klog.Infof("Foo %s replicas: %d, deployment replicas: %d\n", name, *foo.Spec.Replicas, *deployment.Spec.Replicas)
+                klog.Infof("Foo %s replicas: %d, deployment replicas: %d", name, *foo.Spec.Replicas, *deployment.Spec.Replicas)
                 deployment, err = c.kubeclientset.AppsV1().Deployments(foo.Namespace).Update(context.TODO(), newDeployment(foo), metav1.UpdateOptions{})
             }
             // If an error occurs during Update, we'll requeue the item so we can
@@ -790,7 +790,7 @@ What needs to be done:
     kubectl delete deploy foo-sample
     ```
 
-## [5.5. Update Foo status](https://github.com/nakamasato/sample-controller/commit/c3a98cdaa13f5f7a4e5e184baa64e3517b97f874)
+## [5.5. Update Foo status](https://github.com/nakamasato/sample-controller/commit/07a254b37ad85f4b5af513b0ffe9a558d465258c)
 
 ### 5.5.1. Overview
 
@@ -876,7 +876,7 @@ What needs to be done:
     ```
     kubectl delete -f config/sample/foo.yaml
     ```
-## [5.6. Capture the update of Deployment](https://github.com/nakamasato/sample-controller/commit/1765894c43c2aeb5d51b4a8cc5d05fa2106c65ae)
+## [5.6. Capture the update of Deployment](https://github.com/nakamasato/sample-controller/commit/0188fd6001ccc2a5e02ac89cce1fb2f39d66e756)
 
 ### 5.6.1. Overview
 
@@ -983,7 +983,7 @@ In the previous section, `status.availableReplicas` is not updated immediately. 
     kubectl delete -f config/sample/foo.yaml
     ```
 
-## [5.7. Create events for Foo resource](https://github.com/nakamasato/sample-controller/commit/72859779fd2fe16894c98afa5d296b55ddf7f3bd)
+## [5.7. Create events for Foo resource](https://github.com/nakamasato/sample-controller/commit/8499805b4ee9d82382ab159c4a951c9522896e32)
 
 ### 5.7.1. Overview
 
