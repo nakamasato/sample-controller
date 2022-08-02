@@ -1,12 +1,12 @@
 ---
 title: '5. Implement reconciliation'
-date: 2022-08-02T09:01:44+0900
+date: 2022-08-02T10:11:13+0900
 draft: false
 weight: 7
 summary: Implement controller.
 ---
 
-## [5.1. Create Controller](https://github.com/nakamasato/sample-controller/commit/5cf076bb61bb2394731abb9b2674358d38fb0679)
+## [5.1. Create Controller](https://github.com/nakamasato/sample-controller/commit/fd2213b90eb7113639ac64bfe3644b1107502a45)
 
 
 ### 5.1.1. Overview
@@ -211,19 +211,49 @@ func main() {
     2022/07/18 06:36:40 handleDelete is called
     ```
 
-## [5.2. Fetch Foo object](https://github.com/nakamasato/sample-controller/commit/ac231d6311fffbf19a47f06c31393f86a9e386b4)
+## [5.2. Fetch Foo object](https://github.com/nakamasato/sample-controller/commit/dba973350be9def030199ba6b0bd414ff9110fd4)
 
 ### 5.2.1. Overview
 
 ![](overview-2.drawio.svg)
 
 Implement the following logic:
+1. Add `workqueue` and `listers` to `Controller` struct.
 1. Add the key for the triggerred object to `workqueue` in `handleAdd` and `handleUpdate`. (e.g. `Foo` -> `<namespace>/<name>`)
 1. Get a `workqueue` item (`<namespace>/<name>`).
 1. Get the `Foo` resource with namespace and name from the `lister`.
 1. Forget the item from `workqueue`.
 
 ### 5.2.2. Implement
+
+1. Add `workqueue` and `listers`.
+
+    ```go
+    import (
+        ...
+        "k8s.io/client-go/util/workqueue"
+        ...
+        listers "github.com/nakamasato/sample-controller/pkg/generated/listers/example.com/v1alpha1"
+    )
+    ```
+
+    ```diff
+     type Controller struct {
+         sampleclientset clientset.Interface
+         fooSynced       cache.InformerSynced
+    +    foosLister      listers.FooLister
+    +    workqueue       workqueue.RateLimitingInterface
+     }
+    ```
+
+    ```diff
+     controller := &Controller{
+         sampleclientset: sampleclientset,
+         fooSynced:       fooInformer.Informer().HasSynced,
+    +    foosLister:      fooInformer.Lister(),
+    +    workqueue:       workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "foo"),
+     }
+    ```
 
 1. Define `enqueueFoo` to convert Foo resource into namespace/name string before putting into the workqueue.
 
@@ -249,13 +279,6 @@ Implement the following logic:
             return
         }
         c.workqueue.Add(key)
-    }
-    ```
-1. Call `processNextWorkItem` in `runWork`.
-    ```go
-    func (c *Controller) runWorker() {
-        for c.processNextWorkItem() {
-        }
     }
     ```
 1. Create `processNextWorkItem` function that processes a queue item from workqueue.
@@ -295,7 +318,7 @@ Implement the following logic:
                 klog.Errorf("failed to get foo resource from lister %s\n", err.Error())
                 return err
             }
-            klog.Infof("Got foo %+v\n", foo.Spec)
+            klog.Infof("Got foo %+v", foo.Spec)
 
             // Forget the queue item as it's successfully processed and
             // the item will not be requeued.
@@ -309,6 +332,13 @@ Implement the following logic:
         }
 
         return true
+    }
+    ```
+1. Call `processNextWorkItem` in `runWork`.
+    ```go
+    func (c *Controller) runWorker() {
+        for c.processNextWorkItem() {
+        }
     }
     ```
 
@@ -340,7 +370,7 @@ Implement the following logic:
     2022/07/18 07:46:49 failed to get foo resource from lister foo.example.com "foo-sample" not found
     ```
 
-## [5.3. Create/Delete Deployment for Foo resource](https://github.com/nakamasato/sample-controller/commit/efc192910c5363ab977e4921f876fbf2313021a7)
+## [5.3. Create/Delete Deployment for Foo resource](https://github.com/nakamasato/sample-controller/commit/5f011a846db86065fa2658a7caac7b72585fe1cd)
 
 ### 5.3.1. Overview
 
@@ -433,8 +463,8 @@ The logic to implement is:
     +       kubeInformerFactory := kubeinformers.NewSharedInformerFactory(kubeClient, time.Second*30)
             exampleInformerFactory := informers.NewSharedInformerFactory(exampleClient, time.Second*30)
             stopCh := make(chan struct{})
-    -       controller := controller.NewController(exampleClient, exampleInformerFactory.Example().V1alpha1().Foos())
-    +       controller := controller.NewController(
+    -       controller := NewController(exampleClient, exampleInformerFactory.Example().V1alpha1().Foos())
+    +       controller := NewController(
     +               kubeClient,
     +               exampleClient,
     +               kubeInformerFactory.Apps().V1().Deployments(),
@@ -615,7 +645,7 @@ The logic to implement is:
 
     > Kubernetes checks for and deletes objects that no longer have owner references, like the pods left behind when you delete a ReplicaSet. When you delete an object, you can control whether Kubernetes deletes the object's dependents automatically, in a process called cascading deletion.
 
-## [5.4. Check and update Deployment if necessary](https://github.com/nakamasato/sample-controller/commit/0eb10bc8704da037e2d650b01540fac39292926c)
+## [5.4. Check and update Deployment if necessary](https://github.com/nakamasato/sample-controller/commit/60ecacf8c8159d85e010ab295479331d24fee958)
 
 ### 5.4.1. Overview
 
@@ -760,7 +790,7 @@ What needs to be done:
     kubectl delete deploy foo-sample
     ```
 
-## [5.5. Update Foo status](https://github.com/nakamasato/sample-controller/commit/ffa3c6f4b84104ff254c5ee8c09a888c25329cbd)
+## [5.5. Update Foo status](https://github.com/nakamasato/sample-controller/commit/c3a98cdaa13f5f7a4e5e184baa64e3517b97f874)
 
 ### 5.5.1. Overview
 
@@ -846,7 +876,7 @@ What needs to be done:
     ```
     kubectl delete -f config/sample/foo.yaml
     ```
-## [5.6. Capture the update of Deployment](https://github.com/nakamasato/sample-controller/commit/c7e176b9e4762ad23a9bb5d4ae206e00a45c2f0b)
+## [5.6. Capture the update of Deployment](https://github.com/nakamasato/sample-controller/commit/1765894c43c2aeb5d51b4a8cc5d05fa2106c65ae)
 
 ### 5.6.1. Overview
 
@@ -953,7 +983,7 @@ In the previous section, `status.availableReplicas` is not updated immediately. 
     kubectl delete -f config/sample/foo.yaml
     ```
 
-## [5.7. Create events for Foo resource](https://github.com/nakamasato/sample-controller/commit/5e136598214a40adcb6fac909690b07c0b0124b0)
+## [5.7. Create events for Foo resource](https://github.com/nakamasato/sample-controller/commit/72859779fd2fe16894c98afa5d296b55ddf7f3bd)
 
 ### 5.7.1. Overview
 
