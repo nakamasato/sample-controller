@@ -1,16 +1,16 @@
 package main
 
 import (
-	"context"
 	"flag"
 	"path/filepath"
+	"time"
 
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
 	"k8s.io/klog/v2"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	clientset "github.com/nakamasato/sample-controller/pkg/generated/clientset/versioned"
+	informers "github.com/nakamasato/sample-controller/pkg/generated/informers/externalversions"
 )
 
 func main() {
@@ -34,9 +34,11 @@ func main() {
 		klog.Fatalf("Error building example clientset: %s", err.Error())
 	}
 
-	foos, err := exampleClient.ExampleV1alpha1().Foos("").List(context.Background(), metav1.ListOptions{})
-	if err != nil {
-		klog.Fatalf("listing foos %s", err.Error())
+	exampleInformerFactory := informers.NewSharedInformerFactory(exampleClient, time.Second*30)
+	stopCh := make(chan struct{})
+	controller := NewController(exampleClient, exampleInformerFactory.Example().V1alpha1().Foos())
+	exampleInformerFactory.Start(stopCh)
+	if err = controller.Run(stopCh); err != nil {
+		klog.Fatalf("error occurred when running controller %s", err)
 	}
-	klog.Infof("length of foos is %d", len(foos.Items))
 }
