@@ -120,20 +120,21 @@ func NewController(
 func (c *Controller) Run(stopCh chan struct{}) error {
 	defer c.workqueue.ShutDown()
 	if ok := cache.WaitForCacheSync(stopCh, c.foosSynced); !ok {
-		klog.Info("cache is not synced")
+		return fmt.Errorf("failed to wait for caches to sync")
 	}
 
-	go wait.Until(c.worker, time.Second, stopCh)
+	go wait.Until(c.runWorker, time.Second, stopCh)
 
 	<-stopCh
 	return nil
 }
 
-func (c *Controller) worker() {
-	c.processNextItem()
+func (c *Controller) runWorker() {
+	for c.processNextWorkItem() {
+	}
 }
 
-func (c *Controller) processNextItem() bool {
+func (c *Controller) processNextWorkItem() bool {
 	obj, shutdown := c.workqueue.Get()
 	if shutdown {
 		return false
@@ -182,7 +183,7 @@ func (c *Controller) enqueueFoo(obj interface{}) {
 	var key string
 	var err error
 	if key, err = cache.MetaNamespaceKeyFunc(obj); err != nil {
-		klog.Errorf("failed to get key from the cache %s\n", err.Error())
+		klog.Errorf("failed to get key from the cache %s", err.Error())
 		return
 	}
 	c.workqueue.Add(key)
@@ -191,13 +192,13 @@ func (c *Controller) enqueueFoo(obj interface{}) {
 func (c *Controller) syncHandler(key string) error {
 	ns, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
-		klog.Errorf("failed to split key into namespace and name %s\n", err.Error())
+		klog.Errorf("failed to split key into namespace and name %s", err.Error())
 		return err
 	}
 
 	foo, err := c.foosLister.Foos(ns).Get(name)
 	if err != nil {
-		klog.Errorf("failed to get foo resource from lister %s\n", err.Error())
+		klog.Errorf("failed to get foo resource from lister %s", err.Error())
 		if errors.IsNotFound(err) {
 			return nil
 		}
@@ -206,7 +207,7 @@ func (c *Controller) syncHandler(key string) error {
 
 	deploymentName := foo.Spec.DeploymentName
 	if deploymentName == "" {
-		klog.Errorf("deploymentName must be specified %s\n", key)
+		klog.Errorf("deploymentName must be specified %s", key)
 		return nil
 	}
 	deployment, err := c.deploymentsLister.Deployments(foo.Namespace).Get(deploymentName)
@@ -231,7 +232,7 @@ func (c *Controller) syncHandler(key string) error {
 	// number does not equal the current desired replicas on the Deployment, we
 	// should update the Deployment resource.
 	if foo.Spec.Replicas != nil && *foo.Spec.Replicas != *deployment.Spec.Replicas {
-		klog.Infof("Foo %s replicas: %d, deployment replicas: %d\n", name, *foo.Spec.Replicas, *deployment.Spec.Replicas)
+		klog.Infof("Foo %s replicas: %d, deployment replicas: %d", name, *foo.Spec.Replicas, *deployment.Spec.Replicas)
 		deployment, err = c.kubeclientset.AppsV1().Deployments(foo.Namespace).Update(context.TODO(), newDeployment(foo), metav1.UpdateOptions{})
 	}
 

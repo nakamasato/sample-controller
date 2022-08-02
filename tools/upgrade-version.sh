@@ -288,6 +288,7 @@ cat <<EOF >> $FOO_CONTROLLER_FILE
 package main
 
 import (
+    "fmt"
 	"time"
 
 	clientset "$MODULE_NAME/pkg/generated/clientset/versioned"
@@ -296,7 +297,6 @@ import (
 
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/cache"
-	"k8s.io/client-go/util/workqueue"
     "k8s.io/klog/v2"
 )
 
@@ -324,21 +324,17 @@ func NewController(sampleclientset clientset.Interface, fooInformer informers.Fo
 
 func (c *Controller) Run(stopCh chan struct{}) error {
     if ok := cache.WaitForCacheSync(stopCh, c.foosSynced); !ok {
-        klog.Info("cache is not synced")
+        return fmt.Errorf("failed to wait for caches to sync")
     }
 
-    go wait.Until(c.worker, time.Second, stopCh)
+    go wait.Until(c.runWorker, time.Second, stopCh)
 
     <-stopCh
     return nil
 }
 
-func (c *Controller) worker() {
-	c.processNextItem()
-}
-
-func (c *Controller) processNextItem() bool {
-	return true
+func (c *Controller) runWorker() {
+	klog.Info("runWorker is called")
 }
 
 func (c *Controller) handleAdd(obj interface{}) {
@@ -393,7 +389,7 @@ func main() {
     controller := NewController(exampleClient, exampleInformerFactory.Example().V1alpha1().Foos())
     exampleInformerFactory.Start(stopCh)
     if err = controller.Run(stopCh); err != nil {
-        klog.Fatalf("error occurred when running controller %s\n", err.Error())
+        klog.Fatalf("error occurred when running controller %s", err.Error())
     }
 }
 EOF
@@ -408,6 +404,8 @@ gsed -i "s#\[$TITLE_AND_MESSAGE\].*#[$TITLE_AND_MESSAGE]($REPO_URL/commit/$commi
 
 # 5.2. Fetch Foo object
 
+# import     "k8s.io/client-go/util/workqueue"
+gsed -i '/"k8s.io\/client-go\/tools\/cache"/a "k8s.io\/client-go\/util\/workqueue"' $FOO_CONTROLLER_FILE # add after
 # add foosLister and workqueue to Controller
 cat <<EOF > tmpfile
 
@@ -438,15 +436,18 @@ func (c *Controller) enqueueFoo(obj interface{}) {
     var key string
     var err error
     if key, err = cache.MetaNamespaceKeyFunc(obj); err != nil {
-        klog.Errorf("failed to get key from the cache %s\n", err.Error())
+        klog.Errorf("failed to get key from the cache %s", err.Error())
         return
     }
     c.workqueue.Add(key)
 }
 EOF
-gsed -i "/^func.*processNextItem() bool {$/,/^$/d" $FOO_CONTROLLER_FILE # delete processNextItem func
+
+# update runWorker()
+gsed -i 's/klog.Info("runWorker is called")/for c.processNextWorkItem() {\n}/' $FOO_CONTROLLER_FILE
+
 cat<<EOF > tmpfile
-func (c *Controller) processNextItem() bool {
+func (c *Controller) processNextWorkItem() bool {
     obj, shutdown := c.workqueue.Get()
     if shutdown {
         return false
@@ -470,17 +471,17 @@ func (c *Controller) processNextItem() bool {
 
         ns, name, err := cache.SplitMetaNamespaceKey(key)
         if err != nil {
-            klog.Errorf("failed to split key into namespace and name %s\n", err.Error())
+            klog.Errorf("failed to split key into namespace and name %s", err.Error())
             return err
         }
 
         // temporary main logic
         foo, err := c.foosLister.Foos(ns).Get(name)
         if err != nil {
-            klog.Errorf("failed to get foo resource from lister %s\n", err.Error())
+            klog.Errorf("failed to get foo resource from lister %s", err.Error())
             return err
         }
-        klog.Infof("Got foo %+v\n", foo.Spec)
+        klog.Infof("Got foo %+v", foo.Spec)
 
         // Forget the queue item as it's successfully processed and
         // the item will not be requeued.
@@ -560,7 +561,7 @@ gsed -i $'/clientcmd"$/{e cat tmpfile\n}' $MAIN_GO_FILE # add imports before cli
 cat <<EOF > tmpfile
 	kubeClient, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		klog.Errorf("getting kubernetes client set %s\n", err.Error())
+		klog.Errorf("getting kubernetes client set %s", err.Error())
 	}
 
 EOF
@@ -599,13 +600,13 @@ cat <<EOF > tmpfile
 func (c *Controller) syncHandler(key string) error {
     ns, name, err := cache.SplitMetaNamespaceKey(key)
     if err != nil {
-        klog.Errorf("failed to split key into namespace and name %s\n", err.Error())
+        klog.Errorf("failed to split key into namespace and name %s", err.Error())
         return err
     }
 
     foo, err := c.foosLister.Foos(ns).Get(name)
     if err != nil {
-        klog.Errorf("failed to get foo resource from lister %s\n", err.Error())
+        klog.Errorf("failed to get foo resource from lister %s", err.Error())
         if errors.IsNotFound(err) {
             return nil
         }
@@ -614,7 +615,7 @@ func (c *Controller) syncHandler(key string) error {
 
     deploymentName := foo.Spec.DeploymentName
     if deploymentName == "" {
-        klog.Errorf("deploymentName must be specified %s\n", key)
+        klog.Errorf("deploymentName must be specified %s", key)
         return nil
     }
     deployment, err := c.deploymentsLister.Deployments(foo.Namespace).Get(deploymentName)
@@ -715,7 +716,7 @@ cat <<EOF > tmpfile
     // number does not equal the current desired replicas on the Deployment, we
     // should update the Deployment resource.
     if foo.Spec.Replicas != nil && *foo.Spec.Replicas != *deployment.Spec.Replicas {
-        klog.Infof("Foo %s replicas: %d, deployment replicas: %d\n", name, *foo.Spec.Replicas, *deployment.Spec.Replicas)
+        klog.Infof("Foo %s replicas: %d, deployment replicas: %d", name, *foo.Spec.Replicas, *deployment.Spec.Replicas)
         deployment, err = c.kubeclientset.AppsV1().Deployments(foo.Namespace).Update(context.TODO(), newDeployment(foo), metav1.UpdateOptions{})
     }
 

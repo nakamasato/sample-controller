@@ -33,7 +33,7 @@ func main() {
 
 	kubeClient, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		klog.Errorf("getting kubernetes client set %s\n", err.Error())
+		klog.Errorf("getting kubernetes client set %s", err.Error())
 	}
 
 	exampleClient, err := clientset.NewForConfig(config)
@@ -53,6 +53,6 @@ func main() {
 	kubeInformerFactory.Start(stopCh)
 	exampleInformerFactory.Start(stopCh)
 	if err = controller.Run(stopCh); err != nil {
-		klog.Fatalf("error occurred when running controller %s\n", err.Error())
+		klog.Fatalf("error occurred when running controller %s", err.Error())
 	}
 }
