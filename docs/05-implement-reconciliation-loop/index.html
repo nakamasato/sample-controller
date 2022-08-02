@@ -84,7 +84,7 @@
 <div class="col-12 col-md-9">
 <h1 class=title>5. Implement reconciliation</h1>
 <div class=content>
-<h2 id=51-create-controllerhttpsgithubcomnakamasatosample-controllercommit5cf076bb61bb2394731abb9b2674358d38fb0679><a href=https://github.com/nakamasato/sample-controller/commit/5cf076bb61bb2394731abb9b2674358d38fb0679>5.1. Create Controller</a></h2>
+<h2 id=51-create-controllerhttpsgithubcomnakamasatosample-controllercommitfd2213b90eb7113639ac64bfe3644b1107502a45><a href=https://github.com/nakamasato/sample-controller/commit/fd2213b90eb7113639ac64bfe3644b1107502a45>5.1. Create Controller</a></h2>
 <h3 id=511-overview>5.1.1. Overview</h3>
 <p><img src=overview-1.drawio.svg alt></p>
 <h3 id=511-implement>5.1.1. Implement</h3>
@@ -268,11 +268,12 @@
 2022/07/18 06:36:40 handleDelete is called
 </code></pre></div></li>
 </ol>
-<h2 id=52-fetch-foo-objecthttpsgithubcomnakamasatosample-controllercommitac231d6311fffbf19a47f06c31393f86a9e386b4><a href=https://github.com/nakamasato/sample-controller/commit/ac231d6311fffbf19a47f06c31393f86a9e386b4>5.2. Fetch Foo object</a></h2>
+<h2 id=52-fetch-foo-objecthttpsgithubcomnakamasatosample-controllercommitdba973350be9def030199ba6b0bd414ff9110fd4><a href=https://github.com/nakamasato/sample-controller/commit/dba973350be9def030199ba6b0bd414ff9110fd4>5.2. Fetch Foo object</a></h2>
 <h3 id=521-overview>5.2.1. Overview</h3>
 <p><img src=overview-2.drawio.svg alt></p>
 <p>Implement the following logic:</p>
 <ol>
+<li>Add <code>workqueue</code> and <code>listers</code> to <code>Controller</code> struct.</li>
 <li>Add the key for the triggerred object to <code>workqueue</code> in <code>handleAdd</code> and <code>handleUpdate</code>. (e.g. <code>Foo</code> -> <code>&lt;namespace>/&lt;name></code>)</li>
 <li>Get a <code>workqueue</code> item (<code>&lt;namespace>/&lt;name></code>).</li>
 <li>Get the <code>Foo</code> resource with namespace and name from the <code>lister</code>.</li>
@@ -280,6 +281,27 @@
 </ol>
 <h3 id=522-implement>5.2.2. Implement</h3>
 <ol>
+<li>
+<p>Add <code>workqueue</code> and <code>listers</code>.</p>
+<div class=highlight><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kn>import</span> <span class=p>(</span>
+    <span class=o>...</span>
+    <span class=s>&#34;k8s.io/client-go/util/workqueue&#34;</span>
+    <span class=o>...</span>
+    <span class=nx>listers</span> <span class=s>&#34;github.com/nakamasato/sample-controller/pkg/generated/listers/example.com/v1alpha1&#34;</span>
+<span class=p>)</span>
+</code></pre></div><div class=highlight><pre tabindex=0 class=chroma><code class=language-diff data-lang=diff> type Controller struct {
+     sampleclientset clientset.Interface
+     fooSynced       cache.InformerSynced
+<span class=gi>+    foosLister      listers.FooLister
+</span><span class=gi>+    workqueue       workqueue.RateLimitingInterface
+</span><span class=gi></span> }
+</code></pre></div><div class=highlight><pre tabindex=0 class=chroma><code class=language-diff data-lang=diff> controller := &amp;Controller{
+     sampleclientset: sampleclientset,
+     fooSynced:       fooInformer.Informer().HasSynced,
+<span class=gi>+    foosLister:      fooInformer.Lister(),
+</span><span class=gi>+    workqueue:       workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), &#34;foo&#34;),
+</span><span class=gi></span> }
+</code></pre></div></li>
 <li>
 <p>Define <code>enqueueFoo</code> to convert Foo resource into namespace/name string before putting into the workqueue.</p>
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kd>func</span> <span class=p>(</span><span class=nx>c</span> <span class=o>*</span><span class=nx>Controller</span><span class=p>)</span> <span class=nf>handleAdd</span><span class=p>(</span><span class=nx>obj</span> <span class=kd>interface</span><span class=p>{})</span> <span class=p>{</span>
@@ -303,13 +325,6 @@
         <span class=k>return</span>
     <span class=p>}</span>
     <span class=nx>c</span><span class=p>.</span><span class=nx>workqueue</span><span class=p>.</span><span class=nf>Add</span><span class=p>(</span><span class=nx>key</span><span class=p>)</span>
-<span class=p>}</span>
-</code></pre></div></li>
-<li>
-<p>Call <code>processNextWorkItem</code> in <code>runWork</code>.</p>
-<div class=highlight><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kd>func</span> <span class=p>(</span><span class=nx>c</span> <span class=o>*</span><span class=nx>Controller</span><span class=p>)</span> <span class=nf>runWorker</span><span class=p>()</span> <span class=p>{</span>
-    <span class=k>for</span> <span class=nx>c</span><span class=p>.</span><span class=nf>processNextWorkItem</span><span class=p>()</span> <span class=p>{</span>
-    <span class=p>}</span>
 <span class=p>}</span>
 </code></pre></div></li>
 <li>
@@ -348,7 +363,7 @@
             <span class=nx>klog</span><span class=p>.</span><span class=nf>Errorf</span><span class=p>(</span><span class=s>&#34;failed to get foo resource from lister %s\n&#34;</span><span class=p>,</span> <span class=nx>err</span><span class=p>.</span><span class=nf>Error</span><span class=p>())</span>
             <span class=k>return</span> <span class=nx>err</span>
         <span class=p>}</span>
-        <span class=nx>klog</span><span class=p>.</span><span class=nf>Infof</span><span class=p>(</span><span class=s>&#34;Got foo %+v\n&#34;</span><span class=p>,</span> <span class=nx>foo</span><span class=p>.</span><span class=nx>Spec</span><span class=p>)</span>
+        <span class=nx>klog</span><span class=p>.</span><span class=nf>Infof</span><span class=p>(</span><span class=s>&#34;Got foo %+v&#34;</span><span class=p>,</span> <span class=nx>foo</span><span class=p>.</span><span class=nx>Spec</span><span class=p>)</span>
 
         <span class=c1>// Forget the queue item as it&#39;s successfully processed and
 </span><span class=c1></span>        <span class=c1>// the item will not be requeued.
@@ -362,6 +377,13 @@
     <span class=p>}</span>
 
     <span class=k>return</span> <span class=kc>true</span>
+<span class=p>}</span>
+</code></pre></div></li>
+<li>
+<p>Call <code>processNextWorkItem</code> in <code>runWork</code>.</p>
+<div class=highlight><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kd>func</span> <span class=p>(</span><span class=nx>c</span> <span class=o>*</span><span class=nx>Controller</span><span class=p>)</span> <span class=nf>runWorker</span><span class=p>()</span> <span class=p>{</span>
+    <span class=k>for</span> <span class=nx>c</span><span class=p>.</span><span class=nf>processNextWorkItem</span><span class=p>()</span> <span class=p>{</span>
+    <span class=p>}</span>
 <span class=p>}</span>
 </code></pre></div></li>
 </ol>
@@ -385,7 +407,7 @@
 2022/07/18 07:46:49 failed to get foo resource from lister foo.example.com &#34;foo-sample&#34; not found
 </code></pre></div></li>
 </ol>
-<h2 id=53-createdelete-deployment-for-foo-resourcehttpsgithubcomnakamasatosample-controllercommitefc192910c5363ab977e4921f876fbf2313021a7><a href=https://github.com/nakamasato/sample-controller/commit/efc192910c5363ab977e4921f876fbf2313021a7>5.3. Create/Delete Deployment for Foo resource</a></h2>
+<h2 id=53-createdelete-deployment-for-foo-resourcehttpsgithubcomnakamasatosample-controllercommit5f011a846db86065fa2658a7caac7b72585fe1cd><a href=https://github.com/nakamasato/sample-controller/commit/5f011a846db86065fa2658a7caac7b72585fe1cd>5.3. Create/Delete Deployment for Foo resource</a></h2>
 <h3 id=531-overview>5.3.1. Overview</h3>
 <p><img src=overview-3.drawio.svg alt></p>
 <p>In this section, we&rsquo;ll add a logic to create a <code>Deployment</code> for <code>Foo</code> resource.</p>
@@ -470,8 +492,8 @@
 <span class=gi>+       kubeInformerFactory := kubeinformers.NewSharedInformerFactory(kubeClient, time.Second*30)
 </span><span class=gi></span>        exampleInformerFactory := informers.NewSharedInformerFactory(exampleClient, time.Second*30)
         stopCh := make(chan struct{})
-<span class=gd>-       controller := controller.NewController(exampleClient, exampleInformerFactory.Example().V1alpha1().Foos())
-</span><span class=gd></span><span class=gi>+       controller := controller.NewController(
+<span class=gd>-       controller := NewController(exampleClient, exampleInformerFactory.Example().V1alpha1().Foos())
+</span><span class=gd></span><span class=gi>+       controller := NewController(
 </span><span class=gi>+               kubeClient,
 </span><span class=gi>+               exampleClient,
 </span><span class=gi>+               kubeInformerFactory.Apps().V1().Deployments(),
@@ -633,7 +655,7 @@ No resources found in default namespace.
 </blockquote>
 </li>
 </ol>
-<h2 id=54-check-and-update-deployment-if-necessaryhttpsgithubcomnakamasatosample-controllercommit0eb10bc8704da037e2d650b01540fac39292926c><a href=https://github.com/nakamasato/sample-controller/commit/0eb10bc8704da037e2d650b01540fac39292926c>5.4. Check and update Deployment if necessary</a></h2>
+<h2 id=54-check-and-update-deployment-if-necessaryhttpsgithubcomnakamasatosample-controllercommit60ecacf8c8159d85e010ab295479331d24fee958><a href=https://github.com/nakamasato/sample-controller/commit/60ecacf8c8159d85e010ab295479331d24fee958>5.4. Check and update Deployment if necessary</a></h2>
 <h3 id=541-overview>5.4.1. Overview</h3>
 <p><img src=overview-4.drawio.svg alt></p>
 <p>What needs to be done:</p>
@@ -767,7 +789,7 @@ foo-sample   2/2     2            2           3h42m
 kubectl delete deploy foo-sample
 </code></pre></div></li>
 </ol>
-<h2 id=55-update-foo-statushttpsgithubcomnakamasatosample-controllercommitffa3c6f4b84104ff254c5ee8c09a888c25329cbd><a href=https://github.com/nakamasato/sample-controller/commit/ffa3c6f4b84104ff254c5ee8c09a888c25329cbd>5.5. Update Foo status</a></h2>
+<h2 id=55-update-foo-statushttpsgithubcomnakamasatosample-controllercommitc3a98cdaa13f5f7a4e5e184baa64e3517b97f874><a href=https://github.com/nakamasato/sample-controller/commit/c3a98cdaa13f5f7a4e5e184baa64e3517b97f874>5.5. Update Foo status</a></h2>
 <h3 id=551-overview>5.5.1. Overview</h3>
 <p><img src=overview-5.drawio.svg alt></p>
 <ol>
@@ -845,7 +867,7 @@ kubectl delete deploy foo-sample
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>kubectl delete -f config/sample/foo.yaml
 </code></pre></div></li>
 </ol>
-<h2 id=56-capture-the-update-of-deploymenthttpsgithubcomnakamasatosample-controllercommitc7e176b9e4762ad23a9bb5d4ae206e00a45c2f0b><a href=https://github.com/nakamasato/sample-controller/commit/c7e176b9e4762ad23a9bb5d4ae206e00a45c2f0b>5.6. Capture the update of Deployment</a></h2>
+<h2 id=56-capture-the-update-of-deploymenthttpsgithubcomnakamasatosample-controllercommit1765894c43c2aeb5d51b4a8cc5d05fa2106c65ae><a href=https://github.com/nakamasato/sample-controller/commit/1765894c43c2aeb5d51b4a8cc5d05fa2106c65ae>5.6. Capture the update of Deployment</a></h2>
 <h3 id=561-overview>5.6.1. Overview</h3>
 <p><img src=overview-6.drawio.svg alt></p>
 <p>In the previous section, <code>status.availableReplicas</code> is not updated immediately. This is because sample-contrller just monitors our custom resource <code>Foo</code>. In this section, we&rsquo;ll enable to capture changes of Deployments controlled by <code>Foo</code>.</p>
@@ -939,7 +961,7 @@ kubectl delete deploy foo-sample
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>kubectl delete -f config/sample/foo.yaml
 </code></pre></div></li>
 </ol>
-<h2 id=57-create-events-for-foo-resourcehttpsgithubcomnakamasatosample-controllercommit5e136598214a40adcb6fac909690b07c0b0124b0><a href=https://github.com/nakamasato/sample-controller/commit/5e136598214a40adcb6fac909690b07c0b0124b0>5.7. Create events for Foo resource</a></h2>
+<h2 id=57-create-events-for-foo-resourcehttpsgithubcomnakamasatosample-controllercommit72859779fd2fe16894c98afa5d296b55ddf7f3bd><a href=https://github.com/nakamasato/sample-controller/commit/72859779fd2fe16894c98afa5d296b55ddf7f3bd>5.7. Create events for Foo resource</a></h2>
 <h3 id=571-overview>5.7.1. Overview</h3>
 <ol>
 <li>Add <code>record.EventRecorder</code> to <code>Controller</code>.</li>
