@@ -84,7 +84,7 @@
 <div class="col-12 col-md-9">
 <h1 class=title>5. Implement reconciliation</h1>
 <div class=content>
-<h2 id=51-create-controllerhttpsgithubcomnakamasatosample-controllercommitfd2213b90eb7113639ac64bfe3644b1107502a45><a href=https://github.com/nakamasato/sample-controller/commit/fd2213b90eb7113639ac64bfe3644b1107502a45>5.1. Create Controller</a></h2>
+<h2 id=51-create-controllerhttpsgithubcomnakamasatosample-controllercommitf3b920ae8117b7e10772d7cfaafee3495fd276ea><a href=https://github.com/nakamasato/sample-controller/commit/f3b920ae8117b7e10772d7cfaafee3495fd276ea>5.1. Create Controller</a></h2>
 <h3 id=511-overview>5.1.1. Overview</h3>
 <p><img src=overview-1.drawio.svg alt></p>
 <h3 id=511-implement>5.1.1. Implement</h3>
@@ -200,7 +200,7 @@
 </span><span class=gi></span>Example().V1alpha1().Foos())
 <span class=gi>+       exampleInformerFactory.Start(stopCh)
 </span><span class=gi>+       if err = controller.Run(stopCh); err != nil {
-</span><span class=gi>+               klog.Fatalf(&#34;error occurred when running controller %s\n&#34;,
+</span><span class=gi>+               klog.Fatalf(&#34;error occurred when running controller %s&#34;,
 </span><span class=gi></span> err.Error())
         }
 <span class=gd>-       klog.Infof(&#34;length of foos is %d&#34;, len(foos.Items))
@@ -247,7 +247,7 @@
 	<span class=nx>controller</span> <span class=o>:=</span> <span class=nf>NewController</span><span class=p>(</span><span class=nx>exampleClient</span><span class=p>,</span> <span class=nx>exampleInformerFactory</span><span class=p>.</span><span class=nf>Example</span><span class=p>().</span><span class=nf>V1alpha1</span><span class=p>().</span><span class=nf>Foos</span><span class=p>())</span>
 	<span class=nx>exampleInformerFactory</span><span class=p>.</span><span class=nf>Start</span><span class=p>(</span><span class=nx>stopCh</span><span class=p>)</span>
 	<span class=k>if</span> <span class=nx>err</span> <span class=p>=</span> <span class=nx>controller</span><span class=p>.</span><span class=nf>Run</span><span class=p>(</span><span class=nx>stopCh</span><span class=p>);</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
-		<span class=nx>klog</span><span class=p>.</span><span class=nf>Fatalf</span><span class=p>(</span><span class=s>&#34;error occurred when running controller %s\n&#34;</span><span class=p>,</span> <span class=nx>err</span><span class=p>.</span><span class=nf>Error</span><span class=p>())</span>
+		<span class=nx>klog</span><span class=p>.</span><span class=nf>Fatalf</span><span class=p>(</span><span class=s>&#34;error occurred when running controller %s&#34;</span><span class=p>,</span> <span class=nx>err</span><span class=p>.</span><span class=nf>Error</span><span class=p>())</span>
 	<span class=p>}</span>
 <span class=p>}</span>
 </code></pre></div>
@@ -268,7 +268,7 @@
 2022/07/18 06:36:40 handleDelete is called
 </code></pre></div></li>
 </ol>
-<h2 id=52-fetch-foo-objecthttpsgithubcomnakamasatosample-controllercommitdba973350be9def030199ba6b0bd414ff9110fd4><a href=https://github.com/nakamasato/sample-controller/commit/dba973350be9def030199ba6b0bd414ff9110fd4>5.2. Fetch Foo object</a></h2>
+<h2 id=52-fetch-foo-objecthttpsgithubcomnakamasatosample-controllercommit7fcf6245a14fd89c5148dab49e3c9b5a13503578><a href=https://github.com/nakamasato/sample-controller/commit/7fcf6245a14fd89c5148dab49e3c9b5a13503578>5.2. Fetch Foo object</a></h2>
 <h3 id=521-overview>5.2.1. Overview</h3>
 <p><img src=overview-2.drawio.svg alt></p>
 <p>Implement the following logic:</p>
@@ -321,7 +321,7 @@
     <span class=kd>var</span> <span class=nx>key</span> <span class=kt>string</span>
     <span class=kd>var</span> <span class=nx>err</span> <span class=kt>error</span>
     <span class=k>if</span> <span class=nx>key</span><span class=p>,</span> <span class=nx>err</span> <span class=p>=</span> <span class=nx>cache</span><span class=p>.</span><span class=nf>MetaNamespaceKeyFunc</span><span class=p>(</span><span class=nx>obj</span><span class=p>);</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
-        <span class=nx>klog</span><span class=p>.</span><span class=nf>Errorf</span><span class=p>(</span><span class=s>&#34;failed to get key from the cache %s\n&#34;</span><span class=p>,</span> <span class=nx>err</span><span class=p>.</span><span class=nf>Error</span><span class=p>())</span>
+        <span class=nx>klog</span><span class=p>.</span><span class=nf>Errorf</span><span class=p>(</span><span class=s>&#34;failed to get key from the cache %s&#34;</span><span class=p>,</span> <span class=nx>err</span><span class=p>.</span><span class=nf>Error</span><span class=p>())</span>
         <span class=k>return</span>
     <span class=p>}</span>
     <span class=nx>c</span><span class=p>.</span><span class=nx>workqueue</span><span class=p>.</span><span class=nf>Add</span><span class=p>(</span><span class=nx>key</span><span class=p>)</span>
@@ -353,14 +353,14 @@
 
         <span class=nx>ns</span><span class=p>,</span> <span class=nx>name</span><span class=p>,</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>cache</span><span class=p>.</span><span class=nf>SplitMetaNamespaceKey</span><span class=p>(</span><span class=nx>key</span><span class=p>)</span>
         <span class=k>if</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
-            <span class=nx>klog</span><span class=p>.</span><span class=nf>Errorf</span><span class=p>(</span><span class=s>&#34;failed to split key into namespace and name %s\n&#34;</span><span class=p>,</span> <span class=nx>err</span><span class=p>.</span><span class=nf>Error</span><span class=p>())</span>
+            <span class=nx>klog</span><span class=p>.</span><span class=nf>Errorf</span><span class=p>(</span><span class=s>&#34;failed to split key into namespace and name %s&#34;</span><span class=p>,</span> <span class=nx>err</span><span class=p>.</span><span class=nf>Error</span><span class=p>())</span>
             <span class=k>return</span> <span class=nx>err</span>
         <span class=p>}</span>
 
         <span class=c1>// temporary main logic
 </span><span class=c1></span>        <span class=nx>foo</span><span class=p>,</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>c</span><span class=p>.</span><span class=nx>foosLister</span><span class=p>.</span><span class=nf>Foos</span><span class=p>(</span><span class=nx>ns</span><span class=p>).</span><span class=nf>Get</span><span class=p>(</span><span class=nx>name</span><span class=p>)</span>
         <span class=k>if</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
-            <span class=nx>klog</span><span class=p>.</span><span class=nf>Errorf</span><span class=p>(</span><span class=s>&#34;failed to get foo resource from lister %s\n&#34;</span><span class=p>,</span> <span class=nx>err</span><span class=p>.</span><span class=nf>Error</span><span class=p>())</span>
+            <span class=nx>klog</span><span class=p>.</span><span class=nf>Errorf</span><span class=p>(</span><span class=s>&#34;failed to get foo resource from lister %s&#34;</span><span class=p>,</span> <span class=nx>err</span><span class=p>.</span><span class=nf>Error</span><span class=p>())</span>
             <span class=k>return</span> <span class=nx>err</span>
         <span class=p>}</span>
         <span class=nx>klog</span><span class=p>.</span><span class=nf>Infof</span><span class=p>(</span><span class=s>&#34;Got foo %+v&#34;</span><span class=p>,</span> <span class=nx>foo</span><span class=p>.</span><span class=nx>Spec</span><span class=p>)</span>
@@ -407,7 +407,7 @@
 2022/07/18 07:46:49 failed to get foo resource from lister foo.example.com &#34;foo-sample&#34; not found
 </code></pre></div></li>
 </ol>
-<h2 id=53-createdelete-deployment-for-foo-resourcehttpsgithubcomnakamasatosample-controllercommit5f011a846db86065fa2658a7caac7b72585fe1cd><a href=https://github.com/nakamasato/sample-controller/commit/5f011a846db86065fa2658a7caac7b72585fe1cd>5.3. Create/Delete Deployment for Foo resource</a></h2>
+<h2 id=53-createdelete-deployment-for-foo-resourcehttpsgithubcomnakamasatosample-controllercommitb3a37c47e5cb0e8bf4b82601b4ae8a2d19f618dd><a href=https://github.com/nakamasato/sample-controller/commit/b3a37c47e5cb0e8bf4b82601b4ae8a2d19f618dd>5.3. Create/Delete Deployment for Foo resource</a></h2>
 <h3 id=531-overview>5.3.1. Overview</h3>
 <p><img src=overview-3.drawio.svg alt></p>
 <p>In this section, we&rsquo;ll add a logic to create a <code>Deployment</code> for <code>Foo</code> resource.</p>
@@ -481,12 +481,12 @@
     ...
 <span class=gi>+       kubeClient, err := kubernetes.NewForConfig(config)
 </span><span class=gi>+       if err != nil {
-</span><span class=gi>+               klog.Errorf(&#34;getting kubernetes client set %s\n&#34;, err.Error())
+</span><span class=gi>+               klog.Errorf(&#34;getting kubernetes client set %s&#34;, err.Error())
 </span><span class=gi>+       }
 </span><span class=gi>+
 </span><span class=gi></span>        exampleClient, err := clientset.NewForConfig(config)
         if err != nil {
-                klog.Errorf(&#34;getting client set %s\n&#34;, err.Error())
+                klog.Errorf(&#34;getting client set %s&#34;, err.Error())
         }
 
 <span class=gi>+       kubeInformerFactory := kubeinformers.NewSharedInformerFactory(kubeClient, time.Second*30)
@@ -508,13 +508,13 @@
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kd>func</span> <span class=p>(</span><span class=nx>c</span> <span class=o>*</span><span class=nx>Controller</span><span class=p>)</span> <span class=nf>syncHandler</span><span class=p>(</span><span class=nx>key</span> <span class=kt>string</span><span class=p>)</span> <span class=kt>error</span> <span class=p>{</span>
     <span class=nx>ns</span><span class=p>,</span> <span class=nx>name</span><span class=p>,</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>cache</span><span class=p>.</span><span class=nf>SplitMetaNamespaceKey</span><span class=p>(</span><span class=nx>key</span><span class=p>)</span>
     <span class=k>if</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
-        <span class=nx>klog</span><span class=p>.</span><span class=nf>Errorf</span><span class=p>(</span><span class=s>&#34;failed to split key into namespace and name %s\n&#34;</span><span class=p>,</span> <span class=nx>err</span><span class=p>.</span><span class=nf>Error</span><span class=p>())</span>
+        <span class=nx>klog</span><span class=p>.</span><span class=nf>Errorf</span><span class=p>(</span><span class=s>&#34;failed to split key into namespace and name %s&#34;</span><span class=p>,</span> <span class=nx>err</span><span class=p>.</span><span class=nf>Error</span><span class=p>())</span>
         <span class=k>return</span> <span class=nx>err</span>
     <span class=p>}</span>
 
     <span class=nx>foo</span><span class=p>,</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>c</span><span class=p>.</span><span class=nx>foosLister</span><span class=p>.</span><span class=nf>Foos</span><span class=p>(</span><span class=nx>ns</span><span class=p>).</span><span class=nf>Get</span><span class=p>(</span><span class=nx>name</span><span class=p>)</span>
     <span class=k>if</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
-        <span class=nx>klog</span><span class=p>.</span><span class=nf>Errorf</span><span class=p>(</span><span class=s>&#34;failed to get foo resource from lister %s\n&#34;</span><span class=p>,</span> <span class=nx>err</span><span class=p>.</span><span class=nf>Error</span><span class=p>())</span>
+        <span class=nx>klog</span><span class=p>.</span><span class=nf>Errorf</span><span class=p>(</span><span class=s>&#34;failed to get foo resource from lister %s&#34;</span><span class=p>,</span> <span class=nx>err</span><span class=p>.</span><span class=nf>Error</span><span class=p>())</span>
         <span class=k>if</span> <span class=nx>errors</span><span class=p>.</span><span class=nf>IsNotFound</span><span class=p>(</span><span class=nx>err</span><span class=p>)</span> <span class=p>{</span>
             <span class=k>return</span> <span class=kc>nil</span>
         <span class=p>}</span>
@@ -523,7 +523,7 @@
 
     <span class=nx>deploymentName</span> <span class=o>:=</span> <span class=nx>foo</span><span class=p>.</span><span class=nx>Spec</span><span class=p>.</span><span class=nx>DeploymentName</span>
     <span class=k>if</span> <span class=nx>deploymentName</span> <span class=o>==</span> <span class=s>&#34;&#34;</span> <span class=p>{</span>
-        <span class=nx>klog</span><span class=p>.</span><span class=nf>Errorf</span><span class=p>(</span><span class=s>&#34;deploymentName must be specified %s\n&#34;</span><span class=p>,</span> <span class=nx>key</span><span class=p>)</span>
+        <span class=nx>klog</span><span class=p>.</span><span class=nf>Errorf</span><span class=p>(</span><span class=s>&#34;deploymentName must be specified %s&#34;</span><span class=p>,</span> <span class=nx>key</span><span class=p>)</span>
         <span class=k>return</span> <span class=kc>nil</span>
     <span class=p>}</span>
     <span class=nx>deployment</span><span class=p>,</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>c</span><span class=p>.</span><span class=nx>deploymentsLister</span><span class=p>.</span><span class=nf>Deployments</span><span class=p>(</span><span class=nx>foo</span><span class=p>.</span><span class=nx>Namespace</span><span class=p>).</span><span class=nf>Get</span><span class=p>(</span><span class=nx>deploymentName</span><span class=p>)</span>
@@ -591,7 +591,7 @@
 
 <span class=gd>-               ns, name, err := cache.SplitMetaNamespaceKey(key)
 </span><span class=gd>-               if err != nil {
-</span><span class=gd>-                       klog.Errorf(&#34;failed to split key into namespace and name %s\n&#34;, err.Error())
+</span><span class=gd>-                       klog.Errorf(&#34;failed to split key into namespace and name %s&#34;, err.Error())
 </span><span class=gd>-                       return err
 </span><span class=gd></span><span class=gi>+               if err := c.syncHandler(key); err != nil {
 </span><span class=gi>+                       // Put the item back on the workqueue to handle any transient errors.
@@ -602,10 +602,10 @@
 <span class=gd>-               // temporary main logic
 </span><span class=gd>-               foo, err := c.foosLister.Foos(ns).Get(name)
 </span><span class=gd>-               if err != nil {
-</span><span class=gd>-                       klog.Errorf(&#34;failed to get foo resource from lister %s\n&#34;, err.Error())
+</span><span class=gd>-                       klog.Errorf(&#34;failed to get foo resource from lister %s&#34;, err.Error())
 </span><span class=gd>-                       return err
 </span><span class=gd>-               }
-</span><span class=gd>-               klog.Infof(&#34;Got foo %+v\n&#34;, foo.Spec)
+</span><span class=gd>-               klog.Infof(&#34;Got foo %+v&#34;, foo.Spec)
 </span><span class=gd>-
 </span><span class=gd></span>                // Forget the queue item as it&#39;s successfully processed and
                 // the item will not be requeued.
@@ -655,7 +655,7 @@ No resources found in default namespace.
 </blockquote>
 </li>
 </ol>
-<h2 id=54-check-and-update-deployment-if-necessaryhttpsgithubcomnakamasatosample-controllercommit60ecacf8c8159d85e010ab295479331d24fee958><a href=https://github.com/nakamasato/sample-controller/commit/60ecacf8c8159d85e010ab295479331d24fee958>5.4. Check and update Deployment if necessary</a></h2>
+<h2 id=54-check-and-update-deployment-if-necessaryhttpsgithubcomnakamasatosample-controllercommit951895133561ec67232769ffb6d4c4bb11b0fe48><a href=https://github.com/nakamasato/sample-controller/commit/951895133561ec67232769ffb6d4c4bb11b0fe48>5.4. Check and update Deployment if necessary</a></h2>
 <h3 id=541-overview>5.4.1. Overview</h3>
 <p><img src=overview-4.drawio.svg alt></p>
 <p>What needs to be done:</p>
@@ -704,7 +704,7 @@ No resources found in default namespace.
 </span><span class=c1></span>    <span class=c1>// number does not equal the current desired replicas on the Deployment, we
 </span><span class=c1></span>    <span class=c1>// should update the Deployment resource.
 </span><span class=c1></span>    <span class=k>if</span> <span class=nx>foo</span><span class=p>.</span><span class=nx>Spec</span><span class=p>.</span><span class=nx>Replicas</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=o>&amp;&amp;</span> <span class=o>*</span><span class=nx>foo</span><span class=p>.</span><span class=nx>Spec</span><span class=p>.</span><span class=nx>Replicas</span> <span class=o>!=</span> <span class=o>*</span><span class=nx>deployment</span><span class=p>.</span><span class=nx>Spec</span><span class=p>.</span><span class=nx>Replicas</span> <span class=p>{</span>
-        <span class=nx>klog</span><span class=p>.</span><span class=nf>Infof</span><span class=p>(</span><span class=s>&#34;Foo %s replicas: %d, deployment replicas: %d\n&#34;</span><span class=p>,</span> <span class=nx>name</span><span class=p>,</span> <span class=o>*</span><span class=nx>foo</span><span class=p>.</span><span class=nx>Spec</span><span class=p>.</span><span class=nx>Replicas</span><span class=p>,</span> <span class=o>*</span><span class=nx>deployment</span><span class=p>.</span><span class=nx>Spec</span><span class=p>.</span><span class=nx>Replicas</span><span class=p>)</span>
+        <span class=nx>klog</span><span class=p>.</span><span class=nf>Infof</span><span class=p>(</span><span class=s>&#34;Foo %s replicas: %d, deployment replicas: %d&#34;</span><span class=p>,</span> <span class=nx>name</span><span class=p>,</span> <span class=o>*</span><span class=nx>foo</span><span class=p>.</span><span class=nx>Spec</span><span class=p>.</span><span class=nx>Replicas</span><span class=p>,</span> <span class=o>*</span><span class=nx>deployment</span><span class=p>.</span><span class=nx>Spec</span><span class=p>.</span><span class=nx>Replicas</span><span class=p>)</span>
         <span class=nx>deployment</span><span class=p>,</span> <span class=nx>err</span> <span class=p>=</span> <span class=nx>c</span><span class=p>.</span><span class=nx>kubeclientset</span><span class=p>.</span><span class=nf>AppsV1</span><span class=p>().</span><span class=nf>Deployments</span><span class=p>(</span><span class=nx>foo</span><span class=p>.</span><span class=nx>Namespace</span><span class=p>).</span><span class=nf>Update</span><span class=p>(</span><span class=nx>context</span><span class=p>.</span><span class=nf>TODO</span><span class=p>(),</span> <span class=nf>newDeployment</span><span class=p>(</span><span class=nx>foo</span><span class=p>),</span> <span class=nx>metav1</span><span class=p>.</span><span class=nx>UpdateOptions</span><span class=p>{})</span>
     <span class=p>}</span>
     <span class=c1>// If an error occurs during Update, we&#39;ll requeue the item so we can
@@ -789,7 +789,7 @@ foo-sample   2/2     2            2           3h42m
 kubectl delete deploy foo-sample
 </code></pre></div></li>
 </ol>
-<h2 id=55-update-foo-statushttpsgithubcomnakamasatosample-controllercommitc3a98cdaa13f5f7a4e5e184baa64e3517b97f874><a href=https://github.com/nakamasato/sample-controller/commit/c3a98cdaa13f5f7a4e5e184baa64e3517b97f874>5.5. Update Foo status</a></h2>
+<h2 id=55-update-foo-statushttpsgithubcomnakamasatosample-controllercommit07a254b37ad85f4b5af513b0ffe9a558d465258c><a href=https://github.com/nakamasato/sample-controller/commit/07a254b37ad85f4b5af513b0ffe9a558d465258c>5.5. Update Foo status</a></h2>
 <h3 id=551-overview>5.5.1. Overview</h3>
 <p><img src=overview-5.drawio.svg alt></p>
 <ol>
@@ -867,7 +867,7 @@ kubectl delete deploy foo-sample
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>kubectl delete -f config/sample/foo.yaml
 </code></pre></div></li>
 </ol>
-<h2 id=56-capture-the-update-of-deploymenthttpsgithubcomnakamasatosample-controllercommit1765894c43c2aeb5d51b4a8cc5d05fa2106c65ae><a href=https://github.com/nakamasato/sample-controller/commit/1765894c43c2aeb5d51b4a8cc5d05fa2106c65ae>5.6. Capture the update of Deployment</a></h2>
+<h2 id=56-capture-the-update-of-deploymenthttpsgithubcomnakamasatosample-controllercommit0188fd6001ccc2a5e02ac89cce1fb2f39d66e756><a href=https://github.com/nakamasato/sample-controller/commit/0188fd6001ccc2a5e02ac89cce1fb2f39d66e756>5.6. Capture the update of Deployment</a></h2>
 <h3 id=561-overview>5.6.1. Overview</h3>
 <p><img src=overview-6.drawio.svg alt></p>
 <p>In the previous section, <code>status.availableReplicas</code> is not updated immediately. This is because sample-contrller just monitors our custom resource <code>Foo</code>. In this section, we&rsquo;ll enable to capture changes of Deployments controlled by <code>Foo</code>.</p>
@@ -961,7 +961,7 @@ kubectl delete deploy foo-sample
 <div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>kubectl delete -f config/sample/foo.yaml
 </code></pre></div></li>
 </ol>
-<h2 id=57-create-events-for-foo-resourcehttpsgithubcomnakamasatosample-controllercommit72859779fd2fe16894c98afa5d296b55ddf7f3bd><a href=https://github.com/nakamasato/sample-controller/commit/72859779fd2fe16894c98afa5d296b55ddf7f3bd>5.7. Create events for Foo resource</a></h2>
+<h2 id=57-create-events-for-foo-resourcehttpsgithubcomnakamasatosample-controllercommit8499805b4ee9d82382ab159c4a951c9522896e32><a href=https://github.com/nakamasato/sample-controller/commit/8499805b4ee9d82382ab159c4a951c9522896e32>5.7. Create events for Foo resource</a></h2>
 <h3 id=571-overview>5.7.1. Overview</h3>
 <ol>
 <li>Add <code>record.EventRecorder</code> to <code>Controller</code>.</li>
