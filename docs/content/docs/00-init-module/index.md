@@ -1,6 +1,6 @@
 ---
 title: '0. Initialize Go module'
-date: 2022-10-17T10:13:00+0900
+date: 2022-10-17T10:14:13+0900
 weight: 2
 summary: Initialize Go module.
 ---
