@@ -1,6 +1,11 @@
 # Sample Controller
 
 ![](docs/content/sample-controller.drawio.svg)
+
+## Go version
+
+1. [go1.19](https://github.com/golang/go/releases/go1.19)
+
 ## Spec
 
 Sample Controller manages a custom resource `Foo` to keep a `Deployment` always running for a `Foo` instance.

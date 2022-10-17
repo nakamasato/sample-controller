@@ -10,6 +10,9 @@ FOO_CRD_FILE=config/crd/foos.yaml
 FOO_TYPES_FILE=pkg/apis/example.com/v1alpha1/types.go
 MAIN_GO_FILE=main.go
 
+GO_VERSION_CLI_RESULT=$(go version)
+GO_VERSION=$(echo ${GO_VERSION_CLI_RESULT} | sed 's/go version \(go[^\s]*\) [^\s]*/\1/')
+
 # Start from main
 # git fetch
 # git reset origin/main --hard # TODO: confirm this will blow up all the uncommited changes
@@ -26,11 +29,13 @@ git commit -m "Remove files"
 
 # 0. Init Go module
 go mod init $MODULE_NAME
-TITLE_AND_MESSAGE="0. Initialize Go module"
+TITLE_AND_MESSAGE="0. Initialize Go module ($GO_VERSION)"
 git add go.mod && git commit -m "$TITLE_AND_MESSAGE"
 commit_hash=$(git rev-parse HEAD)
 gsed -i "s#\[$TITLE_AND_MESSAGE\].*#[$TITLE_AND_MESSAGE]($REPO_URL/commit/$commit_hash)#" docs/content/docs/00-init-module/index.md
 gsed -i "s/date:.*/date: $(date +"$DATE_FORMAT")/" docs/content/docs/00-init-module/index.md
+gsed -i "s/go-version:.*/go-version: ${GO_VERSION/go/}/g" .github/workflows/golangci-lint.yml
+gsed -i "s#\[go.*\](.*)#[${GO_VERSION}](https://github.com/golang/go/releases/${GO_VERSION})#g" README.md
 
 # 1. Define Go types for CRD
 mkdir -p pkg/apis/example.com/v1alpha1
