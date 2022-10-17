@@ -14,6 +14,9 @@ git push origin --tag
 gh release create $new_version --generate-notes
 gh release view $new_version --json body -q .body > $RELEASE_MD
 
+echo "## Versions" >> $RELEASE_MD
+grep -A 2 'Go version' README.md | grep '^1.' >> $RELEASE_MD
+
 echo "## Contents" >> $RELEASE_MD
 for f in docs/content/docs/*/index.md; do grep -e '## \[[0-9]' $f | sed 's/##/-/g';done >> $RELEASE_MD
 gh release edit $new_version --notes-file $RELEASE_MD
