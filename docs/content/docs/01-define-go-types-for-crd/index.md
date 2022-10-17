@@ -1,12 +1,12 @@
 ---
 title: '1. Define Go types for CRD'
-date: 2022-08-02T10:17:01+0900
+date: 2022-10-17T09:44:21+0900
 draft: false
 weight: 3
 summary: Define Go types for Custom Resource Definition `Foo`.
 ---
 
-## [1. Define Go types for CRD](https://github.com/nakamasato/sample-controller/commit/c78f9736454eabbdd8c07f3d37fd1d6a749f9f93)
+## [1. Define Go types for CRD](https://github.com/nakamasato/sample-controller/commit/d45eeb28c44184e069d82297bff53a42ae2bfc57)
 
 1. Create a directory.
 
