@@ -4,7 +4,7 @@
 
 ## Go version
 
-1. [go1.19.2](https://github.com/golang/go/releases/go1.19.2)
+1. [go1.19](https://github.com/golang/go/releases/go1.19)
 
 ## Spec
 
