@@ -38,3 +38,5 @@ spec:
               properties:
                 availableReplicas:
                   type: integer
+      subresources:
+        status: {}
