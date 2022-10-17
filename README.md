@@ -15,9 +15,18 @@ https://nakamasato.github.io/sample-controller
 
 ## Quickstart
 
-1. Install CRD. `kubectl apply -f config/crd/foos.yaml`
-1. Start controller. `go run .`
-1. Create CR. `kubectl apply -f config/sample/foo.yaml`
+1. Install CRD.
+    ```
+    kubectl apply -f config/crd/foos.yaml
+    ```
+1. Start controller.
+    ```
+    go run .
+    ```
+1. Create CR.
+    ```
+    kubectl apply -f config/sample/foo.yaml
+    ```
 1. Check.
 
     ```
@@ -26,9 +35,15 @@ https://nakamasato.github.io/sample-controller
     foo-sample   1/1     1            1           103s
     ```
 1. Clean up.
-    1. Delete CR. `kubectl delete -f config/sample/foo.yaml`
+    1. Delete CR.
+        ```
+        kubectl delete -f config/sample/foo.yaml
+        ```
     1. Stop controller.
-    1. Delete CRD. `kubectl delete -f config/crd/foos.yaml`
+    1. Delete CRD.
+        ```
+        kubectl delete -f config/crd/foos.yaml
+        ```
 
 ## Tools
 

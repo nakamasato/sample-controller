@@ -1,12 +1,12 @@
 ---
 title: '2. Generate codes'
-date: 2022-08-02T10:17:32+0900
+date: 2022-10-17T09:45:18+0900
 draft: false
 weight: 4
 summary: Generate Go codes with code-generator.
 ---
 
-## [2. Generate codes](https://github.com/nakamasato/sample-controller/commit/a5ba03f73e6755bcb7ebc9cbc84b2dae2576597e)
+## [2. Generate codes](https://github.com/nakamasato/sample-controller/commit/1adde64c0cca29700e40e72234f0eebce7ba584e)
 
 ### 2.1. Overview
 
@@ -101,9 +101,11 @@ summary: Generate Go codes with code-generator.
     ※ You need to replace `github.com/nakamasato/sample-controller` with your module name.
 
     ```
-    module=github.com/nakamasato/sample-controller; "${codeGeneratorDir}"/generate-groups.sh all ${module}/pkg/generated ${module}/pkg/apis example.com:v1alpha1 --go-header-file "${codeGeneratorDir}"/hack/boilerplate.go.txt --trim-path-prefix $module
+    module=github.com/nakamasato/sample-controller; "${codeGeneratorDir}"/generate-groups.sh all ${module}/pkg/generated ${module}/pkg/apis example.com:v1alpha1 --go-header-file "${codeGeneratorDir}"/hack/boilerplate.go.txt --trim-path-prefix $module --output-base ./
     ```
 
+    - `--output-base ./` is necessary to generate the codes under the current directory
+    - `--trim-path-prefix $module` is necessary to generate under the path `pkg/generated/...`
 
     The command above consists of the following commands:
 
