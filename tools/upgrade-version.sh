@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -uex
+set -ue
 
 MODULE_NAME=github.com/nakamasato/sample-controller
 REPO_URL=https://$MODULE_NAME
