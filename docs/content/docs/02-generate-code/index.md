@@ -101,9 +101,11 @@ summary: Generate Go codes with code-generator.
     ※ You need to replace `github.com/nakamasato/sample-controller` with your module name.
 
     ```
-    module=github.com/nakamasato/sample-controller; "${codeGeneratorDir}"/generate-groups.sh all ${module}/pkg/generated ${module}/pkg/apis example.com:v1alpha1 --go-header-file "${codeGeneratorDir}"/hack/boilerplate.go.txt --trim-path-prefix $module
+    module=github.com/nakamasato/sample-controller; "${codeGeneratorDir}"/generate-groups.sh all ${module}/pkg/generated ${module}/pkg/apis example.com:v1alpha1 --go-header-file "${codeGeneratorDir}"/hack/boilerplate.go.txt --trim-path-prefix $module --output-base ./
     ```
 
+    - `--output-base ./` is necessary to generate the codes under the current directory
+    - `--trim-path-prefix $module` is necessary to generate under the path `pkg/generated/...`
 
     The command above consists of the following commands:
 
