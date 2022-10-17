@@ -1,12 +1,12 @@
 ---
 title: '4. Checkpoint'
-date: 2022-10-17T10:14:25+0900
+date: 2022-10-17T10:17:41+0900
 draft: false
 weight: 6
 summary: Check the behavior at this point.
 ---
 
-## [4. Checkpoint: Check custom resource and codes](https://github.com/nakamasato/sample-controller/commit/a18555637163741277d9f998632d8c9d09a26c92)
+## [4. Checkpoint: Check custom resource and codes](https://github.com/nakamasato/sample-controller/commit/9c5ceb6bc84fef5d57cf3ab3cea573881618b120)
 
 ### 4.1. Overview
 
