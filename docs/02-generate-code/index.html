@@ -84,7 +84,7 @@
 <div class="col-12 col-md-9">
 <h1 class=title>2. Generate codes</h1>
 <div class=content>
-<h2 id=2-generate-codeshttpsgithubcomnakamasatosample-controllercommita5ba03f73e6755bcb7ebc9cbc84b2dae2576597e><a href=https://github.com/nakamasato/sample-controller/commit/a5ba03f73e6755bcb7ebc9cbc84b2dae2576597e>2. Generate codes</a></h2>
+<h2 id=2-generate-codeshttpsgithubcomnakamasatosample-controllercommit1adde64c0cca29700e40e72234f0eebce7ba584e><a href=https://github.com/nakamasato/sample-controller/commit/1adde64c0cca29700e40e72234f0eebce7ba584e>2. Generate codes</a></h2>
 <h3 id=21-overview>2.1. Overview</h3>
 <p><a href=https://github.com/kubernetes/code-generator>code-generator</a> is Golang code-generators used to implement Kubernetes-style API types (generate deepcopy, clientset, informer, lister)</p>
 <ol>
@@ -164,8 +164,12 @@
 <li>
 <p>Generate codes (deepcopy, clientset, listers, and informers).</p>
 <p>※ You need to replace <code>github.com/nakamasato/sample-controller</code> with your module name.</p>
-<div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>module=github.com/nakamasato/sample-controller; &#34;${codeGeneratorDir}&#34;/generate-groups.sh all ${module}/pkg/generated ${module}/pkg/apis example.com:v1alpha1 --go-header-file &#34;${codeGeneratorDir}&#34;/hack/boilerplate.go.txt --trim-path-prefix $module
-</code></pre></div><p>The command above consists of the following commands:</p>
+<div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>module=github.com/nakamasato/sample-controller; &#34;${codeGeneratorDir}&#34;/generate-groups.sh all ${module}/pkg/generated ${module}/pkg/apis example.com:v1alpha1 --go-header-file &#34;${codeGeneratorDir}&#34;/hack/boilerplate.go.txt --trim-path-prefix $module --output-base ./
+</code></pre></div><ul>
+<li><code>--output-base ./</code> is necessary to generate the codes under the current directory</li>
+<li><code>--trim-path-prefix $module</code> is necessary to generate under the path <code>pkg/generated/...</code></li>
+</ul>
+<p>The command above consists of the following commands:</p>
 <ol>
 <li>
 <p>Set <code>gobin</code></p>
