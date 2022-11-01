@@ -1,301 +1,105 @@
-<!doctype html><html lang=en>
-<head>
-<meta charset=utf-8>
-<meta http-equiv=x-ua-compatible content="ie=edge">
-<title>2. Generate codes - Sample Controller</title>
-<meta name=viewport content="width=device-width,initial-scale=1">
-<link rel=icon href=https://www.nakamasato.com/sample-controller/favicon.png>
-<link rel=stylesheet href=/sample-controller/css/style.min.6719d72e323121369d5caeb4264b95d8a63cf1deaab029da67602fe5a046e0a4.css>
-</head>
-<body class="page page-default-single">
-<div id=main-menu-mobile class=main-menu-mobile>
-<ul>
-<li class=menu-item-home>
-<a href=/sample-controller/>
-<span>Home</span>
-</a>
-</li>
-<li class=menu-item-docs>
-<a href=/sample-controller/docs/>
-<span>Docs</span>
-</a>
-</li>
-</ul>
-</div>
-<div class=wrapper>
-<div class=header>
-<div class=container>
-<div class=logo>
-<a href=https://www.nakamasato.com/sample-controller><img alt=Logo src=/sample-controller/images/logo.svg></a>
-</div>
-<div class=logo-mobile>
-<a href=https://www.nakamasato.com/sample-controller><img alt=Logo src=/sample-controller/images/logo-mobile.svg></a>
-</div>
-<div id=main-menu class=main-menu>
-<ul>
-<li class=menu-item-home>
-<a href=/sample-controller/>
-<span>Home</span>
-</a>
-</li>
-<li class=menu-item-docs>
-<a href=/sample-controller/docs/>
-<span>Docs</span>
-</a>
-</li>
-</ul>
-</div>
-<button id=toggle-main-menu-mobile class="hamburger hamburger--slider" type=button>
-<span class=hamburger-box>
-<span class=hamburger-inner></span>
-</span>
-</button>
-</div>
-</div>
-<div class="container pt-2 pt-md-6 pb-3 pb-md-6">
-<div class=row>
-<div class="col-12 col-md-3 mb-3">
-<div class=sidebar>
-<div class=docs-menu>
-<h4>Docs</h4>
-<ul>
-<li>
-<a href=https://www.nakamasato.com/sample-controller/docs/00-init-module/>0. Initialize Go module</a>
-</li>
-<li>
-<a href=https://www.nakamasato.com/sample-controller/docs/01-define-go-types-for-crd/>1. Define Go types for CRD</a>
-</li>
-<li class=active>
-<a href=https://www.nakamasato.com/sample-controller/docs/02-generate-code/>2. Generate codes</a>
-</li>
-<li>
-<a href=https://www.nakamasato.com/sample-controller/docs/03-create-crd-yaml/>3. Create CRD yaml file</a>
-</li>
-<li>
-<a href=https://www.nakamasato.com/sample-controller/docs/04-check-points-check-custom-resource-and-codes/>4. Checkpoint</a>
-</li>
-<li>
-<a href=https://www.nakamasato.com/sample-controller/docs/05-implement-reconciliation-loop/>5. Implement reconciliation</a>
-</li>
-</ul>
-</div>
-</div>
-</div>
-<div class="col-12 col-md-9">
-<h1 class=title>2. Generate codes</h1>
-<div class=content>
-<h2 id=2-generate-codeshttpsgithubcomnakamasatosample-controllercommitbedaa91058d28af639dd6392dfd5413797c8ece4><a href=https://github.com/nakamasato/sample-controller/commit/bedaa91058d28af639dd6392dfd5413797c8ece4>2. Generate codes</a></h2>
-<h3 id=21-overview>2.1. Overview</h3>
-<p><a href=https://github.com/kubernetes/code-generator>code-generator</a> is Golang code-generators used to implement Kubernetes-style API types (generate deepcopy, clientset, informer, lister)</p>
-<ol>
-<li><strong>DeepCopy</strong> is necessary to implement <a href=https://pkg.go.dev/k8s.io/apimachinery/pkg/runtime#Object>runtime.Object</a> interface.</li>
-<li><strong>Clientset</strong> is to access a (custom) resource in Kubernetes API.</li>
-<li><strong>Lister</strong> is to list custom resources in a in-memory <code>cache.Indexer</code> with List function.</li>
-<li><strong>Informer</strong> is used to capture changes of a target custom resource, which is usually used in a custom controller.</li>
-</ol>
-<h3 id=22-prepare-code-generator>2.2. Prepare code-generator</h3>
-<ol>
-<li>
-<p>Set <code>codeGeneratorDir</code> env var for <code>code-generator</code>.</p>
-<div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>codeGeneratorDir=~/repos/kubernetes/code-generator
-</code></pre></div><p>If you already cloned, you can specify the directory.</p>
-</li>
-<li>
-<p>Clone code-generator if you haven&rsquo;t cloned.</p>
-<div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>git clone https://github.com/kubernetes/code-generator.git $codeGeneratorDir
-</code></pre></div>
-<div class=highlight><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=s>&#34;${codeGeneratorDir}&#34;</span><span class=o>/</span><span class=nx>generate</span><span class=o>-</span><span class=nx>groups</span><span class=p>.</span><span class=nx>sh</span>
-<span class=nx>Usage</span><span class=p>:</span> <span class=nx>generate</span><span class=o>-</span><span class=nx>groups</span><span class=p>.</span><span class=nx>sh</span> <span class=p>&lt;</span><span class=nx>generators</span><span class=p>&gt;</span> <span class=p>&lt;</span><span class=nx>output</span><span class=o>-</span><span class=kn>package</span><span class=p>&gt;</span> <span class=p>&lt;</span><span class=nx>apis</span><span class=o>-</span><span class=kn>package</span><span class=p>&gt;</span> <span class=p>&lt;</span><span class=nx>groups</span><span class=o>-</span><span class=nx>versions</span><span class=p>&gt;</span> <span class=o>...</span>
-
-  <span class=p>&lt;</span><span class=nx>generators</span><span class=p>&gt;</span>        <span class=nx>the</span> <span class=nx>generators</span> <span class=nx>comma</span> <span class=nx>separated</span> <span class=nx>to</span> <span class=nf>run</span> <span class=p>(</span><span class=nx>deepcopy</span><span class=p>,</span><span class=nx>defaulter</span><span class=p>,</span><span class=nx>client</span><span class=p>,</span><span class=nx>lister</span><span class=p>,</span><span class=nx>informer</span><span class=p>)</span> <span class=nx>or</span> <span class=s>&#34;all&#34;</span><span class=p>.</span>
-  <span class=p>&lt;</span><span class=nx>output</span><span class=o>-</span><span class=kn>package</span><span class=p>&gt;</span>    <span class=nx>the</span> <span class=nx>output</span> <span class=kn>package</span> <span class=nf>name</span> <span class=p>(</span><span class=nx>e</span><span class=p>.</span><span class=nx>g</span><span class=p>.</span> <span class=nx>github</span><span class=p>.</span><span class=nx>com</span><span class=o>/</span><span class=nx>example</span><span class=o>/</span><span class=nx>project</span><span class=o>/</span><span class=nx>pkg</span><span class=o>/</span><span class=nx>generated</span><span class=p>).</span>
-  <span class=p>&lt;</span><span class=nx>apis</span><span class=o>-</span><span class=kn>package</span><span class=p>&gt;</span>      <span class=nx>the</span> <span class=nx>external</span> <span class=nx>types</span> <span class=nf>dir</span> <span class=p>(</span><span class=nx>e</span><span class=p>.</span><span class=nx>g</span><span class=p>.</span> <span class=nx>github</span><span class=p>.</span><span class=nx>com</span><span class=o>/</span><span class=nx>example</span><span class=o>/</span><span class=nx>api</span> <span class=nx>or</span> <span class=nx>github</span><span class=p>.</span><span class=nx>com</span><span class=o>/</span><span class=nx>example</span><span class=o>/</span><span class=nx>project</span><span class=o>/</span><span class=nx>pkg</span><span class=o>/</span><span class=nx>apis</span><span class=p>).</span>
-  <span class=p>&lt;</span><span class=nx>groups</span><span class=o>-</span><span class=nx>versions</span><span class=p>&gt;</span>   <span class=nx>the</span> <span class=nx>groups</span> <span class=nx>and</span> <span class=nx>their</span> <span class=nx>versions</span> <span class=nx>in</span> <span class=nx>the</span> <span class=nx>format</span> <span class=s>&#34;groupA:v1,v2 groupB:v1 groupC:v2&#34;</span><span class=p>,</span> <span class=nx>relative</span>
-                      <span class=nx>to</span> <span class=p>&lt;</span><span class=nx>api</span><span class=o>-</span><span class=kn>package</span><span class=p>&gt;.</span>
-  <span class=o>...</span>                 <span class=nx>arbitrary</span> <span class=nx>flags</span> <span class=nx>passed</span> <span class=nx>to</span> <span class=nx>all</span> <span class=nx>generator</span> <span class=nx>binaries</span><span class=p>.</span>
-
-
-<span class=nx>Examples</span><span class=p>:</span>
-  <span class=nx>generate</span><span class=o>-</span><span class=nx>groups</span><span class=p>.</span><span class=nx>sh</span> <span class=nx>all</span>             <span class=nx>github</span><span class=p>.</span><span class=nx>com</span><span class=o>/</span><span class=nx>example</span><span class=o>/</span><span class=nx>project</span><span class=o>/</span><span class=nx>pkg</span><span class=o>/</span><span class=nx>client</span> <span class=nx>github</span><span class=p>.</span><span class=nx>com</span><span class=o>/</span><span class=nx>example</span><span class=o>/</span><span class=nx>project</span><span class=o>/</span><span class=nx>pkg</span><span class=o>/</span><span class=nx>apis</span> <span class=s>&#34;foo:v1 bar:v1alpha1,v1beta1&#34;</span>
-  <span class=nx>generate</span><span class=o>-</span><span class=nx>groups</span><span class=p>.</span><span class=nx>sh</span> <span class=nx>deepcopy</span><span class=p>,</span><span class=nx>client</span> <span class=nx>github</span><span class=p>.</span><span class=nx>com</span><span class=o>/</span><span class=nx>example</span><span class=o>/</span><span class=nx>project</span><span class=o>/</span><span class=nx>pkg</span><span class=o>/</span><span class=nx>client</span> <span class=nx>github</span><span class=p>.</span><span class=nx>com</span><span class=o>/</span><span class=nx>example</span><span class=o>/</span><span class=nx>project</span><span class=o>/</span><span class=nx>pkg</span><span class=o>/</span><span class=nx>apis</span> <span class=s>&#34;foo:v1 bar:v1alpha1,v1beta1&#34;</span>
-</code></pre></div>
-</li>
-</ol>
-<h3 id=23-add-markers>2.3. Add markers</h3>
-<ol>
-<li>
-<p>Mark the package <code>pkg/api/doc.go</code>.</p>
-<div class=highlight><pre tabindex=0 class=chroma><code class=language-diff data-lang=diff><span class=gi>+// +k8s:deepcopy-gen=package
-</span><span class=gi>+// +groupName=example.com
-</span><span class=gi></span>
- package v1alpha1
-</code></pre></div><ol>
-<li><code>// +k8s:deepcopy-gen=package</code>: generate DeepCopy for the entire package</li>
-<li><code>// +groupName=example.com</code>: used in the fake client as the full group name (defaults to the package name) (<a href=https://github.com/kubernetes/community/blob/master/contributors/devel/sig-api-machinery/generating-clientset.md>client-gen</a>)</li>
-</ol>
-</li>
-<li>
-<p>Mark the types (<code>Foo</code> and <code>FooList</code>) in <code>pkg/api/types.go</code>.</p>
-<div class=highlight><pre tabindex=0 class=chroma><code class=language-diff data-lang=diff><span class=gi>+// +genclient
-</span><span class=gi>+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-</span><span class=gi></span>
- // Foo is a specification for a Foo resource
- type Foo struct {
- ...
-</code></pre></div><div class=highlight><pre tabindex=0 class=chroma><code class=language-diff data-lang=diff><span class=gi>+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-</span><span class=gi></span>
- // FooList is a list of Foo resources
- type FooList struct {
-</code></pre></div><ol>
-<li><code>// +genclient</code>: generate default client verb functions (create, update, delete, get, list, update, patch, watch and depending on the existence of .Status field in the type the client is generated for also updateStatus). (More details: <a href=https://github.com/kubernetes/community/blob/master/contributors/devel/sig-api-machinery/generating-clientset.md>Generation and release cycle of clientset</a>)</li>
-<li><code>+k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object</code>: generate DeepCopyObject with the given interfaces as return types.</li>
-</ol>
-</li>
-<li>
-<p>For more about comment tags.</p>
-<ol>
-<li><a href=https://pkg.go.dev/k8s.io/gengo/examples/deepcopy-gen>deepcopy-gen</a></li>
-<li><a href=https://github.com/kubernetes/community/blob/master/contributors/devel/sig-api-machinery/generating-clientset.md>client-gen</a></li>
-</ol>
-</li>
-</ol>
-<h3 id=24-generate-codes>2.4. Generate codes</h3>
-<ol>
-<li>
-<p>Generate codes (deepcopy, clientset, listers, and informers).</p>
-<p>※ You need to replace <code>github.com/nakamasato/sample-controller</code> with your module name.</p>
-<div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>module=github.com/nakamasato/sample-controller; &#34;${codeGeneratorDir}&#34;/generate-groups.sh all ${module}/pkg/generated ${module}/pkg/apis example.com:v1alpha1 --go-header-file &#34;${codeGeneratorDir}&#34;/hack/boilerplate.go.txt --trim-path-prefix $module --output-base ./
-</code></pre></div><ul>
-<li><code>--output-base ./</code> is necessary to generate the codes under the current directory</li>
-<li><code>--trim-path-prefix $module</code> is necessary to generate under the path <code>pkg/generated/...</code></li>
-</ul>
-<p>The command above consists of the following commands:</p>
-<ol>
-<li>
-<p>Set <code>gobin</code></p>
-<div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>GOBIN=&#34;$(go env GOBIN)&#34;
-gobin=&#34;${GOBIN:-$(go env GOPATH)/bin}&#34;
-</code></pre></div></li>
-<li>
-<p><strong>deepcopy-gen</strong>:</p>
-<div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>${gobin}/deepcopy-gen --input-dirs github.com/nakamasato/sample-controller/pkg/apis/example.com/v1alpha1 -O zz_generated.deepcopy --go-header-file /Users/m.naka/repos/kubernetes/code-generator/hack/boilerplate.go.txt --trim-path-prefix github.com/nakamasato/sample-controller
-</code></pre></div></li>
-<li>
-<p><strong>client-gen</strong>:</p>
-<div class=highlight><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=err>$</span><span class=p>{</span><span class=nx>gobin</span><span class=p>}</span><span class=o>/</span><span class=nx>client</span><span class=o>-</span><span class=nx>gen</span> <span class=o>--</span><span class=nx>clientset</span><span class=o>-</span><span class=nx>name</span> <span class=nx>versioned</span> <span class=o>--</span><span class=nx>input</span><span class=o>-</span><span class=nx>base</span> <span class=err>&#39;&#39;</span> <span class=o>--</span><span class=nx>input</span> <span class=nx>github</span><span class=p>.</span><span class=nx>com</span><span class=o>/</span><span class=nx>nakamasato</span><span class=o>/</span><span class=nx>sample</span><span class=o>-</span><span class=nx>controller</span><span class=o>/</span><span class=nx>pkg</span><span class=o>/</span><span class=nx>apis</span><span class=o>/</span><span class=nx>example</span><span class=p>.</span><span class=nx>com</span><span class=o>/</span><span class=nx>v1alpha1</span> <span class=o>--</span><span class=nx>output</span><span class=o>-</span><span class=kn>package</span> <span class=nx>github</span><span class=p>.</span><span class=nx>com</span><span class=o>/</span><span class=nx>nakamasato</span><span class=o>/</span><span class=nx>sample</span><span class=o>-</span><span class=nx>controller</span><span class=o>/</span><span class=nx>pkg</span><span class=o>/</span><span class=nx>generated</span><span class=o>/</span><span class=nx>clientset</span> <span class=o>--</span><span class=k>go</span><span class=o>-</span><span class=nx>header</span><span class=o>-</span><span class=nx>file</span> <span class=o>/</span><span class=nx>Users</span><span class=o>/</span><span class=nx>m</span><span class=p>.</span><span class=nx>naka</span><span class=o>/</span><span class=nx>repos</span><span class=o>/</span><span class=nx>kubernetes</span><span class=o>/</span><span class=nx>code</span><span class=o>-</span><span class=nx>generator</span><span class=o>/</span><span class=nx>hack</span><span class=o>/</span><span class=nx>boilerplate</span><span class=p>.</span><span class=k>go</span><span class=p>.</span><span class=nx>txt</span> <span class=o>--</span><span class=nx>trim</span><span class=o>-</span><span class=nx>path</span><span class=o>-</span><span class=nx>prefix</span> <span class=nx>github</span><span class=p>.</span><span class=nx>com</span><span class=o>/</span><span class=nx>nakamasato</span><span class=o>/</span><span class=nx>sample</span><span class=o>-</span><span class=nx>controller</span>
-</code></pre></div></li>
-<li>
-<p><strong>lister-gen</strong>:</p>
-<div class=highlight><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=err>$</span><span class=p>{</span><span class=nx>gobin</span><span class=p>}</span><span class=o>/</span><span class=nx>lister</span><span class=o>-</span><span class=nx>gen</span> <span class=o>--</span><span class=nx>input</span><span class=o>-</span><span class=nx>dirs</span> <span class=nx>github</span><span class=p>.</span><span class=nx>com</span><span class=o>/</span><span class=nx>nakamasato</span><span class=o>/</span><span class=nx>sample</span><span class=o>-</span><span class=nx>controller</span><span class=o>/</span><span class=nx>pkg</span><span class=o>/</span><span class=nx>apis</span><span class=o>/</span><span class=nx>example</span><span class=p>.</span><span class=nx>com</span><span class=o>/</span><span class=nx>v1alpha1</span> <span class=o>--</span><span class=nx>output</span><span class=o>-</span><span class=kn>package</span> <span class=nx>github</span><span class=p>.</span><span class=nx>com</span><span class=o>/</span><span class=nx>nakamasato</span><span class=o>/</span><span class=nx>sample</span><span class=o>-</span><span class=nx>controller</span><span class=o>/</span><span class=nx>pkg</span><span class=o>/</span><span class=nx>generated</span><span class=o>/</span><span class=nx>listers</span> <span class=o>--</span><span class=k>go</span><span class=o>-</span><span class=nx>header</span><span class=o>-</span><span class=nx>file</span> <span class=o>/</span><span class=nx>Users</span><span class=o>/</span><span class=nx>m</span><span class=p>.</span><span class=nx>naka</span><span class=o>/</span><span class=nx>repos</span><span class=o>/</span><span class=nx>kubernetes</span><span class=o>/</span><span class=nx>code</span><span class=o>-</span><span class=nx>generator</span><span class=o>/</span><span class=nx>hack</span><span class=o>/</span><span class=nx>boilerplate</span><span class=p>.</span><span class=k>go</span><span class=p>.</span><span class=nx>txt</span> <span class=o>--</span><span class=nx>trim</span><span class=o>-</span><span class=nx>path</span><span class=o>-</span><span class=nx>prefix</span> <span class=nx>github</span><span class=p>.</span><span class=nx>com</span><span class=o>/</span><span class=nx>nakamasato</span><span class=o>/</span><span class=nx>sample</span><span class=o>-</span><span class=nx>controller</span>
-</code></pre></div></li>
-<li>
-<p><strong>informer-gen</strong>:</p>
-<div class=highlight><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=err>$</span><span class=p>{</span><span class=nx>gobin</span><span class=p>}</span><span class=o>/</span><span class=nx>informer</span><span class=o>-</span><span class=nx>gen</span> <span class=o>--</span><span class=nx>input</span><span class=o>-</span><span class=nx>dirs</span> <span class=nx>github</span><span class=p>.</span><span class=nx>com</span><span class=o>/</span><span class=nx>nakamasato</span><span class=o>/</span><span class=nx>sample</span><span class=o>-</span><span class=nx>controller</span><span class=o>/</span><span class=nx>pkg</span><span class=o>/</span><span class=nx>apis</span><span class=o>/</span><span class=nx>example</span><span class=p>.</span><span class=nx>com</span><span class=o>/</span><span class=nx>v1alpha1</span> <span class=o>--</span><span class=nx>versioned</span><span class=o>-</span><span class=nx>clientset</span><span class=o>-</span><span class=kn>package</span> <span class=nx>github</span><span class=p>.</span><span class=nx>com</span><span class=o>/</span><span class=nx>nakamasato</span><span class=o>/</span><span class=nx>sample</span><span class=o>-</span><span class=nx>controller</span><span class=o>/</span><span class=nx>pkg</span><span class=o>/</span><span class=nx>generated</span><span class=o>/</span><span class=nx>clientset</span><span class=o>/</span><span class=nx>versioned</span> <span class=o>--</span><span class=nx>listers</span><span class=o>-</span><span class=kn>package</span> <span class=nx>github</span><span class=p>.</span><span class=nx>com</span><span class=o>/</span><span class=nx>nakamasato</span><span class=o>/</span><span class=nx>sample</span><span class=o>-</span><span class=nx>controller</span><span class=o>/</span><span class=nx>pkg</span><span class=o>/</span><span class=nx>generated</span><span class=o>/</span><span class=nx>listers</span> <span class=o>--</span><span class=nx>output</span><span class=o>-</span><span class=kn>package</span> <span class=nx>github</span><span class=p>.</span><span class=nx>com</span><span class=o>/</span><span class=nx>nakamasato</span><span class=o>/</span><span class=nx>sample</span><span class=o>-</span><span class=nx>controller</span><span class=o>/</span><span class=nx>pkg</span><span class=o>/</span><span class=nx>generated</span><span class=o>/</span><span class=nx>informers</span> <span class=o>--</span><span class=k>go</span><span class=o>-</span><span class=nx>header</span><span class=o>-</span><span class=nx>file</span> <span class=o>/</span><span class=nx>Users</span><span class=o>/</span><span class=nx>m</span><span class=p>.</span><span class=nx>naka</span><span class=o>/</span><span class=nx>repos</span><span class=o>/</span><span class=nx>kubernetes</span><span class=o>/</span><span class=nx>code</span><span class=o>-</span><span class=nx>generator</span><span class=o>/</span><span class=nx>hack</span><span class=o>/</span><span class=nx>boilerplate</span><span class=p>.</span><span class=k>go</span><span class=p>.</span><span class=nx>txt</span> <span class=o>--</span><span class=nx>trim</span><span class=o>-</span><span class=nx>path</span><span class=o>-</span><span class=nx>prefix</span> <span class=nx>github</span><span class=p>.</span><span class=nx>com</span><span class=o>/</span><span class=nx>nakamasato</span><span class=o>/</span><span class=nx>sample</span><span class=o>-</span><span class=nx>controller</span>
-</code></pre></div></li>
-</ol>
-<p>The following files are generated:</p>
-<ul>
-<li><code>pkg/apis/example.com/v1alpha1/zz_generated.deepcopy.go</code></li>
-<li><code>pkg/generated/</code>
-<ul>
-<li><code>clientset</code></li>
-<li><code>informers</code></li>
-<li><code>listers</code></li>
-</ul>
-</li>
-</ul>
-<div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>tree .
-.
-├── README.md
-├── go.mod
-├── go.sum
-└── pkg
-    ├── apis
-    │   └── example.com
-    │       └── v1alpha1
-    │           ├── doc.go
-    │           ├── register.go
-    │           ├── types.go
-    │           └── zz_generated.deepcopy.go
-    └── generated
-        ├── clientset
-        │   └── versioned
-        │       ├── clientset.go
-        │       ├── doc.go
-        │       ├── fake
-        │       │   ├── clientset_generated.go
-        │       │   ├── doc.go
-        │       │   └── register.go
-        │       ├── scheme
-        │       │   ├── doc.go
-        │       │   └── register.go
-        │       └── typed
-        │           └── example.com
-        │               └── v1alpha1
-        │                   ├── doc.go
-        │                   ├── example.com_client.go
-        │                   ├── fake
-        │                   │   ├── doc.go
-        │                   │   ├── fake_example.com_client.go
-        │                   │   └── fake_foo.go
-        │                   ├── foo.go
-        │                   └── generated_expansion.go
-        ├── informers
-        │   └── externalversions
-        │       ├── example.com
-        │       │   ├── interface.go
-        │       │   └── v1alpha1
-        │       │       ├── foo.go
-        │       │       └── interface.go
-        │       ├── factory.go
-        │       ├── generic.go
-        │       └── internalinterfaces
-        │           └── factory_interfaces.go
-        └── listers
-            └── example.com
-                └── v1alpha1
-                    ├── expansion_generated.go
-                    └── foo.go
-
-21 directories, 29 files
-</code></pre></div>
-<p>As is mentioned in the previous section, <code>AddToScheme</code> is called in <code>pkg/generated/clientset/versioned/scheme/register.go</code> to register our new api version <code>example.com/v1alpha1</code>, which includes <code>Foo</code> kind.</p>
-<div class=highlight><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kd>var</span> <span class=nx>localSchemeBuilder</span> <span class=p>=</span> <span class=nx>runtime</span><span class=p>.</span><span class=nx>SchemeBuilder</span><span class=p>{</span>
-    <span class=nx>examplev1alpha1</span><span class=p>.</span><span class=nx>AddToScheme</span><span class=p>,</span>
-<span class=p>}</span>
-<span class=o>...</span>
-<span class=kd>var</span> <span class=nx>AddToScheme</span> <span class=p>=</span> <span class=nx>localSchemeBuilder</span><span class=p>.</span><span class=nx>AddToScheme</span>
-
-<span class=kd>func</span> <span class=nf>init</span><span class=p>()</span> <span class=p>{</span>
-    <span class=nx>v1</span><span class=p>.</span><span class=nf>AddToGroupVersion</span><span class=p>(</span><span class=nx>Scheme</span><span class=p>,</span> <span class=nx>schema</span><span class=p>.</span><span class=nx>GroupVersion</span><span class=p>{</span><span class=nx>Version</span><span class=p>:</span> <span class=s>&#34;v1&#34;</span><span class=p>})</span>
-    <span class=nx>utilruntime</span><span class=p>.</span><span class=nf>Must</span><span class=p>(</span><span class=nf>AddToScheme</span><span class=p>(</span><span class=nx>Scheme</span><span class=p>))</span>
-<span class=p>}</span>
-</code></pre></div></li>
-<li>
-<p>Run <code>go mod tidy</code>.</p>
-</li>
-</ol>
-</div>
-</div>
-</div>
-</div>
-</div>
-</div>
-<div class=sub-footer>
-<div class=container>
-<div class=row>
-<div class=col-12>
-<div class=sub-footer-inner>
-<ul>
-<li class=zerostatic><a href=https://www.zerostatic.io>www.zerostatic.io</a></li>
-</ul>
-</div>
-</div>
-</div>
-</div>
-</div>
-<script type=text/javascript src=/sample-controller/js/scripts.min.eaf147370baecdd07c022597db631f99cab1c9cd6479de586f30327a568d6a0f.js></script>
+<!doctype html><html lang=en><head><meta charset=utf-8><meta http-equiv=x-ua-compatible content="ie=edge"><title>2. Generate codes - Sample Controller</title><meta name=viewport content="width=device-width,initial-scale=1"><link rel=icon href=https://www.nakamasato.com/sample-controller/favicon.png><link rel=stylesheet href=/sample-controller/css/style.min.6719d72e323121369d5caeb4264b95d8a63cf1deaab029da67602fe5a046e0a4.css></head><body class='page page-default-single'><div id=main-menu-mobile class=main-menu-mobile><ul><li class=menu-item-home><a href=/sample-controller/><span>Home</span></a></li><li class=menu-item-docs><a href=/sample-controller/docs/><span>Docs</span></a></li></ul></div><div class=wrapper><div class=header><div class=container><div class=logo><a href=https://www.nakamasato.com/sample-controller><img alt=Logo src=/sample-controller/images/logo.svg></a></div><div class=logo-mobile><a href=https://www.nakamasato.com/sample-controller><img alt=Logo src=/sample-controller/images/logo-mobile.svg></a></div><div id=main-menu class=main-menu><ul><li class=menu-item-home><a href=/sample-controller/><span>Home</span></a></li><li class=menu-item-docs><a href=/sample-controller/docs/><span>Docs</span></a></li></ul></div><button id=toggle-main-menu-mobile class="hamburger hamburger--slider" type=button>
+<span class=hamburger-box><span class=hamburger-inner></span></span></button></div></div><div class="container pt-2 pt-md-6 pb-3 pb-md-6"><div class=row><div class="col-12 col-md-3 mb-3"><div class=sidebar><div class=docs-menu><h4>Docs</h4><ul><li><a href=https://www.nakamasato.com/sample-controller/docs/00-init-module/>0. Initialize Go module</a></li><li><a href=https://www.nakamasato.com/sample-controller/docs/01-define-go-types-for-crd/>1. Define Go types for CRD</a></li><li class=active><a href=https://www.nakamasato.com/sample-controller/docs/02-generate-code/>2. Generate codes</a></li><li><a href=https://www.nakamasato.com/sample-controller/docs/03-create-crd-yaml/>3. Create CRD yaml file</a></li><li><a href=https://www.nakamasato.com/sample-controller/docs/04-check-points-check-custom-resource-and-codes/>4. Checkpoint</a></li><li><a href=https://www.nakamasato.com/sample-controller/docs/05-implement-reconciliation-loop/>5. Implement reconciliation</a></li></ul></div></div></div><div class="col-12 col-md-9"><h1 class=title>2. Generate codes</h1><div class=content><h2 id=2-generate-codeshttpsgithubcomnakamasatosample-controllercommitbedaa91058d28af639dd6392dfd5413797c8ece4><a href=https://github.com/nakamasato/sample-controller/commit/bedaa91058d28af639dd6392dfd5413797c8ece4>2. Generate codes</a></h2><h3 id=21-overview>2.1. Overview</h3><p><a href=https://github.com/kubernetes/code-generator>code-generator</a> is Golang code-generators used to implement Kubernetes-style API types (generate deepcopy, clientset, informer, lister)</p><ol><li><strong>DeepCopy</strong> is necessary to implement <a href=https://pkg.go.dev/k8s.io/apimachinery/pkg/runtime#Object>runtime.Object</a> interface.</li><li><strong>Clientset</strong> is to access a (custom) resource in Kubernetes API.</li><li><strong>Lister</strong> is to list custom resources in a in-memory <code>cache.Indexer</code> with List function.</li><li><strong>Informer</strong> is used to capture changes of a target custom resource, which is usually used in a custom controller.</li></ol><h3 id=22-prepare-code-generator>2.2. Prepare code-generator</h3><ol><li><p>Set <code>codeGeneratorDir</code> env var for <code>code-generator</code>.</p><div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>codeGeneratorDir=~/repos/kubernetes/code-generator
+</span></span></code></pre></div><p>If you already cloned, you can specify the directory.</p></li><li><p>Clone code-generator if you haven&rsquo;t cloned.</p><div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>git clone https://github.com/kubernetes/code-generator.git $codeGeneratorDir
+</span></span></code></pre></div><div class=highlight><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=line><span class=cl><span class=s>&#34;${codeGeneratorDir}&#34;</span><span class=o>/</span><span class=nx>generate</span><span class=o>-</span><span class=nx>groups</span><span class=p>.</span><span class=nx>sh</span>
+</span></span><span class=line><span class=cl><span class=nx>Usage</span><span class=p>:</span> <span class=nx>generate</span><span class=o>-</span><span class=nx>groups</span><span class=p>.</span><span class=nx>sh</span> <span class=p>&lt;</span><span class=nx>generators</span><span class=p>&gt;</span> <span class=p>&lt;</span><span class=nx>output</span><span class=o>-</span><span class=kn>package</span><span class=p>&gt;</span> <span class=p>&lt;</span><span class=nx>apis</span><span class=o>-</span><span class=kn>package</span><span class=p>&gt;</span> <span class=p>&lt;</span><span class=nx>groups</span><span class=o>-</span><span class=nx>versions</span><span class=p>&gt;</span> <span class=o>...</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=p>&lt;</span><span class=nx>generators</span><span class=p>&gt;</span>        <span class=nx>the</span> <span class=nx>generators</span> <span class=nx>comma</span> <span class=nx>separated</span> <span class=nx>to</span> <span class=nf>run</span> <span class=p>(</span><span class=nx>deepcopy</span><span class=p>,</span><span class=nx>defaulter</span><span class=p>,</span><span class=nx>client</span><span class=p>,</span><span class=nx>lister</span><span class=p>,</span><span class=nx>informer</span><span class=p>)</span> <span class=nx>or</span> <span class=s>&#34;all&#34;</span><span class=p>.</span>
+</span></span><span class=line><span class=cl>  <span class=p>&lt;</span><span class=nx>output</span><span class=o>-</span><span class=kn>package</span><span class=p>&gt;</span>    <span class=nx>the</span> <span class=nx>output</span> <span class=kn>package</span> <span class=nf>name</span> <span class=p>(</span><span class=nx>e</span><span class=p>.</span><span class=nx>g</span><span class=p>.</span> <span class=nx>github</span><span class=p>.</span><span class=nx>com</span><span class=o>/</span><span class=nx>example</span><span class=o>/</span><span class=nx>project</span><span class=o>/</span><span class=nx>pkg</span><span class=o>/</span><span class=nx>generated</span><span class=p>).</span>
+</span></span><span class=line><span class=cl>  <span class=p>&lt;</span><span class=nx>apis</span><span class=o>-</span><span class=kn>package</span><span class=p>&gt;</span>      <span class=nx>the</span> <span class=nx>external</span> <span class=nx>types</span> <span class=nf>dir</span> <span class=p>(</span><span class=nx>e</span><span class=p>.</span><span class=nx>g</span><span class=p>.</span> <span class=nx>github</span><span class=p>.</span><span class=nx>com</span><span class=o>/</span><span class=nx>example</span><span class=o>/</span><span class=nx>api</span> <span class=nx>or</span> <span class=nx>github</span><span class=p>.</span><span class=nx>com</span><span class=o>/</span><span class=nx>example</span><span class=o>/</span><span class=nx>project</span><span class=o>/</span><span class=nx>pkg</span><span class=o>/</span><span class=nx>apis</span><span class=p>).</span>
+</span></span><span class=line><span class=cl>  <span class=p>&lt;</span><span class=nx>groups</span><span class=o>-</span><span class=nx>versions</span><span class=p>&gt;</span>   <span class=nx>the</span> <span class=nx>groups</span> <span class=nx>and</span> <span class=nx>their</span> <span class=nx>versions</span> <span class=nx>in</span> <span class=nx>the</span> <span class=nx>format</span> <span class=s>&#34;groupA:v1,v2 groupB:v1 groupC:v2&#34;</span><span class=p>,</span> <span class=nx>relative</span>
+</span></span><span class=line><span class=cl>                      <span class=nx>to</span> <span class=p>&lt;</span><span class=nx>api</span><span class=o>-</span><span class=kn>package</span><span class=p>&gt;.</span>
+</span></span><span class=line><span class=cl>  <span class=o>...</span>                 <span class=nx>arbitrary</span> <span class=nx>flags</span> <span class=nx>passed</span> <span class=nx>to</span> <span class=nx>all</span> <span class=nx>generator</span> <span class=nx>binaries</span><span class=p>.</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=nx>Examples</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>  <span class=nx>generate</span><span class=o>-</span><span class=nx>groups</span><span class=p>.</span><span class=nx>sh</span> <span class=nx>all</span>             <span class=nx>github</span><span class=p>.</span><span class=nx>com</span><span class=o>/</span><span class=nx>example</span><span class=o>/</span><span class=nx>project</span><span class=o>/</span><span class=nx>pkg</span><span class=o>/</span><span class=nx>client</span> <span class=nx>github</span><span class=p>.</span><span class=nx>com</span><span class=o>/</span><span class=nx>example</span><span class=o>/</span><span class=nx>project</span><span class=o>/</span><span class=nx>pkg</span><span class=o>/</span><span class=nx>apis</span> <span class=s>&#34;foo:v1 bar:v1alpha1,v1beta1&#34;</span>
+</span></span><span class=line><span class=cl>  <span class=nx>generate</span><span class=o>-</span><span class=nx>groups</span><span class=p>.</span><span class=nx>sh</span> <span class=nx>deepcopy</span><span class=p>,</span><span class=nx>client</span> <span class=nx>github</span><span class=p>.</span><span class=nx>com</span><span class=o>/</span><span class=nx>example</span><span class=o>/</span><span class=nx>project</span><span class=o>/</span><span class=nx>pkg</span><span class=o>/</span><span class=nx>client</span> <span class=nx>github</span><span class=p>.</span><span class=nx>com</span><span class=o>/</span><span class=nx>example</span><span class=o>/</span><span class=nx>project</span><span class=o>/</span><span class=nx>pkg</span><span class=o>/</span><span class=nx>apis</span> <span class=s>&#34;foo:v1 bar:v1alpha1,v1beta1&#34;</span>
+</span></span></code></pre></div></li></ol><h3 id=23-add-markers>2.3. Add markers</h3><ol><li><p>Mark the package <code>pkg/api/doc.go</code>.</p><div class=highlight><pre tabindex=0 class=chroma><code class=language-diff data-lang=diff><span class=line><span class=cl><span class=gi>+// +k8s:deepcopy-gen=package
+</span></span></span><span class=line><span class=cl><span class=gi>+// +groupName=example.com
+</span></span></span><span class=line><span class=cl><span class=gi></span>
+</span></span><span class=line><span class=cl> package v1alpha1
+</span></span></code></pre></div><ol><li><code>// +k8s:deepcopy-gen=package</code>: generate DeepCopy for the entire package</li><li><code>// +groupName=example.com</code>: used in the fake client as the full group name (defaults to the package name) (<a href=https://github.com/kubernetes/community/blob/master/contributors/devel/sig-api-machinery/generating-clientset.md>client-gen</a>)</li></ol></li><li><p>Mark the types (<code>Foo</code> and <code>FooList</code>) in <code>pkg/api/types.go</code>.</p><div class=highlight><pre tabindex=0 class=chroma><code class=language-diff data-lang=diff><span class=line><span class=cl><span class=gi>+// +genclient
+</span></span></span><span class=line><span class=cl><span class=gi>+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+</span></span></span><span class=line><span class=cl><span class=gi></span>
+</span></span><span class=line><span class=cl> // Foo is a specification for a Foo resource
+</span></span><span class=line><span class=cl> type Foo struct {
+</span></span><span class=line><span class=cl> ...
+</span></span></code></pre></div><div class=highlight><pre tabindex=0 class=chroma><code class=language-diff data-lang=diff><span class=line><span class=cl><span class=gi>+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+</span></span></span><span class=line><span class=cl><span class=gi></span>
+</span></span><span class=line><span class=cl> // FooList is a list of Foo resources
+</span></span><span class=line><span class=cl> type FooList struct {
+</span></span></code></pre></div><ol><li><code>// +genclient</code>: generate default client verb functions (create, update, delete, get, list, update, patch, watch and depending on the existence of .Status field in the type the client is generated for also updateStatus). (More details: <a href=https://github.com/kubernetes/community/blob/master/contributors/devel/sig-api-machinery/generating-clientset.md>Generation and release cycle of clientset</a>)</li><li><code>+k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object</code>: generate DeepCopyObject with the given interfaces as return types.</li></ol></li><li><p>For more about comment tags.</p><ol><li><a href=https://pkg.go.dev/k8s.io/gengo/examples/deepcopy-gen>deepcopy-gen</a></li><li><a href=https://github.com/kubernetes/community/blob/master/contributors/devel/sig-api-machinery/generating-clientset.md>client-gen</a></li></ol></li></ol><h3 id=24-generate-codes>2.4. Generate codes</h3><ol><li><p>Generate codes (deepcopy, clientset, listers, and informers).</p><p>※ You need to replace <code>github.com/nakamasato/sample-controller</code> with your module name.</p><div class=highlight><pre tabindex=0 class=chroma><code class=language-v data-lang=v><span class=line><span class=cl><span class=kn>module</span><span class=o>=</span><span class=nv>github</span><span class=p>.</span><span class=nv>com</span><span class=o>/</span><span class=nv>nakamasato</span><span class=o>/</span><span class=nv>sample</span><span class=o>-</span><span class=nv>controller</span><span class=p>;</span> <span class=s2>&#34;</span><span class=o>$</span><span class=p>{</span><span class=nv>codeGeneratorDir</span><span class=p>}</span><span class=s2>&#34;</span><span class=o>/</span><span class=nv>generate</span><span class=o>-</span><span class=nv>groups</span><span class=p>.</span><span class=nv>sh</span> <span class=nv>all</span> <span class=err>$</span><span class=p>{</span><span class=kn>module</span><span class=p>}</span><span class=o>/</span><span class=nv>pkg</span><span class=o>/</span><span class=nv>generated</span> <span class=err>$</span><span class=p>{</span><span class=kn>module</span><span class=p>}</span><span class=o>/</span><span class=nv>pkg</span><span class=o>/</span><span class=nv>apis</span> <span class=nv>example</span><span class=p>.</span><span class=nv>com</span><span class=p>:</span><span class=nv>v1alpha1</span> <span class=o>--</span><span class=k>go</span><span class=o>-</span><span class=nv>header</span><span class=o>-</span><span class=nv>file</span> <span class=s2>&#34;</span><span class=o>$</span><span class=p>{</span><span class=nv>codeGeneratorDir</span><span class=p>}</span><span class=s2>&#34;</span><span class=o>/</span><span class=nv>hack</span><span class=o>/</span><span class=nv>boilerplate</span><span class=p>.</span><span class=k>go</span><span class=p>.</span><span class=nv>txt</span> <span class=o>--</span><span class=nv>trim</span><span class=o>-</span><span class=nv>path</span><span class=o>-</span><span class=nv>prefix</span> <span class=o>$</span><span class=kn>module</span> <span class=o>--</span><span class=nv>output</span><span class=o>-</span><span class=nv>base</span> <span class=p>.</span><span class=o>/</span>
+</span></span></code></pre></div><ul><li><code>--output-base ./</code> is necessary to generate the codes under the current directory</li><li><code>--trim-path-prefix $module</code> is necessary to generate under the path <code>pkg/generated/...</code></li></ul><p>The command above consists of the following commands:</p><ol><li><p>Set <code>gobin</code></p><div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>GOBIN=&#34;$(go env GOBIN)&#34;
+</span></span><span class=line><span class=cl>gobin=&#34;${GOBIN:-$(go env GOPATH)/bin}&#34;
+</span></span></code></pre></div></li><li><p><strong>deepcopy-gen</strong>:</p><div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>${gobin}/deepcopy-gen --input-dirs github.com/nakamasato/sample-controller/pkg/apis/example.com/v1alpha1 -O zz_generated.deepcopy --go-header-file /Users/m.naka/repos/kubernetes/code-generator/hack/boilerplate.go.txt --trim-path-prefix github.com/nakamasato/sample-controller
+</span></span></code></pre></div></li><li><p><strong>client-gen</strong>:</p><div class=highlight><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=line><span class=cl><span class=err>$</span><span class=p>{</span><span class=nx>gobin</span><span class=p>}</span><span class=o>/</span><span class=nx>client</span><span class=o>-</span><span class=nx>gen</span> <span class=o>--</span><span class=nx>clientset</span><span class=o>-</span><span class=nx>name</span> <span class=nx>versioned</span> <span class=o>--</span><span class=nx>input</span><span class=o>-</span><span class=nx>base</span> <span class=err>&#39;&#39;</span> <span class=o>--</span><span class=nx>input</span> <span class=nx>github</span><span class=p>.</span><span class=nx>com</span><span class=o>/</span><span class=nx>nakamasato</span><span class=o>/</span><span class=nx>sample</span><span class=o>-</span><span class=nx>controller</span><span class=o>/</span><span class=nx>pkg</span><span class=o>/</span><span class=nx>apis</span><span class=o>/</span><span class=nx>example</span><span class=p>.</span><span class=nx>com</span><span class=o>/</span><span class=nx>v1alpha1</span> <span class=o>--</span><span class=nx>output</span><span class=o>-</span><span class=kn>package</span> <span class=nx>github</span><span class=p>.</span><span class=nx>com</span><span class=o>/</span><span class=nx>nakamasato</span><span class=o>/</span><span class=nx>sample</span><span class=o>-</span><span class=nx>controller</span><span class=o>/</span><span class=nx>pkg</span><span class=o>/</span><span class=nx>generated</span><span class=o>/</span><span class=nx>clientset</span> <span class=o>--</span><span class=k>go</span><span class=o>-</span><span class=nx>header</span><span class=o>-</span><span class=nx>file</span> <span class=o>/</span><span class=nx>Users</span><span class=o>/</span><span class=nx>m</span><span class=p>.</span><span class=nx>naka</span><span class=o>/</span><span class=nx>repos</span><span class=o>/</span><span class=nx>kubernetes</span><span class=o>/</span><span class=nx>code</span><span class=o>-</span><span class=nx>generator</span><span class=o>/</span><span class=nx>hack</span><span class=o>/</span><span class=nx>boilerplate</span><span class=p>.</span><span class=k>go</span><span class=p>.</span><span class=nx>txt</span> <span class=o>--</span><span class=nx>trim</span><span class=o>-</span><span class=nx>path</span><span class=o>-</span><span class=nx>prefix</span> <span class=nx>github</span><span class=p>.</span><span class=nx>com</span><span class=o>/</span><span class=nx>nakamasato</span><span class=o>/</span><span class=nx>sample</span><span class=o>-</span><span class=nx>controller</span>
+</span></span></code></pre></div></li><li><p><strong>lister-gen</strong>:</p><div class=highlight><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=line><span class=cl><span class=err>$</span><span class=p>{</span><span class=nx>gobin</span><span class=p>}</span><span class=o>/</span><span class=nx>lister</span><span class=o>-</span><span class=nx>gen</span> <span class=o>--</span><span class=nx>input</span><span class=o>-</span><span class=nx>dirs</span> <span class=nx>github</span><span class=p>.</span><span class=nx>com</span><span class=o>/</span><span class=nx>nakamasato</span><span class=o>/</span><span class=nx>sample</span><span class=o>-</span><span class=nx>controller</span><span class=o>/</span><span class=nx>pkg</span><span class=o>/</span><span class=nx>apis</span><span class=o>/</span><span class=nx>example</span><span class=p>.</span><span class=nx>com</span><span class=o>/</span><span class=nx>v1alpha1</span> <span class=o>--</span><span class=nx>output</span><span class=o>-</span><span class=kn>package</span> <span class=nx>github</span><span class=p>.</span><span class=nx>com</span><span class=o>/</span><span class=nx>nakamasato</span><span class=o>/</span><span class=nx>sample</span><span class=o>-</span><span class=nx>controller</span><span class=o>/</span><span class=nx>pkg</span><span class=o>/</span><span class=nx>generated</span><span class=o>/</span><span class=nx>listers</span> <span class=o>--</span><span class=k>go</span><span class=o>-</span><span class=nx>header</span><span class=o>-</span><span class=nx>file</span> <span class=o>/</span><span class=nx>Users</span><span class=o>/</span><span class=nx>m</span><span class=p>.</span><span class=nx>naka</span><span class=o>/</span><span class=nx>repos</span><span class=o>/</span><span class=nx>kubernetes</span><span class=o>/</span><span class=nx>code</span><span class=o>-</span><span class=nx>generator</span><span class=o>/</span><span class=nx>hack</span><span class=o>/</span><span class=nx>boilerplate</span><span class=p>.</span><span class=k>go</span><span class=p>.</span><span class=nx>txt</span> <span class=o>--</span><span class=nx>trim</span><span class=o>-</span><span class=nx>path</span><span class=o>-</span><span class=nx>prefix</span> <span class=nx>github</span><span class=p>.</span><span class=nx>com</span><span class=o>/</span><span class=nx>nakamasato</span><span class=o>/</span><span class=nx>sample</span><span class=o>-</span><span class=nx>controller</span>
+</span></span></code></pre></div></li><li><p><strong>informer-gen</strong>:</p><div class=highlight><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=line><span class=cl><span class=err>$</span><span class=p>{</span><span class=nx>gobin</span><span class=p>}</span><span class=o>/</span><span class=nx>informer</span><span class=o>-</span><span class=nx>gen</span> <span class=o>--</span><span class=nx>input</span><span class=o>-</span><span class=nx>dirs</span> <span class=nx>github</span><span class=p>.</span><span class=nx>com</span><span class=o>/</span><span class=nx>nakamasato</span><span class=o>/</span><span class=nx>sample</span><span class=o>-</span><span class=nx>controller</span><span class=o>/</span><span class=nx>pkg</span><span class=o>/</span><span class=nx>apis</span><span class=o>/</span><span class=nx>example</span><span class=p>.</span><span class=nx>com</span><span class=o>/</span><span class=nx>v1alpha1</span> <span class=o>--</span><span class=nx>versioned</span><span class=o>-</span><span class=nx>clientset</span><span class=o>-</span><span class=kn>package</span> <span class=nx>github</span><span class=p>.</span><span class=nx>com</span><span class=o>/</span><span class=nx>nakamasato</span><span class=o>/</span><span class=nx>sample</span><span class=o>-</span><span class=nx>controller</span><span class=o>/</span><span class=nx>pkg</span><span class=o>/</span><span class=nx>generated</span><span class=o>/</span><span class=nx>clientset</span><span class=o>/</span><span class=nx>versioned</span> <span class=o>--</span><span class=nx>listers</span><span class=o>-</span><span class=kn>package</span> <span class=nx>github</span><span class=p>.</span><span class=nx>com</span><span class=o>/</span><span class=nx>nakamasato</span><span class=o>/</span><span class=nx>sample</span><span class=o>-</span><span class=nx>controller</span><span class=o>/</span><span class=nx>pkg</span><span class=o>/</span><span class=nx>generated</span><span class=o>/</span><span class=nx>listers</span> <span class=o>--</span><span class=nx>output</span><span class=o>-</span><span class=kn>package</span> <span class=nx>github</span><span class=p>.</span><span class=nx>com</span><span class=o>/</span><span class=nx>nakamasato</span><span class=o>/</span><span class=nx>sample</span><span class=o>-</span><span class=nx>controller</span><span class=o>/</span><span class=nx>pkg</span><span class=o>/</span><span class=nx>generated</span><span class=o>/</span><span class=nx>informers</span> <span class=o>--</span><span class=k>go</span><span class=o>-</span><span class=nx>header</span><span class=o>-</span><span class=nx>file</span> <span class=o>/</span><span class=nx>Users</span><span class=o>/</span><span class=nx>m</span><span class=p>.</span><span class=nx>naka</span><span class=o>/</span><span class=nx>repos</span><span class=o>/</span><span class=nx>kubernetes</span><span class=o>/</span><span class=nx>code</span><span class=o>-</span><span class=nx>generator</span><span class=o>/</span><span class=nx>hack</span><span class=o>/</span><span class=nx>boilerplate</span><span class=p>.</span><span class=k>go</span><span class=p>.</span><span class=nx>txt</span> <span class=o>--</span><span class=nx>trim</span><span class=o>-</span><span class=nx>path</span><span class=o>-</span><span class=nx>prefix</span> <span class=nx>github</span><span class=p>.</span><span class=nx>com</span><span class=o>/</span><span class=nx>nakamasato</span><span class=o>/</span><span class=nx>sample</span><span class=o>-</span><span class=nx>controller</span>
+</span></span></code></pre></div></li></ol><p>The following files are generated:</p><ul><li><code>pkg/apis/example.com/v1alpha1/zz_generated.deepcopy.go</code></li><li><code>pkg/generated/</code><ul><li><code>clientset</code></li><li><code>informers</code></li><li><code>listers</code></li></ul></li></ul><div class=highlight><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>tree .
+</span></span><span class=line><span class=cl>.
+</span></span><span class=line><span class=cl>├── README.md
+</span></span><span class=line><span class=cl>├── go.mod
+</span></span><span class=line><span class=cl>├── go.sum
+</span></span><span class=line><span class=cl>└── pkg
+</span></span><span class=line><span class=cl>    ├── apis
+</span></span><span class=line><span class=cl>    │   └── example.com
+</span></span><span class=line><span class=cl>    │       └── v1alpha1
+</span></span><span class=line><span class=cl>    │           ├── doc.go
+</span></span><span class=line><span class=cl>    │           ├── register.go
+</span></span><span class=line><span class=cl>    │           ├── types.go
+</span></span><span class=line><span class=cl>    │           └── zz_generated.deepcopy.go
+</span></span><span class=line><span class=cl>    └── generated
+</span></span><span class=line><span class=cl>        ├── clientset
+</span></span><span class=line><span class=cl>        │   └── versioned
+</span></span><span class=line><span class=cl>        │       ├── clientset.go
+</span></span><span class=line><span class=cl>        │       ├── doc.go
+</span></span><span class=line><span class=cl>        │       ├── fake
+</span></span><span class=line><span class=cl>        │       │   ├── clientset_generated.go
+</span></span><span class=line><span class=cl>        │       │   ├── doc.go
+</span></span><span class=line><span class=cl>        │       │   └── register.go
+</span></span><span class=line><span class=cl>        │       ├── scheme
+</span></span><span class=line><span class=cl>        │       │   ├── doc.go
+</span></span><span class=line><span class=cl>        │       │   └── register.go
+</span></span><span class=line><span class=cl>        │       └── typed
+</span></span><span class=line><span class=cl>        │           └── example.com
+</span></span><span class=line><span class=cl>        │               └── v1alpha1
+</span></span><span class=line><span class=cl>        │                   ├── doc.go
+</span></span><span class=line><span class=cl>        │                   ├── example.com_client.go
+</span></span><span class=line><span class=cl>        │                   ├── fake
+</span></span><span class=line><span class=cl>        │                   │   ├── doc.go
+</span></span><span class=line><span class=cl>        │                   │   ├── fake_example.com_client.go
+</span></span><span class=line><span class=cl>        │                   │   └── fake_foo.go
+</span></span><span class=line><span class=cl>        │                   ├── foo.go
+</span></span><span class=line><span class=cl>        │                   └── generated_expansion.go
+</span></span><span class=line><span class=cl>        ├── informers
+</span></span><span class=line><span class=cl>        │   └── externalversions
+</span></span><span class=line><span class=cl>        │       ├── example.com
+</span></span><span class=line><span class=cl>        │       │   ├── interface.go
+</span></span><span class=line><span class=cl>        │       │   └── v1alpha1
+</span></span><span class=line><span class=cl>        │       │       ├── foo.go
+</span></span><span class=line><span class=cl>        │       │       └── interface.go
+</span></span><span class=line><span class=cl>        │       ├── factory.go
+</span></span><span class=line><span class=cl>        │       ├── generic.go
+</span></span><span class=line><span class=cl>        │       └── internalinterfaces
+</span></span><span class=line><span class=cl>        │           └── factory_interfaces.go
+</span></span><span class=line><span class=cl>        └── listers
+</span></span><span class=line><span class=cl>            └── example.com
+</span></span><span class=line><span class=cl>                └── v1alpha1
+</span></span><span class=line><span class=cl>                    ├── expansion_generated.go
+</span></span><span class=line><span class=cl>                    └── foo.go
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>21 directories, 29 files
+</span></span></code></pre></div><p>As is mentioned in the previous section, <code>AddToScheme</code> is called in <code>pkg/generated/clientset/versioned/scheme/register.go</code> to register our new api version <code>example.com/v1alpha1</code>, which includes <code>Foo</code> kind.</p><div class=highlight><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=line><span class=cl><span class=kd>var</span> <span class=nx>localSchemeBuilder</span> <span class=p>=</span> <span class=nx>runtime</span><span class=p>.</span><span class=nx>SchemeBuilder</span><span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=nx>examplev1alpha1</span><span class=p>.</span><span class=nx>AddToScheme</span><span class=p>,</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=o>...</span>
+</span></span><span class=line><span class=cl><span class=kd>var</span> <span class=nx>AddToScheme</span> <span class=p>=</span> <span class=nx>localSchemeBuilder</span><span class=p>.</span><span class=nx>AddToScheme</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=kd>func</span> <span class=nf>init</span><span class=p>()</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=nx>v1</span><span class=p>.</span><span class=nf>AddToGroupVersion</span><span class=p>(</span><span class=nx>Scheme</span><span class=p>,</span> <span class=nx>schema</span><span class=p>.</span><span class=nx>GroupVersion</span><span class=p>{</span><span class=nx>Version</span><span class=p>:</span> <span class=s>&#34;v1&#34;</span><span class=p>})</span>
+</span></span><span class=line><span class=cl>    <span class=nx>utilruntime</span><span class=p>.</span><span class=nf>Must</span><span class=p>(</span><span class=nf>AddToScheme</span><span class=p>(</span><span class=nx>Scheme</span><span class=p>))</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></div></li><li><p>Run <code>go mod tidy</code>.</p></li></ol></div></div></div></div></div></div><div class=sub-footer><div class=container><div class=row><div class=col-12><div class=sub-footer-inner><ul><li class=zerostatic><a href=https://www.zerostatic.io>www.zerostatic.io</a></li></ul></div></div></div></div></div><script type=text/javascript src=/sample-controller/js/scripts.min.302a6fc365d5139fb98cf60bdb8f715d96257ea189161d36c190ccfa8182e569.js></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-9NTB93RVPJ"></script>
-<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date),gtag('config','G-9NTB93RVPJ')</script>
-</body>
-</html>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag("js",new Date),gtag("config","G-9NTB93RVPJ")</script></body></html>
