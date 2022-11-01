@@ -6,7 +6,7 @@ weight: 7
 summary: Implement controller.
 ---
 
-## [5.1. Create Controller](https://github.com/nakamasato/sample-controller/commit/ed92e3d30a51a0e70ab8a2a305ccd2a825e76dc2) {#createcontroller}
+## [5.1. Create Controller](https://github.com/nakamasato/sample-controller/commit/ed92e3d30a51a0e70ab8a2a305ccd2a825e76dc2) {#create-controller}
 
 
 ### 5.1.1. Overview
