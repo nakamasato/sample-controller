@@ -18,6 +18,15 @@ Sample Controller manages a custom resource `Foo` to keep a `Deployment` always 
 
 https://nakamasato.github.io/sample-controller
 
+local:
+
+```
+git submodule update --init --recursive
+hugo serve
+```
+
+Open: http://localhost:1313/sample-controller/
+
 ## Quickstart
 
 1. Install CRD.
