@@ -35,7 +35,7 @@ summaryLength = 10
 
 [params]
   google_analytics_id="G-9NTB93RVPJ"
-  homepage_button_link = '/docs'
+  homepage_button_link = 'docs'
   homepage_button_text = 'Read The Docs'
   homepage_intro = 'Study sample controller step by step to have deep understanding of Kubernetes controller.'
   # homepage_image = '/images/terminal.gif'
@@ -47,13 +47,13 @@ summaryLength = 10
     meta_description = "Study sample controller step by step to have deep understanding of Kubernetes controller."
     meta_og_title = "Sample controller"
     meta_og_type = "website"
-    meta_og_url = "https://hugo-whisper.netlify.app"
-    meta_og_image = "https://raw.githubusercontent.com/JugglerX/hugo-whisper-theme/master/images/tn.png"
+    meta_og_url = "https://www.nakamasato.com/sample-controller"
+    meta_og_image = ""
     meta_og_description = "Study sample controller step by step to have deep understanding of Kubernetes controller."
     meta_twitter_card = "summary"
     meta_twitter_site = "@gymnstcs"
     meta_twitter_creator = "@gymnstcs"
 
   [params.logo]
-      mobile = "/images/logo-mobile.svg"
-      standard  = "/images/logo.svg"
+    mobile = "images/logo-mobile.svg"
+    standard  = "images/logo.svg"
