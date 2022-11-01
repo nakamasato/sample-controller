@@ -32,7 +32,7 @@ go mod init $MODULE_NAME
 TITLE_AND_MESSAGE="0. Initialize Go module ($GO_VERSION)"
 git add go.mod && git commit -m "$TITLE_AND_MESSAGE"
 commit_hash=$(git rev-parse HEAD)
-gsed -i "s#\[$TITLE_AND_MESSAGE\].*#[$TITLE_AND_MESSAGE]($REPO_URL/commit/$commit_hash)#" docs/content/docs/00-init-module/index.md
+gsed -i "s#\[$TITLE_AND_MESSAGE\](.*)#[$TITLE_AND_MESSAGE]($REPO_URL/commit/$commit_hash)#" docs/content/docs/00-init-module/index.md
 gsed -i "s/date:.*/date: $(date +"$DATE_FORMAT")/" docs/content/docs/00-init-module/index.md
 gsed -i "s/go-version:.*/go-version: ${GO_VERSION/go/}/g" .github/workflows/golangci-lint.yml
 gsed -i "s#\[go.*\](.*)#[${GO_VERSION}](https://github.com/golang/go/releases/${GO_VERSION})#g" README.md
@@ -118,7 +118,7 @@ go mod tidy
 TITLE_AND_MESSAGE="1. Define Go types for CRD"
 git add go.sum go.mod pkg/apis/example.com/v1alpha1 && git commit -m "$TITLE_AND_MESSAGE"
 commit_hash=$(git rev-parse HEAD)
-gsed -i "s#\[$TITLE_AND_MESSAGE\].*#[$TITLE_AND_MESSAGE]($REPO_URL/commit/$commit_hash)#" docs/content/docs/01-define-go-types-for-crd/index.md
+gsed -i "s#\[$TITLE_AND_MESSAGE\](.*)#[$TITLE_AND_MESSAGE]($REPO_URL/commit/$commit_hash)#" docs/content/docs/01-define-go-types-for-crd/index.md
 gsed -i "s/date:.*/date: $(date +"$DATE_FORMAT")/" docs/content/docs/01-define-go-types-for-crd/index.md
 
 # 2. Generate codes
@@ -157,7 +157,7 @@ go vet ./...
 TITLE_AND_MESSAGE="2. Generate codes"
 git add pkg && git commit -m "$TITLE_AND_MESSAGE"
 commit_hash=$(git rev-parse HEAD)
-gsed -i "s#\[$TITLE_AND_MESSAGE\].*#[$TITLE_AND_MESSAGE]($REPO_URL/commit/$commit_hash)#" docs/content/docs/02-generate-code/index.md
+gsed -i "s#\[$TITLE_AND_MESSAGE\](.*)#[$TITLE_AND_MESSAGE]($REPO_URL/commit/$commit_hash)#" docs/content/docs/02-generate-code/index.md
 gsed -i "s/date:.*/date: $(date +"$DATE_FORMAT")/" docs/content/docs/02-generate-code/index.md
 
 # 3. Create CRD
@@ -207,7 +207,7 @@ EOF
 TITLE_AND_MESSAGE="3. Create CRD yaml file"
 git add config && git commit -m "$TITLE_AND_MESSAGE"
 commit_hash=$(git rev-parse HEAD)
-gsed -i "s#\[$TITLE_AND_MESSAGE\].*#[$TITLE_AND_MESSAGE]($REPO_URL/commit/$commit_hash)#" docs/content/docs/03-create-crd-yaml/index.md
+gsed -i "s#\[$TITLE_AND_MESSAGE\](.*)#[$TITLE_AND_MESSAGE]($REPO_URL/commit/$commit_hash)#" docs/content/docs/03-create-crd-yaml/index.md
 gsed -i "s/date:.*/date: $(date +"$DATE_FORMAT")/" docs/content/docs/03-create-crd-yaml/index.md
 
 # 4. Checkpoint
@@ -271,7 +271,7 @@ EOF
 TITLE_AND_MESSAGE="4. Checkpoint: Check custom resource and codes"
 git add config $MAIN_GO_FILE && git commit -m "$TITLE_AND_MESSAGE"
 commit_hash=$(git rev-parse HEAD)
-gsed -i "s#\[$TITLE_AND_MESSAGE\].*#[$TITLE_AND_MESSAGE]($REPO_URL/commit/$commit_hash)#" docs/content/docs/04-check-points-check-custom-resource-and-codes/index.md
+gsed -i "s#\[$TITLE_AND_MESSAGE\](.*)#[$TITLE_AND_MESSAGE]($REPO_URL/commit/$commit_hash)#" docs/content/docs/04-check-points-check-custom-resource-and-codes/index.md
 gsed -i "s/date:.*/date: $(date +"$DATE_FORMAT")/" docs/content/docs/04-check-points-check-custom-resource-and-codes/index.md
 
 echo "
@@ -405,7 +405,7 @@ git add pkg go.mod go.sum $FOO_CONTROLLER_FILE $MAIN_GO_FILE
 TITLE_AND_MESSAGE="5.1. Create Controller"
 git commit -m "$TITLE_AND_MESSAGE"
 commit_hash=$(git rev-parse HEAD)
-gsed -i "s#\[$TITLE_AND_MESSAGE\].*#[$TITLE_AND_MESSAGE]($REPO_URL/commit/$commit_hash)#" docs/content/docs/05-implement-reconciliation-loop/index.md
+gsed -i "s#\[$TITLE_AND_MESSAGE\](.*)#[$TITLE_AND_MESSAGE]($REPO_URL/commit/$commit_hash)#" docs/content/docs/05-implement-reconciliation-loop/index.md
 
 # 5.2. Fetch Foo object
 
@@ -509,7 +509,7 @@ go vet ./...
 TITLE_AND_MESSAGE="5.2. Fetch Foo object"
 git add $MAIN_GO_FILE $FOO_CONTROLLER_FILE && git commit -m "$TITLE_AND_MESSAGE"
 commit_hash=$(git rev-parse HEAD)
-gsed -i "s#\[$TITLE_AND_MESSAGE\].*#[$TITLE_AND_MESSAGE]($REPO_URL/commit/$commit_hash)#" docs/content/docs/05-implement-reconciliation-loop/index.md
+gsed -i "s#\[$TITLE_AND_MESSAGE\](.*)#[$TITLE_AND_MESSAGE]($REPO_URL/commit/$commit_hash)#" docs/content/docs/05-implement-reconciliation-loop/index.md
 
 # 5.3. Create/Delete Deployment for Foo resource
 
@@ -694,7 +694,7 @@ go vet ./...
 TITLE_AND_MESSAGE="5.3. Create/Delete Deployment for Foo resource"
 git add $MAIN_GO_FILE $FOO_CONTROLLER_FILE && git commit -m "$TITLE_AND_MESSAGE"
 commit_hash=$(git rev-parse HEAD)
-gsed -i "s#\[$TITLE_AND_MESSAGE\].*#[$TITLE_AND_MESSAGE]($REPO_URL/commit/$commit_hash)#" docs/content/docs/05-implement-reconciliation-loop/index.md
+gsed -i "s#\[$TITLE_AND_MESSAGE\](.*)#[$TITLE_AND_MESSAGE]($REPO_URL/commit/$commit_hash)#" docs/content/docs/05-implement-reconciliation-loop/index.md
 
 # 5.4. Check and update Deployment if necessary
 
@@ -749,7 +749,7 @@ go vet ./...
 TITLE_AND_MESSAGE="5.4. Check and update Deployment if necessary"
 git add $MAIN_GO_FILE $FOO_CONTROLLER_FILE && git commit -m "$TITLE_AND_MESSAGE"
 commit_hash=$(git rev-parse HEAD)
-gsed -i "s#\[$TITLE_AND_MESSAGE\].*#[$TITLE_AND_MESSAGE]($REPO_URL/commit/$commit_hash)#" docs/content/docs/05-implement-reconciliation-loop/index.md
+gsed -i "s#\[$TITLE_AND_MESSAGE\](.*)#[$TITLE_AND_MESSAGE]($REPO_URL/commit/$commit_hash)#" docs/content/docs/05-implement-reconciliation-loop/index.md
 
 # 5.5. Update Foo status
 
@@ -794,7 +794,7 @@ go fmt ./...
 TITLE_AND_MESSAGE="5.5. Update Foo status"
 git add $FOO_CRD_FILE $FOO_CONTROLLER_FILE && git commit -m "$TITLE_AND_MESSAGE"
 commit_hash=$(git rev-parse HEAD)
-gsed -i "s#\[$TITLE_AND_MESSAGE\].*#[$TITLE_AND_MESSAGE]($REPO_URL/commit/$commit_hash)#" docs/content/docs/05-implement-reconciliation-loop/index.md
+gsed -i "s#\[$TITLE_AND_MESSAGE\](.*)#[$TITLE_AND_MESSAGE]($REPO_URL/commit/$commit_hash)#" docs/content/docs/05-implement-reconciliation-loop/index.md
 
 # 5.6. Capture the update of Deployment
 
@@ -868,7 +868,7 @@ go vet ./...
 TITLE_AND_MESSAGE="5.6. Capture the update of Deployment"
 git add $FOO_CONTROLLER_FILE && git commit -m "$TITLE_AND_MESSAGE"
 commit_hash=$(git rev-parse HEAD)
-gsed -i "s#\[$TITLE_AND_MESSAGE\].*#[$TITLE_AND_MESSAGE]($REPO_URL/commit/$commit_hash)#" docs/content/docs/05-implement-reconciliation-loop/index.md
+gsed -i "s#\[$TITLE_AND_MESSAGE\](.*)#[$TITLE_AND_MESSAGE]($REPO_URL/commit/$commit_hash)#" docs/content/docs/05-implement-reconciliation-loop/index.md
 
 # 5.7. Create events for Foo resource
 
@@ -939,5 +939,5 @@ go vet ./...
 TITLE_AND_MESSAGE="5.7. Create events for Foo resource"
 git add go.mod go.sum $FOO_CONTROLLER_FILE && git commit -m "$TITLE_AND_MESSAGE"
 commit_hash=$(git rev-parse HEAD)
-gsed -i "s#\[$TITLE_AND_MESSAGE\].*#[$TITLE_AND_MESSAGE]($REPO_URL/commit/$commit_hash)#" docs/content/docs/05-implement-reconciliation-loop/index.md
+gsed -i "s#\[$TITLE_AND_MESSAGE\](.*)#[$TITLE_AND_MESSAGE]($REPO_URL/commit/$commit_hash)#" docs/content/docs/05-implement-reconciliation-loop/index.md
 git add docs && git commit -m "docs: Update docs links"
