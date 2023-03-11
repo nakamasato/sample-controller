@@ -5,7 +5,7 @@ go 1.19
 require (
 	k8s.io/api v0.25.3
 	k8s.io/apimachinery v0.25.3
-	k8s.io/client-go v0.25.3
+	k8s.io/client-go/v11 v11.0.0+incompatible
 	k8s.io/klog/v2 v2.70.1
 )
 
