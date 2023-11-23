@@ -1,16 +1,16 @@
 package main
 
 import (
-	"context"
 	"flag"
 	"path/filepath"
+	"time"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
 	"k8s.io/klog/v2"
 
 	clientset "github.com/nakamasato/sample-controller/pkg/generated/clientset/versioned"
+	informers "github.com/nakamasato/sample-controller/pkg/generated/informers/externalversions"
 )
 
 func main() {
@@ -27,19 +27,18 @@ func main() {
 	config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
 	if err != nil {
 		klog.Fatalf("Error building kubeconfig: %s", err.Error())
-		klog.FlushAndExit(klog.ExitFlushTimeout, 1)
 	}
 
 	exampleClient, err := clientset.NewForConfig(config)
 	if err != nil {
 		klog.Fatalf("Error building example clientset: %s", err.Error())
-		klog.FlushAndExit(klog.ExitFlushTimeout, 1)
 	}
 
-	foos, err := exampleClient.ExampleV1alpha1().Foos("").List(context.Background(), metav1.ListOptions{})
-	if err != nil {
-		klog.Fatalf("listing foos %s", err.Error())
-		klog.FlushAndExit(klog.ExitFlushTimeout, 1)
+	exampleInformerFactory := informers.NewSharedInformerFactory(exampleClient, time.Second*30)
+	stopCh := make(chan struct{})
+	controller := NewController(exampleClient, exampleInformerFactory.Example().V1alpha1().Foos())
+	exampleInformerFactory.Start(stopCh)
+	if err = controller.Run(stopCh); err != nil {
+		klog.Fatalf("error occurred when running controller %s", err.Error())
 	}
-	klog.Infof("length of foos is %d", len(foos.Items))
 }
