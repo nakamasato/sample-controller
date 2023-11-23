@@ -1,12 +1,12 @@
 ---
 title: '4. Checkpoint'
-date: 2022-10-17T10:18:21+0900
+date: 2023-11-23T15:46:52+0900
 draft: false
 weight: 6
 summary: Check the behavior at this point.
 ---
 
-## [4. Checkpoint: Check custom resource and codes](https://github.com/nakamasato/sample-controller/commit/0e99be12b2487cce47a861a3dca20e467f7f01c4)
+## [4. Checkpoint: Check custom resource and codes](https://github.com/nakamasato/sample-controller/commit/4db617ffe95d9014d361227572f8088d6a7a82e9)
 
 ### 4.1. Overview
 
@@ -77,6 +77,7 @@ summary: Check the behavior at this point.
     config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
     if err != nil {
         klog.Fatalf("Error building kubeconfig: %s", err.Error())
+        klog.FlushAndExit(klog.ExitFlushTimeout, 1)
     }
     ```
 
@@ -92,6 +93,7 @@ summary: Check the behavior at this point.
     exampleClient, err := clientset.NewForConfig(config)
     if err != nil {
         klog.Fatalf("Error building example clientset: %s", err.Error())
+        klog.FlushAndExit(klog.ExitFlushTimeout, 1)
     }
     ```
 
@@ -108,6 +110,7 @@ summary: Check the behavior at this point.
     foos, err := exampleClient.ExampleV1alpha1().Foos("").List(context.Background(), metav1.ListOptions{})
     if err != nil {
         klog.Fatalf("listing foos %s %s", err.Error())
+        klog.FlushAndExit(klog.ExitFlushTimeout, 1)
     }
     klog.Infof("length of foos is %d", len(foos.Items))
     ```
@@ -144,16 +147,19 @@ func main() {
     config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
     if err != nil {
         klog.Fatalf("Error building kubeconfig: %s", err.Error())
+        klog.FlushAndExit(klog.ExitFlushTimeout, 1)
     }
 
     exampleClient, err := clientset.NewForConfig(config)
     if err != nil {
         klog.Fatalf("Error building example clientset: %s", err.Error())
+        klog.FlushAndExit(klog.ExitFlushTimeout, 1)
     }
 
     foos, err := exampleClient.ExampleV1alpha1().Foos("").List(context.Background(), metav1.ListOptions{})
     if err != nil {
         klog.Fatalf("listing foos %s %s", err.Error())
+        klog.FlushAndExit(klog.ExitFlushTimeout, 1)
     }
     klog.Infof("length of foos is %d", len(foos.Items))
 }
