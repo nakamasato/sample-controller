@@ -241,16 +241,19 @@ func main() {
 	config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
 	if err != nil {
 		klog.Fatalf("Error building kubeconfig: %s", err.Error())
+        klog.FlushAndExit(klog.ExitFlushTimeout, 1)
 	}
 
 	exampleClient, err := clientset.NewForConfig(config)
 	if err != nil {
 		klog.Fatalf("Error building example clientset: %s", err.Error())
+        klog.FlushAndExit(klog.ExitFlushTimeout, 1)
 	}
 
 	foos, err := exampleClient.ExampleV1alpha1().Foos("").List(context.Background(), metav1.ListOptions{})
 	if err != nil {
 		klog.Fatalf("listing foos %s", err.Error())
+        klog.FlushAndExit(klog.ExitFlushTimeout, 1)
 	}
 	klog.Infof("length of foos is %d", len(foos.Items))
 }
@@ -318,12 +321,16 @@ func NewController(sampleclientset clientset.Interface, fooInformer informers.Fo
 		foosSynced:      fooInformer.Informer().HasSynced,
 	}
 
-	fooInformer.Informer().AddEventHandler(
+	_, err := fooInformer.Informer().AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
 			AddFunc:    controller.handleAdd,
 			DeleteFunc: controller.handleDelete,
 		},
 	)
+    if err != nil {
+        klog.Fatalf("error adding event handler to fooInformer %s", err.Error())
+        klog.FlushAndExit(klog.ExitFlushTimeout, 1)
+    }
 	return controller
 }
 
@@ -846,7 +853,7 @@ cat <<EOF > tmpfile
     // processing. This way, we don't need to implement custom logic for
     // handling Deployment resources. More info on this pattern:
     // https://github.com/kubernetes/community/blob/8cafef897a22026d42f5e5bb3f104febe7e29830/contributors/devel/controllers.md
-    deploymentInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+    _, err := deploymentInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
         AddFunc: controller.handleObject,
         UpdateFunc: func(old, new interface{}) {
             newDepl := new.(*appsv1.Deployment)
@@ -860,6 +867,10 @@ cat <<EOF > tmpfile
         },
         DeleteFunc: controller.handleObject,
     })
+    if err != nil {
+        klog.Fatalf("error occurred when adding event handler %s", err.Error())
+        klog.FlushAndExit(klog.ExitFlushTimeout, 1)
+    }
 
 EOF
 gsed -i $'/.*return controller/{e cat tmpfile\n}' $FOO_CONTROLLER_FILE # add before

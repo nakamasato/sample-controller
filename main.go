@@ -29,16 +29,19 @@ func main() {
 	config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
 	if err != nil {
 		klog.Fatalf("Error building kubeconfig: %s", err.Error())
+		klog.FlushAndExit(klog.ExitFlushTimeout, 1)
 	}
 
 	kubeClient, err := kubernetes.NewForConfig(config)
 	if err != nil {
 		klog.Errorf("getting kubernetes client set %s", err.Error())
+		klog.FlushAndExit(klog.ExitFlushTimeout, 1)
 	}
 
 	exampleClient, err := clientset.NewForConfig(config)
 	if err != nil {
 		klog.Fatalf("Error building example clientset: %s", err.Error())
+		klog.FlushAndExit(klog.ExitFlushTimeout, 1)
 	}
 
 	kubeInformerFactory := kubeinformers.NewSharedInformerFactory(kubeClient, time.Second*30)

@@ -85,7 +85,7 @@ func NewController(
 		recorder:          recorder,
 	}
 
-	fooInformer.Informer().AddEventHandler(
+	_, err := fooInformer.Informer().AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: controller.enqueueFoo,
 			UpdateFunc: func(old, new interface{}) {
@@ -93,13 +93,17 @@ func NewController(
 			},
 		},
 	)
+	if err != nil {
+		klog.Errorf("failed to add event handler for foo informer %s", err.Error())
+		klog.FlushAndExit(klog.ExitFlushTimeout, 1)
+	}
 	// Set up an event handler for when Deployment resources change. This
 	// handler will lookup the owner of the given Deployment, and if it is
 	// owned by a Foo resource then the handler will enqueue that Foo resource for
 	// processing. This way, we don't need to implement custom logic for
 	// handling Deployment resources. More info on this pattern:
 	// https://github.com/kubernetes/community/blob/8cafef897a22026d42f5e5bb3f104febe7e29830/contributors/devel/controllers.md
-	deploymentInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+	_, err = deploymentInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: controller.handleObject,
 		UpdateFunc: func(old, new interface{}) {
 			newDepl := new.(*appsv1.Deployment)
@@ -113,6 +117,10 @@ func NewController(
 		},
 		DeleteFunc: controller.handleObject,
 	})
+	if err != nil {
+		klog.Errorf("failed to add event handler for foo informer %s", err.Error())
+		klog.FlushAndExit(klog.ExitFlushTimeout, 1)
+	}
 
 	return controller
 }

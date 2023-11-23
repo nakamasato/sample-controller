@@ -61,12 +61,16 @@ func NewController(sampleclientset clientset.Interface, fooInformer informers.Fo
 		foosSynced:      fooInformer.Informer().HasSynced,
 	}
 
-	fooInformer.Informer().AddEventHandler(
+	_, err := fooInformer.Informer().AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
 			AddFunc:    controller.handleAdd,
 			DeleteFunc: controller.handleDelete,
 		},
 	)
+	if err != nil {
+		klog.Fatalf("error occurred when adding event handler %s", err.Error())
+		klog.FlushAndExit(klog.ExitFlushTimeout, 1)
+	}
 	return controller
 }
 
@@ -703,7 +707,7 @@ What needs to be done:
 
 1. Update event handlers in `NewController`:
     ```diff
-            fooInformer.Informer().AddEventHandler(
+            _, err := fooInformer.Informer().AddEventHandler(
                     cache.ResourceEventHandlerFuncs{
     -                       AddFunc: controller.handleAdd,
     +                       AddFunc: controller.enqueueFoo,
@@ -938,7 +942,7 @@ In the previous section, `status.availableReplicas` is not updated immediately. 
         // processing. This way, we don't need to implement custom logic for
         // handling Deployment resources. More info on this pattern:
         // https://github.com/kubernetes/community/blob/8cafef897a22026d42f5e5bb3f104febe7e29830/contributors/devel/controllers.md
-        deploymentInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+        _, err = deploymentInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
             AddFunc: controller.handleObject,
             UpdateFunc: func(old, new interface{}) {
                 newDepl := new.(*appsv1.Deployment)
@@ -952,6 +956,10 @@ In the previous section, `status.availableReplicas` is not updated immediately. 
             },
             DeleteFunc: controller.handleObject,
         })
+        if err != nil {
+            klog.Fatalf("error occurred when adding event handler %s", err.Error())
+            klog.FlushAndExit(klog.ExitFlushTimeout, 1)
+        }
     ```
 
 ### 5.6.3. Run and check
