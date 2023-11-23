@@ -1,12 +1,12 @@
 ---
 title: '5. Implement reconciliation'
-date: 2023-11-23T15:46:52+0900
+date: 2023-11-23T15:51:14+0900
 draft: false
 weight: 7
 summary: Implement controller.
 ---
 
-## [5.1. Create Controller](https://github.com/nakamasato/sample-controller/commit/6b9827020cc9de23883e30bd338b600c62aeff28) {#create-controller}
+## [5.1. Create Controller](https://github.com/nakamasato/sample-controller/commit/7b07f169d85bcfbdd7677c17e857eb598ada851c) {#create-controller}
 
 
 ### 5.1.1. Overview
@@ -215,7 +215,7 @@ func main() {
     2022/07/18 06:36:40 handleDelete is called
     ```
 
-## [5.2. Fetch Foo object](https://github.com/nakamasato/sample-controller/commit/2ae0825e2a49b6e6670d06846e132b0657edc654) {#fetch-foo-object}
+## [5.2. Fetch Foo object](https://github.com/nakamasato/sample-controller/commit/cbad54a072f2bcb68138361cb208d4296a1608fe) {#fetch-foo-object}
 
 ### 5.2.1. Overview
 
@@ -374,7 +374,7 @@ Implement the following logic:
     2022/07/18 07:46:49 failed to get foo resource from lister foo.example.com "foo-sample" not found
     ```
 
-## [5.3. Create/Delete Deployment for Foo resource](https://github.com/nakamasato/sample-controller/commit/42782d08db8d395bafb6db687516b65f3978c07d) {#create-delete-deployment-for-foo-resource}
+## [5.3. Create/Delete Deployment for Foo resource](https://github.com/nakamasato/sample-controller/commit/c298dad0f8a5051a43314d46e72cc770f028b107) {#create-delete-deployment-for-foo-resource}
 
 ### 5.3.1. Overview
 
@@ -649,7 +649,7 @@ The logic to implement is:
 
     > Kubernetes checks for and deletes objects that no longer have owner references, like the pods left behind when you delete a ReplicaSet. When you delete an object, you can control whether Kubernetes deletes the object's dependents automatically, in a process called cascading deletion.
 
-## [5.4. Check and update Deployment if necessary](https://github.com/nakamasato/sample-controller/commit/10166c22a56a9412b4b3548baea7167b5eaf31c0) {#check-and-update-deployment-if-necessary}
+## [5.4. Check and update Deployment if necessary](https://github.com/nakamasato/sample-controller/commit/218eef04c27463cb770cd0f87881acf0266e9826) {#check-and-update-deployment-if-necessary}
 
 ### 5.4.1. Overview
 
@@ -794,7 +794,7 @@ What needs to be done:
     kubectl delete deploy foo-sample
     ```
 
-## [5.5. Update Foo status](https://github.com/nakamasato/sample-controller/commit/33a55e8035b47e6a10e4deccd3cc313f4a708043) {#update-foo-status}
+## [5.5. Update Foo status](https://github.com/nakamasato/sample-controller/commit/d9f8385a34325ce3085bd2110e595fec8197ad7a) {#update-foo-status}
 
 ### 5.5.1. Overview
 
@@ -880,7 +880,7 @@ What needs to be done:
     ```
     kubectl delete -f config/sample/foo.yaml
     ```
-## [5.6. Capture the update of Deployment](https://github.com/nakamasato/sample-controller/commit/233f763e18f9fe9b8e14e560d1efe27297f4080e) {#capture-the-update-of-deployment}
+## [5.6. Capture the update of Deployment](https://github.com/nakamasato/sample-controller/commit/ff0d4babb9941c2603f0510c490e9f9512b11328) {#capture-the-update-of-deployment}
 
 ### 5.6.1. Overview
 
@@ -991,7 +991,7 @@ In the previous section, `status.availableReplicas` is not updated immediately. 
     kubectl delete -f config/sample/foo.yaml
     ```
 
-## [5.7. Create events for Foo resource](https://github.com/nakamasato/sample-controller/commit/d13aee660898c3d3dd9525df4ca60f7764d782ec) {#create-events-for-foo-resource}
+## [5.7. Create events for Foo resource](https://github.com/nakamasato/sample-controller/commit/faf7e63a7ff94754574cfe802475318d87b71ca8) {#create-events-for-foo-resource}
 
 ### 5.7.1. Overview
 

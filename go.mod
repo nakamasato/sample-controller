@@ -1,6 +1,6 @@
 module github.com/nakamasato/sample-controller
 
-go 1.20
+go 1.21.0
 
 require (
 	k8s.io/api v0.28.4
